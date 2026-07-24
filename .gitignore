@@ -1,0 +1,35 @@
+*.log
+.DS_Store
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+/.fleet
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+/node_modules
+# /public/build — sengaja di-commit untuk deployment ke shared hosting
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/vendor
+Homestead.json
+Homestead.yaml
+Thumbs.db
+
+# ─── Tooling lokal & sinkronisasi DB (berisi kredensial — JANGAN di-commit) ───
+/*.py
+# Folder script deploy & tooling (berisi kredensial)
+/deployment/
+/db_backups/
+/db_mirror_temp.sql*
+/test.txt
+/test.html
+__pycache__/
+*.pyc
