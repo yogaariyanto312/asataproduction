@@ -1,0 +1,1 @@
+var e=[`#3b82f6`,`#22c55e`,`#f59e0b`,`#ef4444`,`#a855f7`,`#ec4899`,`#14b8a6`,`#f97316`,`#eab308`,`#94a3b8`];function t(e){return e?{background:e+`26`,color:e,borderColor:e+`55`}:void 0}export{t as n,e as t};

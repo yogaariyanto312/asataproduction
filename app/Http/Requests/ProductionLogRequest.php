@@ -11,15 +11,29 @@ class ProductionLogRequest extends FormRequest
         return auth()->check();
     }
 
+    /**
+     * Kolom UP/BT di database bertipe NOT NULL DEFAULT 0, sementara form boleh
+     * dikosongkan. Field kosong diubah jadi null oleh middleware bawaan dan
+     * ditolak MySQL ("cannot be null"). Hanya kunci yang dikirim form yang
+     * dinormalkan, supaya kolom yang tidak dikirim tidak tertimpa 0.
+     */
+    protected function prepareForValidation(): void
+    {
+        foreach (['up_qty', 'bt_qty', 'reject_qty'] as $key) {
+            if ($this->has($key) && in_array($this->input($key), [null, ''], true)) {
+                $this->merge([$key => 0]);
+            }
+        }
+    }
+
     public function rules(): array
     {
         return [
             'product_id'      => ['required', 'exists:products,id'],
             'production_date' => ['required', 'date', 'before_or_equal:today'],
             'operator_name'   => ['nullable', 'string', 'max:150'],
-            'shift1_qty'      => ['nullable', 'integer', 'min:0', 'max:9999'],
-            'shift2_qty'      => ['nullable', 'integer', 'min:0', 'max:9999'],
-            'shift3_qty'      => ['nullable', 'integer', 'min:0', 'max:9999'],
+            'up_qty'      => ['nullable', 'integer', 'min:0', 'max:9999'],
+            'bt_qty'      => ['nullable', 'integer', 'min:0', 'max:9999'],
             'total_qty'       => ['required', 'numeric', 'min:0', 'max:99999'],
             'notes'           => ['nullable', 'string', 'max:500'],
             'manual_series'   => ['nullable', 'string', 'max:100'],

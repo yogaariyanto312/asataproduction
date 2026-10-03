@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class MessageController extends Controller
 {
@@ -193,13 +194,24 @@ class MessageController extends Controller
     // Operator: halaman chat (lama)
     public function chat()
     {
-        return view('chat.index');
+        // Route lama. Halaman chat terpisah sudah digantikan chat terpadu,
+        // jadi URL ini diarahkan ke sana daripada menyisakan tampilan usang.
+        return redirect()->route('chatting');
     }
 
     // Semua role: halaman chat terpadu (WhatsApp-style)
     public function chatUnified()
     {
-        return view('chat.unified');
+        return Inertia::render('Chat/Index', [
+            'contactsUrl' => route('chat.contacts'),
+            'messagesUrl' => route('messages.my'),
+            'sinceUrl'    => route('messages.since'),
+            'storeUrl'    => route('messages.store'),
+            'pingUrl'     => route('api.ping'),
+            'typingUrl'   => route('api.typing'),
+            'readUrlBase' => url('/api/messages/read-conversation'),
+            'deleteUrlBase' => url('/messages/conversation'),
+        ]);
     }
 
     // Semua role: update last_seen_at (ping)
@@ -299,12 +311,28 @@ class MessageController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        if ($request->expectsJson() || $request->ajax()) {
+        if (! $request->header('X-Inertia') && ($request->expectsJson() || $request->ajax())) {
             return response()->json($messages);
         }
 
         $unreadCount = $messages->where('is_read', false)
             ->where('sender_id', '!=', $userId)->count();
-        return view('chat.admin', compact('messages', 'unreadCount'));
+        return Inertia::render('Chat/Admin', [
+            'chatUrl'     => route('chatting'),
+            'replyBase'   => url('/messages'),
+            'unreadCount' => $unreadCount,
+            'messages'    => $messages->map(fn ($m) => [
+                'id'        => $m->id,
+                'message'   => $m->message,
+                'reply'     => $m->reply,
+                'repliedAt' => $m->replied_at?->locale('id')->isoFormat('D MMM YYYY HH:mm'),
+                'isRead'    => (bool) $m->is_read,
+                'sender'    => $m->sender->name ?? 'Tidak dikenal',
+                'senderRole'=> $m->sender->role ?? null,
+                'recipient' => $m->recipient->name ?? null,
+                'at'        => $m->created_at?->locale('id')->isoFormat('D MMM YYYY HH:mm'),
+                'mine'      => $m->sender_id === auth()->id(),
+            ])->values(),
+        ]);
     }
 }

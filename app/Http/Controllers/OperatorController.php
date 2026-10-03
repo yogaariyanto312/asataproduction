@@ -8,29 +8,28 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class OperatorController extends Controller
 {
-    public function index(Request $request)
-    {
-        $operators = User::where('role', 'operator')
-            ->when($request->search, fn($q) => $q->where(function ($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('username', 'like', "%{$request->search}%")
-                  ->orWhere('email', 'like', "%{$request->search}%");
-            }))
-            ->when($request->status !== null && $request->status !== '', fn($q) => $q->where('is_active', $request->status))
-            ->orderBy('name')
-            ->paginate(15)
-            ->withQueryString();
-
-        return view('operators.index', compact('operators'));
-    }
 
     public function create()
     {
         $departments = Department::where('is_active', true)->orderBy('name')->get();
-        return view('operators.create', compact('departments'));
+        return Inertia::render('Users/Form', [
+            'mode'   => 'create',
+            'action' => route('operators.store'),
+            'resource' => [
+                'label'            => 'Operator',
+                'role'             => 'operator',
+                'emailRequired'    => false,
+                'usernameOptional' => false,
+                'withDepartment'   => true,
+                'minPassword'      => 6,
+                'indexUrl'         => route('management.index', ['tab' => 'operator']),
+            ],
+            'departments' => $departments->map(fn ($d) => ['value' => $d->name, 'label' => $d->name])->values(),
+        ]);
     }
 
     public function store(Request $request)
@@ -59,7 +58,7 @@ class OperatorController extends Controller
         $operator = User::create($data);
         ActivityLog::record('create', "Tambah operator: {$operator->name}", $operator);
 
-        return redirect()->route('operators.index')
+        return redirect()->route('management.index', ['tab' => 'operator'])
             ->with('success', "Operator '{$operator->name}' berhasil ditambahkan.");
     }
 
@@ -67,7 +66,28 @@ class OperatorController extends Controller
     {
         abort_if($operator->role !== 'operator', 404);
         $departments = Department::where('is_active', true)->orderBy('name')->get();
-        return view('operators.edit', compact('operator', 'departments'));
+        return Inertia::render('Users/Form', [
+            'mode'   => 'edit',
+            'action' => route('operators.update', $operator->id),
+            'user'   => [
+                'id'         => $operator->id,
+                'name'       => $operator->name,
+                'username'   => $operator->username,
+                'email'      => $operator->email,
+                'department' => $operator->department,
+                'is_active'  => (bool) $operator->is_active,
+            ],
+            'resource' => [
+                'label'            => 'Operator',
+                'role'             => 'operator',
+                'emailRequired'    => false,
+                'usernameOptional' => false,
+                'withDepartment'   => true,
+                'minPassword'      => 6,
+                'indexUrl'         => route('management.index', ['tab' => 'operator']),
+            ],
+            'departments' => $departments->map(fn ($d) => ['value' => $d->name, 'label' => $d->name])->values(),
+        ]);
     }
 
     public function update(Request $request, User $operator)
@@ -102,7 +122,7 @@ class OperatorController extends Controller
         $operator->update($data);
         ActivityLog::record('update', "Edit operator: {$operator->name}", $operator);
 
-        return redirect()->route('operators.index')
+        return redirect()->route('management.index', ['tab' => 'operator'])
             ->with('success', "Data operator '{$operator->name}' berhasil diperbarui.");
     }
 
@@ -118,7 +138,7 @@ class OperatorController extends Controller
         $operator->delete();
         ActivityLog::record('delete', "Hapus operator: {$name}");
 
-        return redirect()->route('operators.index')
+        return redirect()->route('management.index', ['tab' => 'operator'])
             ->with('success', "Operator '{$name}' berhasil dihapus.");
     }
 

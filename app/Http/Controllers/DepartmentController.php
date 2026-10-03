@@ -6,23 +6,18 @@ use App\Models\ActivityLog;
 use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class DepartmentController extends Controller
 {
-    public function index(Request $request)
-    {
-        $departments = Department::withCount(['operators' => fn($q) => $q->where('role', 'operator')])
-            ->when($request->search, fn($q) => $q->where('name', 'like', "%{$request->search}%"))
-            ->orderBy('name')
-            ->paginate(15)
-            ->withQueryString();
-
-        return view('departments.index', compact('departments'));
-    }
 
     public function create()
     {
-        return view('departments.create');
+        return Inertia::render('Departments/Form', [
+            'mode'     => 'create',
+            'action'   => route('departments.store'),
+            'indexUrl' => route('management.index', ['tab' => 'department']),
+        ]);
     }
 
     public function store(Request $request)
@@ -45,7 +40,16 @@ class DepartmentController extends Controller
 
     public function edit(Department $department)
     {
-        return view('departments.edit', compact('department'));
+        return Inertia::render('Departments/Form', [
+            'mode'       => 'edit',
+            'action'     => route('departments.update', $department->id),
+            'indexUrl'   => route('management.index', ['tab' => 'department']),
+            'department' => [
+                'id'        => $department->id,
+                'name'      => $department->name,
+                'is_active' => (bool) $department->is_active,
+            ],
+        ]);
     }
 
     public function update(Request $request, Department $department)

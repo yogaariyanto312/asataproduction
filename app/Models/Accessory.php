@@ -10,6 +10,9 @@ class Accessory extends Model
 {
     use BelongsToDepartment;
 
+    /** Satuan yang diizinkan untuk aksesoris (sama dengan referensi). */
+    public const UNITS = ['pcs', 'unit'];
+
     protected $fillable = [
         'product_id',
         'user_id',
@@ -45,8 +48,7 @@ class Accessory extends Model
         return $query->where(function (\Illuminate\Database\Eloquent\Builder $q) use ($keyword) {
             $q->where('name', 'like', "%{$keyword}%")
               ->orWhere('serial_number', 'like', "%{$keyword}%")
-              ->orWhere('recipient', 'like', "%{$keyword}%")
-              ->orWhere('purpose', 'like', "%{$keyword}%")
+              ->orWhere('keterangan', 'like', "%{$keyword}%")
               ->orWhereHas('product', function (\Illuminate\Database\Eloquent\Builder $p) use ($keyword) {
                   $p->where('name', 'like', "%{$keyword}%")
                     ->orWhere('series', 'like', "%{$keyword}%");

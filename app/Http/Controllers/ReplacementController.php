@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\Product;
 use App\Models\Replacement;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ReplacementController extends Controller
 {
@@ -39,10 +40,48 @@ class ReplacementController extends Controller
             ->orderBy('series')
             ->get();
 
-        $years = Replacement::selectRaw('DISTINCT YEAR(replacement_date) as yr')
-            ->orderByDesc('yr')->pluck('yr');
+        // Rentang tahun dari MIN/MAX tanggal — bukan YEAR() yang hanya ada di MySQL.
+        $rentang = Replacement::selectRaw('MIN(replacement_date) as awal, MAX(replacement_date) as akhir')->first();
+        $years = (! $rentang || ! $rentang->awal)
+            ? collect([(int) now()->year])
+            : collect(range(
+                (int) \Illuminate\Support\Carbon::parse($rentang->akhir)->year,
+                (int) \Illuminate\Support\Carbon::parse($rentang->awal)->year,
+            ));
 
-        return view('replacements.index', compact('replacements', 'products', 'years', 'departments', 'deptFilter'));
+        return Inertia::render('Replacements/Index', [
+            'filters'     => $request->only(['search', 'month', 'year', 'department']),
+            'indexUrl'    => route('replacements.index'),
+            'storeUrl'    => route('replacements.store'),
+            'can'         => [
+                'create' => \App\Support\MenuAccess::can(auth()->user(), 'barang-pengganti.create'),
+                'delete' => \App\Support\MenuAccess::can(auth()->user(), 'barang-pengganti.delete'),
+            ],
+            'departments' => $departments->map(fn ($d) => ['value' => $d, 'label' => $d])->values(),
+            'years'       => $years->map(fn ($y) => ['value' => $y, 'label' => (string) $y])->values(),
+            'products'    => $products->map(fn ($p) => [
+                'value' => $p->id,
+                'label' => trim($p->name . ' ' . ($p->series ?? '') . ' ' . ($p->kva ? $p->kva . ' kVA' : '')),
+            ])->values(),
+            'rows'        => $replacements->through(fn ($r) => [
+                'id'          => $r->id,
+                'date'        => $r->replacement_date?->locale('id')->isoFormat('D MMM YYYY'),
+                'product'     => $r->product->name ?? '-',
+                'qty'         => (int) $r->qty,
+                'recipient'   => $r->recipient,
+                'reason'      => $r->reason,
+                'serials'     => $r->original_serial
+                    ? array_values(array_filter(preg_split('/\s*,\s*/', trim($r->original_serial))))
+                    : [],
+                'canToggle'   => auth()->id() === $r->user_id || auth()->user()->isPrivileged(),
+                'keterangan'  => $r->keterangan,
+                'operator'    => $r->operator_name ?: ($r->user->name ?? '-'),
+                'department'  => $r->department,
+                'completed'   => (bool) $r->completed_at,
+                'toggleUrl'   => route('replacements.toggle-complete', $r->id),
+                'deleteUrl'   => route('replacements.destroy', $r->id),
+            ]),
+        ]);
     }
 
     public function store(Request $request)

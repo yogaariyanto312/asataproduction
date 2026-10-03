@@ -15,6 +15,7 @@
 /node_modules
 # /public/build — sengaja di-commit untuk deployment ke shared hosting
 /public/hot
+/public/js/filament
 /public/storage
 /storage/*.key
 /storage/pail
@@ -33,3 +34,6 @@ Thumbs.db
 /test.html
 __pycache__/
 *.pyc
+
+/public/css/filament
+/public/fonts/filament

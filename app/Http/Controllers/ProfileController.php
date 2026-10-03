@@ -9,12 +9,49 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class ProfileController extends Controller
 {
     public function edit()
     {
-        return view('profile.edit', ['user' => auth()->user()]);
+        $user = auth()->user();
+
+        return Inertia::render('Profile/Edit', [
+            'action'         => route('profile.update'),
+            'avatarUrl'      => route('profile.avatar'),
+            'logoutOthersUrl'=> route('profile.logout-others'),
+            'aboutAvatarUrl' => route('profile.about-avatar'),
+            'aboutInfoUrl'   => route('profile.about-info'),
+            'isDeveloper'    => $user->isDeveloper(),
+            // Kartu Telegram: hanya peran yang boleh, atau yang telanjur tertaut
+            // (supaya tetap bisa memutus tautan).
+            'telegram'       => (\App\Services\Telegram\PenautanAkun::boleh($user) || $user->telegram_user_id) ? [
+                'linked'       => (bool) $user->telegram_user_id,
+                'linkedAt'     => $user->telegram_linked_at?->timezone('Asia/Jakarta')->locale('id')->isoFormat('D MMM YYYY, HH:mm'),
+                'kode'         => session('telegram_kode'),
+                'berlakuMenit' => \App\Services\Telegram\PenautanAkun::BERLAKU_MENIT,
+                // Membuat kode baru hanya untuk peran yang boleh; tautan lama peran
+                // lain tetap bisa diputus.
+                'kodeUrl'      => \App\Services\Telegram\PenautanAkun::boleh($user) ? route('profile.telegram.kode') : null,
+                'putusUrl'     => route('profile.telegram.putus'),
+            ] : null,
+            'user'           => [
+                'name'           => $user->name,
+                'username'       => $user->username,
+                'email'          => $user->email,
+                'role'           => $user->role,
+                'department'     => $user->department,
+                'avatar'         => $user->avatar,
+                'avatar_url'     => $user->avatarUrl(),
+                'handle'         => $user->handle,
+                'bio'            => $user->bio,
+                'link_instagram' => $user->link_instagram,
+                'link_github'    => $user->link_github,
+                'link_portfolio' => $user->link_portfolio,
+                'link_email'     => $user->link_email,
+            ],
+        ]);
     }
 
     public function update(Request $request)
@@ -121,13 +158,30 @@ class ProfileController extends Controller
     public function updateAvatar(Request $request)
     {
         $user = auth()->user();
-        $request->validate(['avatar' => ['nullable', 'url', 'max:1000']]);
+
+        // Dua cara: unggah berkas (tombol "Ganti Foto") atau URL gambar (acuan).
+        if ($request->hasFile('photo')) {
+            $request->validate([
+                'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
+            ], [
+                'photo.image' => 'File harus berupa gambar.',
+                'photo.mimes' => 'Format: JPG, PNG, WebP, atau GIF.',
+                'photo.max'   => 'Ukuran maksimal 5 MB.',
+                'photo.uploaded' => 'Gagal mengunggah — ukuran file mungkin terlalu besar.',
+            ]);
+            $baru = $request->file('photo')->store('avatars', 'public');
+        } else {
+            $request->validate(['avatar' => ['nullable', 'url', 'max:1000']], [
+                'avatar.url' => 'URL foto tidak valid.',
+            ]);
+            $baru = $request->avatar ?: null;
+        }
 
         if ($user->avatar && !str_starts_with($user->avatar, 'http')) {
             Storage::disk('public')->delete($user->avatar);
         }
 
-        $user->avatar = $request->avatar ?: null;
+        $user->avatar = $baru;
         $user->save();
 
         ActivityLog::record('update', "Update avatar profil: {$user->name}");
@@ -194,5 +248,29 @@ class ProfileController extends Controller
         $user->save();
 
         return back()->with('success', 'Foto halaman About berhasil diperbarui.');
+    }
+
+    /**
+     * Buat kode penautan Telegram (berlaku 10 menit). Kode dibuat di aplikasi —
+     * orang yang sudah login yang membuktikan diri — lalu dikirim ke bot lewat
+     * /tautkan KODE. Bot tidak pernah menerima username/password.
+     */
+    public function telegramKode(Request $request)
+    {
+        abort_unless(\App\Services\Telegram\PenautanAkun::boleh($request->user()), 403,
+            'Fitur Telegram hanya untuk ' . \App\Services\Telegram\PenautanAkun::daftarPeran() . '.');
+
+        $kode = \App\Services\Telegram\PenautanAkun::buatKode($request->user());
+
+        return back()->with('telegram_kode', $kode);
+    }
+
+    public function telegramPutus(Request $request)
+    {
+        \App\Services\Telegram\PenautanAkun::putuskan($request->user());
+
+        ActivityLog::record('update', 'Putuskan tautan akun Telegram');
+
+        return back()->with('success', 'Tautan Telegram diputus.');
     }
 }

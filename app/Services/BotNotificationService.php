@@ -70,14 +70,14 @@ class BotNotificationService
                       . "✕ Reject: <b>{$rejectQty}</b> dari {$totalQty} unit\n"
                       . "📅 {$dateFmt} · 🕒 {$time}";
 
-                Http::withoutVerifying()->timeout(5)->post(
+                self::klien(5)->post(
                     "https://api.telegram.org/bot{$setting->telegram_token}/sendMessage",
                     ['chat_id' => $reportChatId, 'text' => $text, 'parse_mode' => 'HTML']
                 );
             }
 
             if ($setting->discord_enabled && $setting->discord_webhook) {
-                Http::withoutVerifying()->timeout(5)->post($setting->discord_webhook, [
+                self::klien(5)->post($setting->discord_webhook, [
                     'embeds' => [[
                         'title'       => '⚠️ Alert: Reject Rate Tinggi!',
                         'description' => "**" . $product->name . "** — Reject rate **{$rateFmt}%** melebihi batas {$threshFmt}%",
@@ -132,14 +132,14 @@ class BotNotificationService
                       . "🕒 {$time}\n\n"
                       . "<i>Asata Production System</i>";
 
-                Http::withoutVerifying()->timeout(5)->post(
+                self::klien(5)->post(
                     "https://api.telegram.org/bot{$setting->telegram_token}/sendMessage",
                     ['chat_id' => $reportChatId, 'text' => $text, 'parse_mode' => 'HTML']
                 );
             }
 
             if ($setting->discord_enabled && $setting->discord_webhook) {
-                Http::withoutVerifying()->timeout(5)->post($setting->discord_webhook, [
+                self::klien(5)->post($setting->discord_webhook, [
                     'embeds' => [[
                         'title'       => '🎯 Target Tercapai!',
                         'description' => "Produksi **" . ($product->name ?? '-') . "** telah mencapai target!",
@@ -258,7 +258,7 @@ class BotNotificationService
             // Laporan harian → kirim ke chat laporan produksi (fallback ke chat utama)
             $reportChatId = $setting->telegram_report_chat_id ?: $setting->telegram_chat_id;
             if ($setting->telegram_enabled && $setting->telegram_token && $reportChatId) {
-                $res = Http::withoutVerifying()->timeout(8)->post(
+                $res = self::klien(8)->post(
                     "https://api.telegram.org/bot{$setting->telegram_token}/sendMessage",
                     ['chat_id' => $reportChatId, 'text' => $text, 'parse_mode' => 'HTML']
                 );
@@ -285,7 +285,7 @@ class BotNotificationService
                     ['name' => '✕ Total Reject',   'value' => $totalReject > 0 ? "{$totalReject} unit\n{$rejectDetail}" : '0 unit', 'inline' => true],
                     ['name' => "{$rateEmoji} Reject Rate", 'value' => "{$rejectRate}%",            'inline' => true],
                 ]);
-                $res = Http::withoutVerifying()->timeout(8)->post($setting->discord_webhook, [
+                $res = self::klien(8)->post($setting->discord_webhook, [
                     'embeds' => [[
                         'title'       => '📊 Laporan Harian Produksi',
                         'description' => "**{$dateFmt}** · Dikirim {$time}",
@@ -329,7 +329,7 @@ class BotNotificationService
                 if (!$setting->telegram_token || !$setting->telegram_chat_id) {
                     return ['ok' => false, 'message' => 'Token dan Chat ID belum diisi.'];
                 }
-                $res = Http::withoutVerifying()->timeout(8)->post(
+                $res = self::klien(8)->post(
                     "https://api.telegram.org/bot{$setting->telegram_token}/sendMessage",
                     [
                         'chat_id'    => $setting->telegram_chat_id,
@@ -346,7 +346,7 @@ class BotNotificationService
                 if (!$setting->discord_webhook) {
                     return ['ok' => false, 'message' => 'Webhook URL belum diisi.'];
                 }
-                $res = Http::withoutVerifying()->timeout(8)->post($setting->discord_webhook, [
+                $res = self::klien(8)->post($setting->discord_webhook, [
                     'embeds' => [[
                         'title'       => '🤖 Test Notifikasi',
                         'description' => '✅ Konfigurasi Discord berhasil!',
@@ -364,6 +364,19 @@ class BotNotificationService
         }
 
         return ['ok' => false, 'message' => 'Tipe bot tidak dikenali.'];
+    }
+
+    /**
+     * Satu-satunya tempat klien HTTP keluar dibuat (Telegram/Discord).
+     * Dulu `Http::withoutVerifying()` ditulis di banyak tempat, sehingga
+     * verifikasi sertifikat mati di semua panggilan — padahal yang dikirim
+     * termasuk Bot Token. Nyalakan verifikasi lewat .env: BOT_VERIFY_TLS=true.
+     */
+    public static function klien(int $detik)
+    {
+        $klien = Http::timeout($detik);
+
+        return config('services.bot.verify_tls', false) ? $klien : $klien->withoutVerifying();
     }
 
     private static function getLocation(string $ip): string
@@ -442,7 +455,7 @@ class BotNotificationService
               . ($location ? "📍 {$location}\n" : '')
               . "🕒 {$time}";
 
-        Http::withoutVerifying()->timeout(5)->post(
+        self::klien(5)->post(
             "https://api.telegram.org/bot{$token}/sendMessage",
             ['chat_id' => $chatId, 'text' => $text, 'parse_mode' => 'HTML']
         );
@@ -467,7 +480,7 @@ class BotNotificationService
             $fields[] = ['name' => '📍 Lokasi', 'value' => $location, 'inline' => false];
         }
 
-        Http::withoutVerifying()->timeout(5)->post($webhook, [
+        self::klien(5)->post($webhook, [
             'embeds' => [[
                 'title'       => "{$icon} " . ucfirst($action),
                 'description' => $description,

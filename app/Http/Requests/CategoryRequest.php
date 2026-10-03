@@ -21,6 +21,7 @@ class CategoryRequest extends FormRequest
             'code'        => ['nullable', 'string', 'max:20', Rule::unique('categories', 'code')->ignore($categoryId)],
             'description' => ['nullable', 'string', 'max:500'],
             'is_active'   => ['boolean'],
+            'has_manual_serial' => ['boolean'],
         ];
     }
 

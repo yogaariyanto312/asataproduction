@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panduan Asata Production</title>
+<meta name="description" content="Panduan lengkap fitur aplikasi Asata Production: cara pakai tiap menu, lengkap dengan penunjuk di layar.">
+<link rel="stylesheet" href="panduan.css">
+</head>
+<body>
+<div class="bungkus">
+
+<!-- ═══════════════════════ HERO ═══════════════════════ -->
+<header class="hero">
+    <h1>Panduan Asata Production</h1>
+    <p>Semua fitur aplikasi dan cara memakainya. Tiap bagian memakai gambar tiruan layar: angka oranye menunjukkan bagian yang dimaksud, dan penjelasannya ada di sampingnya.</p>
+    <label class="cari">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+        <input id="cari-topik" type="search" placeholder="Cari topik, mis. reject, jadwal, password…" autocomplete="off">
+    </label>
+    <div class="legenda">
+        <span><span class="titik contoh-titik">1</span> Nomor penunjuk di layar</span>
+        <span><span class="contoh-garis"></span> Garis ke penjelasannya</span>
+        <span>Arahkan kursor ke penjelasan untuk menyorot bagiannya</span>
+    </div>
+</header>
+
+<!-- ═══════════════════════ DAFTAR ISI ═══════════════════════ -->
+<nav class="daftar" aria-label="Daftar isi">
+    <a href="#tampilan"><span class="no">1</span>Kenali tampilan</a>
+    <a href="#dashboard"><span class="no">2</span>Dashboard</a>
+    <a href="#input-produksi"><span class="no">3</span>Input Produksi</a>
+    <a href="#riwayat"><span class="no">4</span>Riwayat Produksi</a>
+    <a href="#target"><span class="no">5</span>Target &amp; Jadwal</a>
+    <a href="#gambar-kerja"><span class="no">6</span>Gambar Kerja</a>
+    <a href="#pengganti"><span class="no">7</span>Barang Pengganti</a>
+    <a href="#aksesoris"><span class="no">8</span>Aksesoris Keluar</a>
+    <a href="#catatan"><span class="no">9</span>Catatan</a>
+    <a href="#chatting"><span class="no">10</span>Chatting</a>
+    <a href="#laporan"><span class="no">11</span>Laporan</a>
+    <a href="#produk"><span class="no">12</span>Produk &amp; Kategori</a>
+    <a href="#pengguna"><span class="no">13</span>Pengguna &amp; Hak Akses</a>
+    <a href="#profil"><span class="no">14</span>Profil &amp; Keamanan</a>
+    <a href="#telegram"><span class="no">15</span>Bot Telegram</a>
+    <a href="#lupa-password"><span class="no">16</span>Lupa Password</a>
+</nav>
+<div id="kosong-cari" class="kosong-cari">Tidak ada topik yang cocok. Coba kata lain, misalnya <b>produksi</b> atau <b>gambar</b>.</div>
+
+<!-- ═══════════════════════ 1. TAMPILAN ═══════════════════════ -->
+<section class="bab" id="tampilan">
+    <div class="bab-kepala">
+        <span class="ikon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7"/></svg></span>
+        <div>
+            <h2>Kenali tampilan aplikasi</h2>
+            <p>Tata letak yang sama dipakai di semua halaman.</p>
+        </div>
+        <div class="peran"><span>Semua peran</span></div>
+    </div>
+
+    <div class="peraga">
+        <div class="layar">
+            <div class="bilah-jendela"><i></i><i></i><i></i><span>qc.yogaariyanto.com</span></div>
+            <div class="m-app">
+                <div class="m-side tetap" data-titik="1">
+                    <div class="logo">Asata Production</div>
+                    <div class="on">Dashboard</div>
+                    <div>Input Produksi</div>
+                    <div>Riwayat Produksi</div>
+                    <div>Target Produksi</div>
+                    <div>Gambar Kerja</div>
+                    <div>Chatting</div>
+                    <div class="akun" data-titik="4"><b></b>Nama Anda</div>
+                </div>
+                <div class="m-main">
+                    <div class="m-head">
+                        <div data-titik="2"><strong>Dashboard</strong><small>Ringkasan produksi hari ini</small></div>
+                        <small data-titik="3">Rabu, 30 Sep 2026 · 08:15</small>
+                    </div>
+                    <div class="isi" data-titik="5">
+                        <div class="m-grid tiga">
+                            <div class="m-kartu m-stat"><small>Hari ini</small><b>128</b></div>
+                            <div class="m-kartu m-stat"><small>Bulan ini</small><b>3.412</b></div>
+                            <div class="m-kartu m-stat"><small>Produk</small><b>86</b></div>
+                        </div>
+                        <div class="m-kartu"><div class="m-grafik"><i style="height:40%"></i><i style="height:65%"></i><i style="height:50%"></i><i style="height:80%"></i><i style="height:70%"></i><i style="height:95%"></i><i style="height:60%"></i></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <ol class="catatan">
+            <li data-ke="1"><b>Menu samping.</b> Isinya menyesuaikan hak akses Anda, jadi tiap orang bisa melihat menu yang berbeda. Di HP menu ini tersembunyi: ketuk tombol <b>☰</b> di kiri atas, atau geser layar dari tepi kiri ke kanan. Di PC, ketuk <b>ikon logo</b> (papan klip biru di pojok kiri atas) untuk <b>mengecilkan menu jadi ikon saja</b> supaya layar lebih lega. Arahkan kursor ke ikon untuk melihat namanya, lalu ketuk logo lagi untuk membesarkannya. Pilihan ini diingat.</li>
+            <li data-ke="2"><b>Judul halaman</b> dan keterangan singkat halaman yang sedang dibuka.</li>
+            <li data-ke="3"><b>Tanggal &amp; jam</b> saat ini.</li>
+            <li data-ke="4"><b>Akun Anda.</b> Ketuk untuk membuka Profil atau keluar (logout).</li>
+            <li data-ke="5"><b>Isi halaman.</b> Pindah menu tidak memuat ulang seluruh halaman, jadi terasa cepat.</li>
+        </ol>
+    </div>
+
+    <div class="kotak tips">Label peran di tiap bagian panduan ini adalah <b>pengaturan bawaan</b>. Developer bisa mengubahnya kapan saja di <b>Hak Akses Menu</b>. Kalau ada menu yang Anda butuhkan tapi tidak muncul, berarti hak aksesnya belum diberikan. Minta developer menyalakannya.</div>
+</section>
+
+<!-- ═══════════════════════ 2. DASHBOARD ═══════════════════════ -->
+<section class="bab" id="dashboard">
+    <div class="bab-kepala">
+        <span class="ikon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg></span>
+        <div>
+            <h2>Dashboard</h2>
+            <p>Ringkasan produksi hari ini dalam satu layar. Angkanya diperbarui sendiri.</p>
+        </div>
+        <div class="peran"><span>Semua peran</span></div>
+    </div>
+
+    <div class="peraga lebar">
+        <div class="layar">
+            <div class="bilah-jendela"><i></i><i></i><i></i><span>Dashboard</span></div>
+            <div class="isi">
+                <div class="m-grid tiga" data-titik="1">
+                    <div class="m-kartu m-stat"><small>Total Unit Hari Ini</small><b>128</b></div>
+                    <div class="m-kartu m-stat"><small>Total Bulan Ini</small><b>3.412</b></div>
+                    <div class="m-kartu m-stat"><small>Produk Aktif</small><b>86</b></div>
+                </div>
+                <div class="m-grid dua">
+                    <div class="m-kartu" data-titik="2">
+                        <h4>Target Aktif</h4>
+                        <div class="m-bar"><i style="width:72%"></i></div>
+                        <small style="color:var(--muted)">720 / 1.000 unit · 72%</small>
+                    </div>
+                    <div class="m-kartu" data-titik="3">
+                        <h4>Reject Hari Ini <span class="m-chip hijau">✓ All Good</span></h4>
+                        <small style="color:var(--muted)">2 unit reject · reject rate 1,5%</small>
+                    </div>
+                </div>
+                <div class="m-kartu" data-titik="4">
+                    <h4>Trend Produksi · 7 hari terakhir</h4>
+                    <div class="m-grafik"><i style="height:40%"></i><i style="height:65%"></i><i style="height:50%"></i><i style="height:80%"></i><i style="height:70%"></i><i style="height:95%"></i><i style="height:60%"></i></div>
+                </div>
+                <div class="m-grid dua">
+                    <div class="m-kartu" data-titik="5"><h4>Agenda <span class="m-chip">+ Tambah Agenda</span></h4><small style="color:var(--muted)">Kalender bulan ini + hari libur</small></div>
+                    <div class="m-kartu" data-titik="6"><h4>Catatan</h4><small style="color:var(--muted)">Catatan terbaru untuk Anda</small></div>
+                </div>
+                <div class="m-kartu" data-titik="7"><h4>Input Produksi Terbaru</h4><small style="color:var(--muted)">Dikelompokkan per hari &amp; kategori</small></div>
+                <div class="m-konsol" data-titik="8">
+                    <div><span class="t">14:32:05</span> <span class="a tambah">TAMBAH</span> Dicky penembak jitu (operator) › Input produksi: CHANNEL (12 unit)</div>
+                    <div><span class="t">14:30:11</span> <span class="a ubah">UBAH</span> Irkham karbu (admin) › Mengubah produk: 26T001</div>
+                    <div><span class="t">14:12:40</span> <span class="a hapus">HAPUS</span> Yoga Hansome (developer) › Hapus target produksi</div>
+                </div>
+                <div style="text-align:right"><span class="m-chip hijau" data-titik="9">● Live 30s</span></div>
+            </div>
+        </div>
+        <ol class="catatan">
+            <li data-ke="1"><b>Angka utama:</b> total unit hari ini, total bulan ini, dan jumlah produk aktif.</li>
+            <li data-ke="2"><b>Target Aktif:</b> progres semua target sejak dibuat. Ketuk <b>Kelola →</b> untuk ke halaman Target.</li>
+            <li data-ke="3"><b>Reject Hari Ini:</b> tanda <b>✓ All Good</b> berubah menjadi <b>⚠ High Alert</b> kalau reject melewati batas.</li>
+            <li data-ke="4"><b>Trend Produksi</b> 7 hari terakhir, ditambah grafik produk per tipe dan <b>Top Operator</b>.</li>
+            <li data-ke="5"><b>Agenda:</b> kalender dengan hari libur. Ketuk <b>+ Tambah Agenda</b> untuk membuat pengingat pribadi, yang hanya terlihat oleh Anda.</li>
+            <li data-ke="6"><b>Catatan</b> terbaru, termasuk yang dikirim orang lain untuk Anda.</li>
+            <li data-ke="7"><b>Input Produksi Terbaru:</b> entri hari ini. Ketuk <b>Lihat semua →</b> untuk membuka Riwayat.</li>
+            <li data-ke="8"><b>Log Aktivitas:</b> siapa menambah, mengubah, atau menghapus apa, secara langsung. Sediakan saringan Tambah/Ubah/Hapus/Masuk. Bawaannya hanya untuk admin &amp; developer.</li>
+            <li data-ke="9"><b>Live:</b> dashboard menyegarkan angkanya sendiri setiap 30 detik. Di layar lebar, ketuk tombol ini untuk menjeda (<b>Paused</b>) atau menyalakannya lagi.</li>
+        </ol>
+    </div>
+</section>
+
+<!-- ═══════════════════════ 3. INPUT PRODUKSI ═══════════════════════ -->
+<section class="bab" id="input-produksi">
+    <div class="bab-kepala">
+        <span class="ikon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg></span>
+        <div>
+            <h2>Input Produksi</h2>
+            <p>Mencatat hasil produksi harian, termasuk nomor urut dan reject.</p>
+        </div>
+        <div class="peran"><span>Operator</span><span>Admin</span><span>Developer</span></div>
+    </div>
+
+    <div class="peraga">
+        <div class="layar">
+            <div class="bilah-jendela"><i></i><i></i><i></i><span>Form Input Produksi Harian</span></div>
+            <div class="isi">
+                <div class="m-grid dua">
+                    <div data-titik="1"><span class="m-label">Tanggal Produksi <em>*</em></span><div class="m-input isi-ada">30/09/2026 <span>📅</span></div></div>
+                    <div data-titik="2"><span class="m-label">Produk <em>*</em></span><div class="m-input isi-ada">CHANNEL · 26C0251002-100KVA <span>▾</span></div></div>
+                </div>
+                <div data-titik="3">
+                    <span class="m-label">Jumlah Channel <em>*</em></span>
+                    <div class="m-grid dua">
+                        <div class="m-input isi-ada">Channel UP: 12</div>
+                        <div class="m-input isi-ada">Channel BT: 12</div>
+                    </div>
+                </div>
+                <div class="m-kartu" style="background:rgba(217,119,6,.08)" data-titik="4">
+                    <span class="m-label" style="color:var(--kuning)">🏷 Identitas Produk (wajib diisi)</span>
+                    <div class="m-grid dua"><div class="m-input">Nomor Seri: A-1234</div><div class="m-input">KVA: 100</div></div>
+                </div>
+                <div data-titik="5">
+                    <span class="m-label">Nomor Urut</span>
+                    <div class="m-grid dua"><div class="m-input isi-ada">Nomor Awal UP: 435</div><div class="m-input isi-ada">Preview: 435 – 446</div></div>
+                </div>
+                <div data-titik="6">
+                    <span class="m-label" style="color:var(--merah)">⚠ Ada Reject / Defect?</span>
+                    <div class="m-grid tiga"><div class="m-input">Jumlah Reject</div><div class="m-input">Kategori Penyebab ▾</div><div class="m-input">Keterangan Reject</div></div>
+                </div>
+                <div data-titik="7"><span class="m-label">Keterangan (opsional)</span><div class="m-input">Catatan tambahan…</div></div>
+                <div class="m-baris"><span class="m-btn abu tumbuh">Batal</span><span class="m-btn tumbuh" data-titik="8">Simpan Data Produksi</span></div>
+            </div>
+        </div>
+        <ol class="catatan">
+            <li data-ke="1"><b>Tanggal Produksi</b>, yaitu hari barang dibuat (bukan hari Anda mengisi form).</li>
+            <li data-ke="2"><b>Produk.</b> Pilih dari daftar, yang sudah dikelompokkan per kategori.</li>
+            <li data-ke="3"><b>Jumlah.</b> Untuk Channel isi <b>Channel UP</b> dan <b>Channel BT</b> terpisah. Produk lain cukup satu kolom <b>Total Unit</b>.</li>
+            <li data-ke="4"><b>Identitas Produk.</b> Hanya muncul untuk kategori berseri manual (mis. Swasta / Typetest). Isi <b>Nomor Seri</b> dan <b>KVA</b>.</li>
+            <li data-ke="5"><b>Nomor Urut.</b> Isi nomor awal, lalu <b>Preview</b> langsung menunjukkan rentang nomornya.</li>
+            <li data-ke="6">Ketuk <b>Ada Reject / Defect?</b> kalau ada barang cacat. Isi jumlah, <b>Kategori Penyebab</b> (Bahan Baku, Mesin / Alat, Human Error, Desain / Spesifikasi, Lainnya), dan keterangannya.</li>
+            <li data-ke="7"><b>Keterangan</b> tambahan, boleh dikosongkan.</li>
+            <li data-ke="8">Ketuk <b>Simpan Data Produksi</b> (di HP tertulis <b>Save</b>).</li>
+        </ol>
+    </div>
+
+    <div class="kotak tips">Kalau <b>produk dan tanggal yang sama</b> sudah pernah diinput, jumlahnya <b>ditambahkan</b> ke entri itu, bukan dibuat entri baru. Jadi aman menginput bertahap sepanjang hari. Reject yang diinput juga ikut ditambahkan.</div>
+    <div class="kotak tips">Kalau <b>Total 0</b> (semua unit reject), <b>nomor urut dikosongkan</b>, karena tidak ada unit jadi yang memakai nomor.</div>
+</section>
+
+<!-- ═══════════════════════ 4. RIWAYAT ═══════════════════════ -->
+<section class="bab" id="riwayat">
+    <div class="bab-kepala">
+        <span class="ikon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></span>
+        <div>
+            <h2>Riwayat Produksi</h2>
+            <p>Melihat, mencari, mengubah, dan menghapus data produksi yang sudah diinput.</p>
+        </div>
+        <div class="peran"><span>Semua peran bisa melihat</span><span>Edit/hapus: Operator · Admin · Developer</span></div>
+    </div>
+
+    <div class="peraga">
+        <div class="layar">
+            <div class="bilah-jendela"><i></i><i></i><i></i><span>Riwayat Produksi</span></div>
+            <div class="isi">
+                <div class="m-kartu">
+                    <div class="m-baris">
+                        <div class="tumbuh" data-titik="1"><span class="m-label">Cari Produk</span><div class="m-input">26C02…</div></div>
+                        <div data-titik="2"><span class="m-label">Dari – Sampai Tanggal</span><div class="m-input">01/09 – 30/09</div></div>
+                        <span class="m-btn abu">Reset</span>
+                        <span class="m-btn hijau" data-titik="3">+ Input Baru</span>
+                    </div>
+                </div>
+                <div class="m-baris" style="align-items:center"><span class="m-chip" style="background:#334155;color:#fff">Rabu 30 September 2026</span><small style="color:var(--muted)">128 unit · 6 entri</small></div>
+                <div class="m-kartu" data-titik="4">
+                    <h4>● Tangki <small style="color:var(--muted);font-weight:400">· 2 entri</small></h4>
+                    <table class="m-tabel">
+                        <tr><td><b style="color:var(--ink)">26B0251001-50KVA</b><br><small style="color:var(--muted)">NO.589-593 · Agoy</small></td><td>5 unit</td><td style="text-align:right;white-space:nowrap"><span class="m-ikon" data-titik="5">✏️</span> <span class="m-ikon" data-titik="7">⊘</span> <span class="m-ikon" data-titik="6">🗑️</span></td></tr>
+                        <tr><td><b style="color:var(--ink)">26G0162099-315KVA</b> <span class="m-chip merah">✕ 1</span><br><small style="color:var(--merah)" data-titik="8"><b>Desain / Spesifikasi</b> — karoseri menggembung, perlu divakum</small></td><td>0 unit</td><td style="text-align:right;white-space:nowrap"><span class="m-ikon">✏️</span> <span class="m-ikon">🗑️</span></td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <ol class="catatan">
+            <li data-ke="1"><b>Cari:</b> hasilnya langsung tersaring sambil mengetik, tanpa perlu menekan Enter.</li>
+            <li data-ke="2">Saring berdasarkan <b>Produk</b>, <b>Tahun</b>, atau rentang <b>Dari / Sampai Tanggal</b>. <b>Reset</b> mengembalikan semuanya.</li>
+            <li data-ke="3"><b>Input Baru</b> membuka form Input Produksi.</li>
+            <li data-ke="4">Data dikelompokkan <b>per hari</b>, lalu per kategori (Channel, Cover, Tangki).</li>
+            <li data-ke="5"><b>Pensil</b>: ubah entri yang salah, lalu simpan.</li>
+            <li data-ke="6"><b>Tong sampah</b>: hapus entri. Ada konfirmasi dulu.</li>
+            <li data-ke="7"><b>Reject unit</b> (⊘): unit yang sudah tercatat ternyata cacat, mis. kemarin 1 unit NO.025 lalu hari ini ketahuan rusak. Isi jumlah, tanggal ditemukan, kategori, dan keterangan. Entri lama <b>berkurang</b> dan nomor paling akhirnya dilepas (bisa dipakai lagi untuk unit pengganti). Reject-nya dicatat di <b>tanggal ditemukan</b>. Hanya untuk produk non-Channel.</li>
+            <li data-ke="8"><b>Keterangan reject</b>: kategori penyebab dan catatannya tampil di bawah baris yang punya reject.</li>
+        </ol>
+    </div>
+    <div class="kotak awas">Data yang sudah dihapus <b>tidak bisa dikembalikan</b>. Semua perubahan dan penghapusan tercatat di Log Aktivitas.</div>
+</section>
+
+<!-- ═══════════════════════ 5. TARGET & JADWAL ═══════════════════════ -->
+<section class="bab" id="target">
+    <div class="bab-kepala">
+        <span class="ikon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></span>
+        <div>
+            <h2>Target Produksi &amp; Foto Jadwal</h2>
+            <p>Menentukan target per produk dan menempel jadwal produksi mingguan.</p>
+        </div>
+        <div class="peran"><span>Lihat: semua kecuali Visitor</span><span>Atur: Supervisor · Mandor · Admin · Developer</span></div>
+    </div>
+
+    <div class="peraga">
+        <div class="layar">
+            <div class="bilah-jendela"><i></i><i></i><i></i><span>Target Produksi</span></div>
+            <div class="isi">
+                <div class="m-kartu" data-titik="1">
+                    <h4>Foto Jadwal <small style="color:var(--muted);font-weight:400">· 28 Sep – 4 Okt 2026</small></h4>
+                    <div class="m-gambar" style="color:var(--muted)">jadwal-minggu-ini.jpg</div>
+                    <div class="m-baris" style="margin-top:8px"><span class="m-btn abu" data-titik="2">Layar Penuh</span><span class="m-btn abu">Ganti</span><span class="m-btn merah">Hapus</span></div>
+                </div>
+                <div class="m-grid dua">
+                    <div class="m-kartu">
+                        <h4 style="color:var(--hijau)">Set Target</h4>
+                        <div data-titik="3"><span class="m-label">Produk</span><div class="m-input isi-ada">26T001-100KVA ▾</div></div>
+                        <div style="margin-top:8px" data-titik="4">
+                            <span class="m-label">Target Unit</span>
+                            <div class="m-baris"><span class="m-btn hijau tumbuh">Jumlah Unit</span><span class="m-btn abu tumbuh">Sampai No. Urut</span></div>
+                            <div class="m-input isi-ada" style="margin-top:6px">50</div>
+                        </div>
+                        <span class="m-btn hijau penuh" style="margin-top:8px" data-titik="5">Simpan Target</span>
+                    </div>
+                    <div class="m-kartu" data-titik="6">
+                        <h4>Target berjalan</h4>
+                        <small>26T001-100KVA</small><div class="m-bar"><i style="width:80%"></i></div><small style="color:var(--muted)">40 / 50 · sisa 10</small>
+                        <div style="height:8px"></div>
+                        <small>26C0281005-100KVA</small><div class="m-bar"><i style="width:100%"></i></div><small style="color:var(--hijau)">✓ 30 / 30</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <ol class="catatan">
+            <li data-ke="1"><b>Foto Jadwal</b> berlaku <b>satu minggu penuh</b> (Senin–Minggu), bukan per hari. Format JPG, PNG, WebP, atau PDF, maksimal 8 MB.</li>
+            <li data-ke="2"><b>Layar Penuh</b> untuk membaca jadwal. <b>Ganti</b> untuk menukar berkas, <b>Hapus</b> untuk membuangnya.</li>
+            <li data-ke="3">Pilih <b>Produk</b> yang diberi target.</li>
+            <li data-ke="4">Target bisa berupa <b>Jumlah Unit</b>, atau <b>Sampai No. Urut</b>: isi nomor terakhir yang dituju, lalu jumlahnya dihitung dari nomor urut terakhir. Untuk Channel diisi terpisah UP &amp; BT.</li>
+            <li data-ke="5"><b>Simpan Target.</b> Target tidak punya batas waktu, dan tetap berjalan sampai tercapai atau dihapus.</li>
+            <li data-ke="6"><b>Progres</b> dihitung otomatis dari data Input Produksi sejak target dibuat.</li>
+        </ol>
+    </div>
+    <div class="kotak tips">Jadwal juga bisa diunggah dan dilihat lewat bot Telegram: <code>/jadwal</code> dan <code>/jadwal upload</code>. Lihat bagian <b>Bot Telegram</b>.</div>
+</section>
+
+<!-- ═══════════════════════ 6. GAMBAR KERJA ═══════════════════════ -->
+<section class="bab" id="gambar-kerja">
+    <div class="bab-kepala">
+        <span class="ikon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></span>
+        <div>
+            <h2>Gambar Kerja</h2>
+            <p>Dokumen gambar teknik (PDF/gambar) per judul, seri, dan KVA.</p>
+        </div>
+        <div class="peran"><span>Semua peran bisa melihat</span><span>Upload/edit/hapus: Admin · Developer</span></div>
+    </div>
+
+    <div class="peraga">
+        <div class="layar">
+            <div class="bilah-jendela"><i></i><i></i><i></i><span>Gambar Kerja</span></div>
+            <div class="isi">
+                <div class="m-kartu">
+                    <div class="m-baris">
+                        <div class="tumbuh" data-titik="1"><span class="m-label">Cari Judul / Seri / KVA</span><div class="m-input">Nama judul, seri, atau KVA…</div></div>
+                        <div data-titik="2"><span class="m-label">Urutkan</span><div class="m-input isi-ada">Seri terkecil ▾</div></div>
+                        <span class="m-btn hijau" data-titik="3">+ Upload Gambar</span>
+                    </div>
+                </div>
+                <div class="m-kartu m-baris" style="align-items:center" data-titik="4">
+                    <span class="m-ikon">⬇</span>
+                    <div class="tumbuh"><b style="color:var(--ink)">Simpan di perangkat</b><br><small style="color:var(--muted)">26 dari 78 berkas tersimpan · sisa 504 MB</small></div>
+                    <span class="m-btn">Lanjutkan (504 MB)</span>
+                </div>
+                <div class="m-baris" style="align-items:center"><span class="m-chip" style="background:var(--accent);color:#fff">2026</span><small style="color:var(--muted)">● STANDAR / PLN</small></div>
+                <div class="m-grid tiga">
+                    <div class="m-kartu" data-titik="5"><div class="m-gambar">PDF</div><b style="color:var(--ink)">26B0091000-50KVA</b><br><small style="color:var(--accent)">Lihat gambar ›</small></div>
+                    <div class="m-kartu"><div class="m-gambar">PDF</div><b style="color:var(--ink)">26C0251002-100KVA</b><br><small style="color:var(--accent)">Lihat gambar ›</small></div>
+                    <div class="m-kartu"><div class="m-gambar">PDF</div><b style="color:var(--ink)">2604001006-400KVA</b><br><small style="color:var(--accent)">Lihat gambar ›</small></div>
+                </div>
+            </div>
+        </div>
+        <ol class="catatan">
+            <li data-ke="1"><b>Cari</b> berdasarkan judul, seri, atau KVA. Hasilnya muncul sambil mengetik.</li>
+            <li data-ke="2"><b>Urutkan</b>: seri terkecil/terbesar, KVA terkecil/terbesar, atau judul A–Z.</li>
+            <li data-ke="3"><b>Upload Gambar</b> (admin/developer). Isi judul, kategori seri, seri &amp; KVA, lalu seret berkasnya ke kotak unggah.</li>
+            <li data-ke="4"><b>Simpan di perangkat</b>: <b>Unduh Semua</b> menyimpan seluruh gambar di HP/laptop, jadi saat mendesak gambar langsung terbuka tanpa menunggu unduhan. Kalau semua sudah tersimpan, tombolnya berubah menjadi <b>Selesai ✓</b>.</li>
+            <li data-ke="5"><b>Kartu dokumen</b>, dikelompokkan per tahun lalu per kategori. Ketuk <b>Lihat gambar</b> untuk membuka semua lembarnya, dengan tombol <b>Layar Penuh</b> dan <b>Download</b>.</li>
+        </ol>
+    </div>
+    <div class="kotak tips"><b>Unduh Semua</b> hanya bisa dipakai kalau aplikasi dibuka lewat alamat <b>https://</b> (domain), bukan lewat alamat IP biasa. Gambar yang pernah dibuka juga otomatis tersimpan, jadi pembukaan berikutnya lebih cepat.</div>
+</section>
+
+<!-- ═══════════════════════ 7. BARANG PENGGANTI ═══════════════════════ -->
+<section class="bab" id="pengganti">
+    <div class="bab-kepala">
+        <span class="ikon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></span>
+        <div>
+            <h2>Barang Pengganti</h2>
+            <p>Mencatat unit pengganti atau perbaikan sampai selesai dikerjakan.</p>
+        </div>
+        <div class="peran"><span>Lihat: semua kecuali Visitor</span><span>Tambah/ubah: Operator · Admin · Developer</span></div>
+    </div>
+
+    <div class="peraga">
+        <div class="layar">
+            <div class="bilah-jendela"><i></i><i></i><i></i><span>Barang Pengganti</span></div>
+            <div class="isi">
+                <div class="m-baris">
+                    <div class="tumbuh" data-titik="1"><div class="m-input">Cari · Bulan ▾ · Tahun ▾</div></div>
+                    <span class="m-btn" data-titik="2">+ Tambah Pengganti</span>
+                </div>
+                <table class="m-tabel m-kartu" style="padding:0">
+                    <tr><th>Tanggal</th><th>Produk</th><th>Qty</th><th>Penerima</th><th>Status</th></tr>
+                    <tr><td>29/09</td><td>26T001</td><td>2</td><td>PLN UP3</td><td><span class="m-chip kuning" data-titik="3">Belum selesai</span></td></tr>
+                    <tr><td>25/09</td><td>26C025</td><td>1</td><td>CV Maju</td><td><span class="m-chip hijau">Selesai</span></td></tr>
+                </table>
+            </div>
+        </div>
+        <ol class="catatan">
+            <li data-ke="1">Saring berdasarkan kata kunci, <b>Bulan</b>, dan <b>Tahun</b>.</li>
+            <li data-ke="2"><b>Tambah Pengganti</b>: isi Produk, Tanggal, Jumlah Unit, Nomor Urut / Seri Unit Asli, Alasan / Penyebab, lalu <b>Simpan</b>.</li>
+            <li data-ke="3"><b>Status.</b> Ketuk untuk menandai <b>selesai</b> setelah unitnya dikirim atau diperbaiki.</li>
+        </ol>
+    </div>
+    <div class="kotak tips">Pengganti yang belum selesai bisa dicek cepat lewat Telegram: <code>/pengganti</code>.</div>
+</section>
+
+<!-- ═══════════════════════ 8. AKSESORIS KELUAR ═══════════════════════ -->
+<section class="bab" id="aksesoris">
+    <div class="bab-kepala">
+        <span class="ikon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span>
+        <div>
+            <h2>Aksesoris Keluar</h2>
+            <p>Mencatat aksesoris yang keluar dari gudang beserta produk terkaitnya.</p>
+        </div>
+        <div class="peran"><span>Lihat: semua kecuali Visitor</span><span>Tambah/ubah: Operator · Admin · Developer</span></div>
+    </div>
+
+    <div class="peraga">
+        <div class="layar">
+            <div class="bilah-jendela"><i></i><i></i><i></i><span>Tambah Aksesoris Keluar</span></div>
+            <div class="isi">
+                <div data-titik="1"><span class="m-label">Nama / Jenis Aksesoris <em>*</em></span><div class="m-input isi-ada">Bushing HV</div></div>
+                <div class="m-grid tiga" data-titik="2">
+                    <div><span class="m-label">Tanggal <em>*</em></span><div class="m-input isi-ada">30/09/2026</div></div>
+                    <div><span class="m-label">Jumlah <em>*</em></span><div class="m-input isi-ada">6</div></div>
+                    <div><span class="m-label">Satuan</span><div class="m-input isi-ada">pcs</div></div>
+                </div>
+                <div data-titik="3"><span class="m-label">Seri Produk Terkait (opsional)</span><div class="m-input">26T001-100KVA</div></div>
+                <div class="m-grid dua" data-titik="4"><div><span class="m-label">Nomor Awal</span><div class="m-input">101</div></div><div><span class="m-label">Preview</span><div class="m-input">101 – 106</div></div></div>
+                <div class="m-baris"><span class="m-btn abu tumbuh">Batal</span><span class="m-btn tumbuh">Simpan</span><span class="m-btn hijau" data-titik="5">Export</span></div>
+            </div>
+        </div>
+        <ol class="catatan">
+            <li data-ke="1">Nama atau jenis aksesoris yang keluar.</li>
+            <li data-ke="2"><b>Tanggal</b>, <b>Jumlah</b>, dan <b>Satuan</b>.</li>
+            <li data-ke="3">Produk yang memakai aksesoris ini, kalau ada.</li>
+            <li data-ke="4"><b>Nomor urut aksesoris</b> (opsional). Isi nomor awal, lalu rentangnya tampil di <b>Preview</b>.</li>
+            <li data-ke="5"><b>Export</b> daftar aksesoris sesuai saringan bulan/tahun ke berkas Excel.</li>
+        </ol>
+    </div>
+</section>
+
+<!-- ═══════════════════════ 9. CATATAN ═══════════════════════ -->
+<section class="bab" id="catatan">
+    <div class="bab-kepala">
+        <span class="ikon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></span>
+        <div>
+            <h2>Catatan</h2>
+            <p>Catatan pribadi, atau tugas untuk orang lain lengkap dengan tenggat dan foto bukti.</p>
+        </div>
+        <div class="peran"><span>Semua kecuali Visitor</span></div>
+    </div>
+
+    <div class="peraga">
+        <div class="layar">
+            <div class="bilah-jendela"><i></i><i></i><i></i><span>Catatan baru</span></div>
+            <div class="isi">
+                <div data-titik="1"><span class="m-label">Judul</span><div class="m-input isi-ada">Cek ulang kabel Channel batch 3</div></div>
+                <div class="m-grid dua">
+                    <div data-titik="2"><span class="m-label">Kirim Ke</span><div class="m-input isi-ada">Budi (operator) ▾</div></div>
+                    <div data-titik="3"><span class="m-label">Deadline</span><div class="m-input isi-ada">02/10/2026</div></div>
+                </div>
+                <div data-titik="4"><span class="m-label">Catatan</span><div class="m-input" style="height:54px;align-items:flex-start;padding-top:6px"><b>B</b>&nbsp;<i>I</i>&nbsp;<u>U</u>&nbsp;• ≡ &nbsp;Tulis isi catatan…</div></div>
+                <div class="m-baris">
+                    <div data-titik="5"><span class="m-label">Warna Label</span><div class="m-baris"><span class="m-chip">●</span><span class="m-chip hijau">●</span><span class="m-chip kuning">●</span><span class="m-chip merah">●</span></div></div>
+                    <div class="tumbuh" data-titik="6"><span class="m-label">Foto Bukti</span><div class="m-baris"><span class="m-btn abu">Upload Foto</span><span class="m-btn abu">📷 Kamera</span></div></div>
+                </div>
+                <div class="m-baris"><span class="m-btn abu tumbuh">Batal</span><span class="m-btn tumbuh">Simpan</span><span class="m-btn hijau" data-titik="7">✓ Tandai selesai</span></div>
+            </div>
+        </div>
+        <ol class="catatan">
+            <li data-ke="1"><b>Judul</b> singkat.</li>
+            <li data-ke="2"><b>Kirim Ke</b>: <i>Catatan pribadi</i> (hanya Anda), <i>Semua User</i>, atau satu orang tertentu. Penerima melihatnya di kartu Catatan pada dashboard.</li>
+            <li data-ke="3"><b>Deadline</b>, yaitu batas waktu tugas (opsional).</li>
+            <li data-ke="4">Isi catatan dengan <b>tebal</b>, <i>miring</i>, garis bawah, daftar, dan perataan.</li>
+            <li data-ke="5"><b>Warna Label</b> supaya mudah dibedakan.</li>
+            <li data-ke="6"><b>Foto Bukti</b>: unggah dari galeri, atau langsung ambil lewat <b>Kamera</b> di HP.</li>
+            <li data-ke="7"><b>Tandai selesai</b> setelah tugasnya dikerjakan.</li>
+        </ol>
+    </div>
+</section>
+
+<!-- ═══════════════════════ 10. CHATTING ═══════════════════════ -->
+<section class="bab" id="chatting">
+    <div class="bab-kepala">
+        <span class="ikon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z"/></svg></span>
+        <div>
+            <h2>Chatting</h2>
+            <p>Kirim pesan langsung ke developer, admin, atau pengguna lain di dalam aplikasi.</p>
+        </div>
+        <div class="peran"><span>Semua peran</span></div>
+    </div>
+
+    <div class="peraga">
+        <div class="layar">
+            <div class="bilah-jendela"><i></i><i></i><i></i><span>Chatting</span></div>
+            <div class="m-chat">
+                <div class="kiri" data-titik="1">
+                    <div class="on">Yoga · developer</div>
+                    <div>Sari · admin <span class="m-chip merah">2</span></div>
+                    <div>Budi · operator</div>
+                </div>
+                <div class="kanan">
+                    <div style="display:grid;gap:6px;align-content:start" data-titik="2">
+                        <div class="gelembung">Stok kabel Channel tinggal sedikit</div>
+                        <div class="gelembung saya">Oke, saya cek ke gudang</div>
+                        <small style="color:var(--muted);text-align:right">menunggu balasan</small>
+                    </div>
+                    <div class="m-baris" data-titik="3"><div class="m-input tumbuh">Ketik pesan…</div><span class="m-btn">➤</span></div>
+                </div>
+            </div>
+        </div>
+        <ol class="catatan">
+            <li data-ke="1"><b>Daftar percakapan.</b> Angka merah menunjukkan pesan yang belum dibaca. Ketuk nama untuk membuka percakapannya.</li>
+            <li data-ke="2"><b>Isi percakapan.</b> Pesan Anda di kanan (biru), lawan bicara di kiri.</li>
+            <li data-ke="3">Ketik pesan, lalu tekan <b>Enter</b> atau tombol kirim <b>➤</b>.</li>
+        </ol>
+    </div>
+    <div class="kotak tips">Supervisor, mandor, admin, dan developer punya <b>Kotak Masuk</b> untuk melihat semua pesan yang masuk, termasuk yang <b>belum dibalas</b>.</div>
+</section>
+
+<!-- ═══════════════════════ 11. LAPORAN ═══════════════════════ -->
+<section class="bab" id="laporan">
+    <div class="bab-kepala">
+        <span class="ikon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></span>
+        <div>
+            <h2>Laporan</h2>
+            <p>Rekap produksi bulanan per kategori, siap diunduh.</p>
+        </div>
+        <div class="peran"><span>Supervisor</span><span>Mandor</span><span>Admin</span><span>Developer</span></div>
+    </div>
+
+    <div class="peraga">
+        <div class="layar">
+            <div class="bilah-jendela"><i></i><i></i><i></i><span>Laporan</span></div>
+            <div class="isi">
+                <div class="m-baris">
+                    <div data-titik="1"><span class="m-label">Bulan</span><div class="m-input isi-ada">September ▾</div></div>
+                    <div><span class="m-label">Tahun</span><div class="m-input isi-ada">2026 ▾</div></div>
+                    <span class="m-btn">Tampilkan</span>
+                    <span class="m-btn abu" data-titik="2">📅 Harian</span>
+                    <span class="m-btn hijau" data-titik="3">⬇ Excel</span>
+                    <span class="m-btn merah">⬇ PDF</span>
+                </div>
+                <div class="m-grid empat" data-titik="4">
+                    <div class="m-kartu m-stat"><small>Total Channel</small><b>1.204</b></div>
+                    <div class="m-kartu m-stat"><small>Total Tangki</small><b>318</b></div>
+                    <div class="m-kartu m-stat"><small>Total Cover</small><b>402</b></div>
+                    <div class="m-kartu m-stat"><small>Total Keseluruhan</small><b>1.924</b></div>
+                </div>
+            </div>
+        </div>
+        <ol class="catatan">
+            <li data-ke="1">Pilih <b>Bulan</b> dan <b>Tahun</b>, lalu ketuk <b>Tampilkan</b>.</li>
+            <li data-ke="2"><b>Harian</b>: rincian per hari dalam bulan itu.</li>
+            <li data-ke="3">Unduh laporan sebagai <b>Excel</b> atau <b>PDF</b>. Tombol ini hanya muncul kalau Anda punya izin Export.</li>
+            <li data-ke="4">Ringkasan total per kategori untuk bulan yang dipilih.</li>
+        </ol>
+    </div>
+</section>
+
+<!-- ═══════════════════════ 12. PRODUK & KATEGORI ═══════════════════════ -->
+<section class="bab" id="produk">
+    <div class="bab-kepala">
+        <span class="ikon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg></span>
+        <div>
+            <h2>Master Produk &amp; Kategori</h2>
+            <p>Daftar produk (seri &amp; KVA) yang bisa dipilih saat input produksi.</p>
+        </div>
+        <div class="peran"><span>Produk: Admin · Developer</span><span>Kategori: Developer</span></div>
+    </div>
+
+    <div class="peraga">
+        <div class="layar">
+            <div class="bilah-jendela"><i></i><i></i><i></i><span>Master Produk</span></div>
+            <div class="isi">
+                <div class="m-baris">
+                    <div class="tumbuh" data-titik="1"><div class="m-input">Cari Produk · Kategori ▾ · Tahun ▾</div></div>
+                    <span class="m-btn" data-titik="2">+ Tambah Produk</span>
+                </div>
+                <table class="m-tabel m-kartu" style="padding:0">
+                    <tr><th>Produk</th><th>Kategori</th><th>Status</th><th></th></tr>
+                    <tr><td>26T001-100KVA</td><td>Tangki</td><td><span class="m-chip hijau" data-titik="3">Aktif</span></td><td style="text-align:right"><span class="m-ikon" data-titik="4">✏️</span> <span class="m-ikon">🗑️</span></td></tr>
+                    <tr><td>26C0251002-100KVA</td><td>Channel</td><td><span class="m-chip">Nonaktif</span></td><td style="text-align:right"><span class="m-ikon">✏️</span> <span class="m-ikon">🗑️</span></td></tr>
+                </table>
+            </div>
+        </div>
+        <ol class="catatan">
+            <li data-ke="1">Saring berdasarkan nama, <b>Kategori</b>, atau <b>Tahun</b>.</li>
+            <li data-ke="2"><b>Tambah Produk</b> baru beserta seri dan KVA-nya.</li>
+            <li data-ke="3"><b>Status aktif/nonaktif.</b> Produk nonaktif tidak muncul lagi di pilihan Input Produksi, tapi riwayatnya tetap tersimpan.</li>
+            <li data-ke="4">Ubah atau hapus produk.</li>
+        </ol>
+    </div>
+    <div class="kotak tips"><b>Kategori</b> (Channel, Cover, Tangki, dll.) diatur di menu <b>Kategori</b>: nama, kode, keterangan, dan status aktif. Kategori juga bisa diubah cepat dari dashboard.</div>
+</section>
+
+<!-- ═══════════════════════ 13. PENGGUNA & HAK AKSES ═══════════════════════ -->
+<section class="bab" id="pengguna">
+    <div class="bab-kepala">
+        <span class="ikon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></span>
+        <div>
+            <h2>Manajemen Pengguna &amp; Hak Akses Menu</h2>
+            <p>Menambah akun, dan mengatur menu serta tombol apa saja yang boleh dipakai tiap peran.</p>
+        </div>
+        <div class="peran"><span>Manajemen: Admin · Developer</span><span>Hak Akses: Developer</span></div>
+    </div>
+
+    <h3>Manajemen</h3>
+    <div class="peraga">
+        <div class="layar">
+            <div class="bilah-jendela"><i></i><i></i><i></i><span>Manajemen</span></div>
+            <div class="isi">
+                <div class="m-baris" data-titik="1"><span class="m-chip">Admin 2</span><span class="m-chip">Supervisor 1</span><span class="m-chip">Mandor 2</span><span class="m-chip" style="background:var(--accent);color:#fff">Operator 9</span><span class="m-chip">Visitor 3</span></div>
+                <div class="m-baris"><div class="tumbuh"><div class="m-input">Cari nama / username…</div></div><span class="m-btn" data-titik="2">+ Tambah</span></div>
+                <table class="m-tabel m-kartu" style="padding:0">
+                    <tr><th>Nama</th><th>Email</th><th>Status</th><th></th></tr>
+                    <tr><td>Budi</td><td>budi@…</td><td><span class="m-chip hijau" data-titik="3">Aktif</span></td><td style="text-align:right"><span class="m-ikon">✏️</span> <span class="m-ikon">🗑️</span></td></tr>
+                </table>
+            </div>
+        </div>
+        <ol class="catatan">
+            <li data-ke="1"><b>Tab per peran</b> beserta jumlah akunnya. Tab Developer hanya terlihat oleh developer.</li>
+            <li data-ke="2"><b>Tambah</b> akun untuk peran di tab yang sedang dibuka. Admin bisa mengelola Supervisor, Mandor, Operator, dan Visitor. Akun Admin dan Developer hanya bisa dikelola developer.</li>
+            <li data-ke="3">Status <b>aktif/nonaktif</b>. Akun nonaktif tidak bisa login.</li>
+        </ol>
+    </div>
+
+    <h3>Hak Akses Menu</h3>
+    <div class="peraga">
+        <div class="layar">
+            <div class="bilah-jendela"><i></i><i></i><i></i><span>Hak Akses Menu</span></div>
+            <div class="isi">
+                <div class="m-baris" data-titik="1"><span class="m-chip" style="background:var(--accent);color:#fff">Operator</span><span class="m-chip">Mandor</span><span class="m-chip">Supervisor</span><span class="m-chip">Visitor</span></div>
+                <table class="m-tabel m-kartu" style="padding:0">
+                    <tr><th>Menu / Aksi</th><th style="text-align:right">Operator</th></tr>
+                    <tr><td><b>Riwayat Produksi</b></td><td style="text-align:right" data-titik="2"><span class="m-chip hijau">ON</span></td></tr>
+                    <tr><td>&nbsp;&nbsp;↳ Edit</td><td style="text-align:right"><span class="m-chip hijau">ON</span></td></tr>
+                    <tr><td>&nbsp;&nbsp;↳ Hapus</td><td style="text-align:right"><span class="m-chip merah">OFF</span></td></tr>
+                </table>
+                <div class="m-baris" data-titik="3"><small class="tumbuh" style="color:var(--kuning)">● Ada perubahan yang belum disimpan</small><span class="m-btn abu">Batalkan</span><span class="m-btn">Simpan</span></div>
+            </div>
+        </div>
+        <ol class="catatan">
+            <li data-ke="1"><b>Pilih peran</b> yang ingin diatur (di HP tampil satu peran sekaligus).</li>
+            <li data-ke="2">Nyalakan atau matikan <b>menu</b> dan <b>aksi</b> di bawahnya (tambah, edit, hapus, export…). Kalau menunya dimatikan, semua aksinya ikut tidak berlaku.</li>
+            <li data-ke="3">Perubahan baru berlaku setelah <b>Simpan</b>. <b>Kembalikan semua ke bawaan</b> mengembalikan pengaturan awal.</li>
+        </ol>
+    </div>
+    <div class="kotak awas">Hak akses berlaku di aplikasi <b>dan</b> di bot Telegram. Mencabut izin di sini langsung berlaku di keduanya.</div>
+</section>
+
+<!-- ═══════════════════════ 14. PROFIL ═══════════════════════ -->
+<section class="bab" id="profil">
+    <div class="bab-kepala">
+        <span class="ikon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></span>
+        <div>
+            <h2>Profil &amp; Keamanan</h2>
+            <p>Foto profil, data akun, password, sesi login, dan tautan Telegram.</p>
+        </div>
+        <div class="peran"><span>Semua peran</span></div>
+    </div>
+
+    <div class="peraga">
+        <div class="layar">
+            <div class="bilah-jendela"><i></i><i></i><i></i><span>Profil</span></div>
+            <div class="isi">
+                <div class="m-kartu m-baris" style="align-items:center" data-titik="1"><span class="m-ikon" style="width:34px;height:34px;border-radius:99px">👤</span><div class="tumbuh"><b style="color:var(--ink)">Avatar Profil</b></div><span class="m-btn abu">Simpan Avatar</span></div>
+                <div class="m-kartu" data-titik="2"><h4>Informasi Akun</h4><div class="m-grid dua"><div class="m-input isi-ada">Nama Lengkap</div><div class="m-input isi-ada">Email</div></div></div>
+                <div class="m-kartu" data-titik="3"><h4>Ganti Password</h4><div class="m-grid tiga"><div class="m-input">Password Saat Ini</div><div class="m-input">Password Baru</div><div class="m-input">Konfirmasi</div></div></div>
+                <div class="m-grid dua">
+                    <div class="m-kartu" data-titik="4"><h4>Keamanan Sesi</h4><span class="m-btn merah penuh">Logout Semua Perangkat</span></div>
+                    <div class="m-kartu" data-titik="5"><h4>Telegram</h4><span class="m-btn penuh">Tautkan Telegram</span></div>
+                </div>
+            </div>
+        </div>
+        <ol class="catatan">
+            <li data-ke="1"><b>Avatar</b>: pilih foto lalu <b>Simpan Avatar</b>.</li>
+            <li data-ke="2"><b>Nama Lengkap</b> dan <b>Email</b>. Email wajib aktif, karena dipakai untuk <b>Lupa Password</b>.</li>
+            <li data-ke="3"><b>Ganti Password</b>: isi password saat ini, password baru, dan konfirmasinya, lalu <b>Simpan Perubahan</b>.</li>
+            <li data-ke="4"><b>Logout Semua Perangkat</b> mengeluarkan akun Anda dari HP/laptop lain, misalnya kalau HP hilang atau password bocor.</li>
+            <li data-ke="5"><b>Tautkan Telegram</b> supaya bisa memakai bot. Kartu ini <b>hanya muncul untuk developer, admin, dan supervisor</b>. Langkahnya ada di bawah.</li>
+        </ol>
+    </div>
+
+    <h3>Cara menautkan akun Telegram <span class="m-chip">Developer · Admin · Supervisor</span></h3>
+    <ol class="langkah">
+        <li>Di halaman <b>Profil</b>, ketuk <b>Tautkan Telegram</b>. Muncul kode, misalnya <code>/tautkan AB12CD</code>.</li>
+        <li>Buka bot QC di Telegram, lalu kirim perintah itu persis seperti yang tertulis.</li>
+        <li>Bot membalas bahwa akun sudah tertaut. Kode hanya berlaku <b>10 menit</b> dan hanya bisa dipakai sekali.</li>
+        <li>Untuk memutus tautan, ketuk <b>Putuskan</b> di kartu Telegram.</li>
+    </ol>
+</section>
+
+<!-- ═══════════════════════ 15. BOT TELEGRAM ═══════════════════════ -->
+<section class="bab" id="telegram">
+    <div class="bab-kepala">
+        <span class="ikon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg></span>
+        <div>
+            <h2>Bot Telegram</h2>
+            <p>Cek produksi, target, dan jadwal, atau unggah jadwal &amp; gambar kerja langsung dari HP.</p>
+        </div>
+        <div class="peran"><span>Developer</span><span>Admin</span><span>Supervisor</span></div>
+    </div>
+
+    <div class="kotak tips">Bot hanya bisa dipakai secara pribadi oleh <b>developer, admin, dan supervisor</b> yang sudah menautkan akunnya di <b>Profil</b>. Kabar otomatis dan perintah baca (<code>/produksi</code>, <code>/target</code>, dll.) di grup Telegram yang terdaftar tetap bisa dilihat semua anggota grup.</div>
+
+    <div class="peraga">
+        <div class="layar" style="background:transparent;border:0;box-shadow:none">
+            <div class="m-hp">
+                <div class="atas">🤖 Asata Production Bot</div>
+                <div class="obrolan">
+                    <div class="tg saya" data-titik="1"><code>/gambar Trafo PLN</code></div>
+                    <div class="tg" data-titik="2">Pilih kategori seri:
+                        <div class="tg-tombol" style="margin-top:6px"><span>PLN</span><span>Swasta</span><span>Type Test</span></div>
+                    </div>
+                    <div class="tg saya" data-titik="3"><code>26T001 100</code></div>
+                    <div class="tg" data-titik="4">Kirim berkasnya (PDF/foto). Ketik <code>/batal</code> kalau sudah selesai.</div>
+                </div>
+            </div>
+        </div>
+        <ol class="catatan">
+            <li data-ke="1">Ketik perintah. Contoh: unggah gambar kerja dengan <code>/gambar</code> diikuti judulnya.</li>
+            <li data-ke="2">Bot menuntun dengan <b>tombol pilihan</b>. Ketuk salah satunya.</li>
+            <li data-ke="3">Balas pertanyaan bot, misalnya <b>seri</b> dan <b>KVA</b>.</li>
+            <li data-ke="4">Kirim berkasnya. Satu judul boleh beberapa lembar. Akhiri dengan <code>/batal</code>.</li>
+        </ol>
+    </div>
+
+    <h3>Daftar perintah</h3>
+    <table class="perintah">
+        <tr><td><code>/info</code></td><td>Fitur apa saja yang bisa Anda pakai (menyesuaikan hak akses).</td></tr>
+        <tr><td><code>/tutorial</code></td><td>Panduan langkah demi langkah di dalam Telegram.</td></tr>
+        <tr><td><code>/produksi</code></td><td>Total produksi hari ini per kategori, plus reject dan persentasenya.</td></tr>
+        <tr><td><code>/target</code></td><td>Progres tiap target aktif: sudah berapa, dari berapa, sisa berapa.</td></tr>
+        <tr><td><code>/reject</code></td><td>Produk dengan reject tertinggi hari ini.</td></tr>
+        <tr><td><code>/pengganti</code></td><td>Barang pengganti yang belum selesai.</td></tr>
+        <tr><td><code>/jadwal</code></td><td>Jadwal minggu ini, dikirim berkasnya. Ada juga <code>/jadwal depan</code>.</td></tr>
+        <tr><td><code>/jadwal upload</code></td><td>Unggah jadwal untuk satu minggu (<code>/jadwal upload depan</code> untuk minggu depan).</td></tr>
+        <tr><td><code>/gambar</code></td><td>Unggah gambar kerja, dituntun bertahap (judul → kategori → seri &amp; KVA → berkas).</td></tr>
+        <tr><td><code>/lapor</code></td><td>Catat produksi dari lapangan. Contoh <code>/lapor 2601 12 1</code>, atau untuk Channel <code>/lapor CH01 up 10 bt 8 reject 1</code>.</td></tr>
+        <tr><td><code>/tautkan KODE</code></td><td>Menautkan akun (kodenya dari halaman Profil).</td></tr>
+        <tr><td><code>/batal</code></td><td>Menghentikan langkah yang sedang berjalan.</td></tr>
+    </table>
+    <div class="kotak tips">Perintah yang mengubah data (<code>/lapor</code>, <code>/jadwal upload</code>, <code>/gambar</code>) memakai <b>hak akses yang sama</b> dengan aplikasi. Kalau di aplikasi Anda tidak boleh, di bot juga tidak.</div>
+</section>
+
+<!-- ═══════════════════════ 16. LUPA PASSWORD ═══════════════════════ -->
+<section class="bab" id="lupa-password">
+    <div class="bab-kepala">
+        <span class="ikon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg></span>
+        <div>
+            <h2>Lupa Password</h2>
+            <p>Mengatur ulang password lewat email.</p>
+        </div>
+        <div class="peran"><span>Semua peran</span></div>
+    </div>
+    <ol class="langkah">
+        <li>Di halaman login, ketuk <b>Lupa Password?</b></li>
+        <li>Masukkan <b>email</b> yang terdaftar di akun Anda, lalu kirim.</li>
+        <li>Buka email dari Asata Production, lalu ketuk tautan reset di dalamnya.</li>
+        <li>Buat password baru, simpan, lalu login dengan password baru itu.</li>
+    </ol>
+    <div class="kotak awas">Cara ini hanya bisa dipakai kalau email di <b>Profil</b> sudah benar dan aktif. Kalau belum, minta admin atau developer mengganti password Anda lewat menu <b>Manajemen</b>.</div>
+</section>
+
+
+
+<footer class="kaki">
+    Masih bingung? Tanyakan lewat menu <b>Chatting</b> atau ketik <code>/tutorial</code> di bot Telegram.
+</footer>
+
+</div>
+<script src="panduan.js"></script>
+</body>
+</html>

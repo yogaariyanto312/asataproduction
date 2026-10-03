@@ -7,12 +7,16 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class ForgotPasswordController extends Controller
 {
     public function showForm()
     {
-        return view('auth.forgot-password');
+        return Inertia::render('Auth/ForgotPassword', [
+            'action'   => route('password.email'),
+            'loginUrl' => route('login'),
+        ]);
     }
 
     public function sendLink(Request $request)
@@ -46,9 +50,11 @@ class ForgotPasswordController extends Controller
 
     public function showResetForm(Request $request, string $token)
     {
-        return view('auth.reset-password', [
-            'token' => $token,
-            'email' => $request->query('email', ''),
+        return Inertia::render('Auth/ResetPassword', [
+            'action'   => route('password.update'),
+            'loginUrl' => route('login'),
+            'token'    => $token,
+            'email'    => $request->query('email', ''),
         ]);
     }
 

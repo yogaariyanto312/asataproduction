@@ -7,12 +7,25 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class VisitorController extends Controller
 {
     public function create()
     {
-        return view('visitors.create');
+        return Inertia::render('Users/Form', [
+            'mode'   => 'create',
+            'action' => route('visitors.store'),
+            'resource' => [
+                'label'            => 'Visitor',
+                'role'             => 'visitor',
+                'emailRequired'    => false,
+                'usernameOptional' => false,
+                'withDepartment'   => false,
+                'minPassword'      => 8,
+                'indexUrl'         => route('management.index', ['tab' => 'visitor']),
+            ],
+        ]);
     }
 
     public function store(Request $request)
@@ -47,7 +60,27 @@ class VisitorController extends Controller
     public function edit(User $visitor)
     {
         abort_if($visitor->role !== 'visitor', 404);
-        return view('visitors.edit', compact('visitor'));
+        return Inertia::render('Users/Form', [
+            'mode'   => 'edit',
+            'action' => route('visitors.update', $visitor->id),
+            'user'   => [
+                'id'         => $visitor->id,
+                'name'       => $visitor->name,
+                'username'   => $visitor->username,
+                'email'      => $visitor->email,
+                'department' => $visitor->department,
+                'is_active'  => (bool) $visitor->is_active,
+            ],
+            'resource' => [
+                'label'            => 'Visitor',
+                'role'             => 'visitor',
+                'emailRequired'    => false,
+                'usernameOptional' => false,
+                'withDepartment'   => false,
+                'minPassword'      => 8,
+                'indexUrl'         => route('management.index', ['tab' => 'visitor']),
+            ],
+        ]);
     }
 
     public function update(Request $request, User $visitor)
