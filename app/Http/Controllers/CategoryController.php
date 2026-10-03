@@ -30,6 +30,7 @@ class CategoryController extends Controller
                 'code'        => $c->code,
                 'description' => $c->description,
                 'is_active'   => (bool) $c->is_active,
+                'manual'      => (bool) $c->has_manual_serial,
                 'products'    => (int) $c->products_count,
                 'editUrl'     => route('categories.edit', $c->id),
                 'deleteUrl'   => route('categories.destroy', $c->id),
@@ -48,7 +49,7 @@ class CategoryController extends Controller
 
     public function store(CategoryRequest $request)
     {
-        $category = Category::create($request->validated() + ['is_active' => $request->boolean('is_active', true)]);
+        $category = Category::create($request->validated() + ['is_active' => $request->boolean('is_active', true), 'has_manual_serial' => $request->boolean('has_manual_serial')]);
         ActivityLog::record('create', "Menambah kategori: {$category->name}", $category);
         return redirect()->route('categories.index')->with('success', "Kategori '{$category->name}' berhasil ditambahkan.");
     }
@@ -65,13 +66,14 @@ class CategoryController extends Controller
                 'code'        => $category->code,
                 'description' => $category->description,
                 'is_active'   => (bool) $category->is_active,
+                'has_manual_serial' => (bool) $category->has_manual_serial,
             ],
         ]);
     }
 
     public function update(CategoryRequest $request, Category $category)
     {
-        $category->update($request->validated() + ['is_active' => $request->boolean('is_active', true)]);
+        $category->update($request->validated() + ['is_active' => $request->boolean('is_active', true), 'has_manual_serial' => $request->boolean('has_manual_serial')]);
         ActivityLog::record('update', "Mengubah kategori: {$category->name}", $category);
         return redirect()->route('categories.index')->with('success', "Kategori '{$category->name}' berhasil diperbarui.");
     }

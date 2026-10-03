@@ -67,9 +67,9 @@ class ProductionLogController extends Controller
             ->get();
 
         $products   = Product::where('is_active', true)->distinct()->orderBy('name')->pluck('name');
-        $categories = Category::where('is_active', true)->orderBy('name')->get();
-        // Daftar tahun unik — ambil tanggal lalu ekstrak tahun di PHP (cross-DB: MySQL & SQLite)
+        // Daftar tahun unik — ambil tanggal unik lalu ekstrak tahun di PHP (cross-DB: MySQL & SQLite)
         $years      = ProductionLog::query()
+            ->distinct()
             ->orderByDesc('production_date')
             ->pluck('production_date')
             ->map(fn ($d) => (int) \Illuminate\Support\Carbon::parse($d)->year)
@@ -104,7 +104,16 @@ class ProductionLogController extends Controller
             return null;
         };
 
-        $mapLog = function ($log) use ($badgeOf, $lastChannelNums) {
+        // URL per kartu dibangun dari templat sekali jalan — route() untuk tiap
+        // log (4 x ratusan kartu) terasa di waktu muat halaman.
+        $urlTpl = array_map(fn ($r) => route($r, '__ID__'), [
+            'showUrl'   => 'production.show',
+            'editUrl'   => 'production.edit',
+            'deleteUrl' => 'production.destroy',
+            'rejectUrl' => 'production.reject-unit',
+        ]);
+
+        $mapLog = function ($log) use ($badgeOf, $lastChannelNums, $urlTpl) {
             $isChannel = ($log->product->type ?? '') === 'channel';
 
             // Nomor urut UP/BT: dari catatan, jatuh ke nomor terakhir bila kosong.
@@ -131,10 +140,7 @@ class ProductionLogController extends Controller
                 'notes'      => $isChannel ? null : $log->notes,
                 'keterangan' => $log->keterangan,
                 'operator'   => $log->user->name ?? '-',
-                'showUrl'    => route('production.show', $log->id),
-                'editUrl'    => route('production.edit', $log->id),
-                'deleteUrl'  => route('production.destroy', $log->id),
-                'rejectUrl'  => route('production.reject-unit', $log->id),
+                ...str_replace('__ID__', (string) $log->id, $urlTpl),
                 // Reject unit hanya untuk non-channel yang masih punya unit.
                 'canReject'  => ! $isChannel && (float) $log->total_qty >= 1,
                 'dateInput'  => $log->production_date->toDateString(),
@@ -446,7 +452,7 @@ class ProductionLogController extends Controller
                 };
                 $label = 'Seri & KVA Manual' . $typeAbbr . ' → ' . $typeTag;
             } else {
-                $label = ($p->series ?: '—') . ($p->kva ? ' · ' . $p->kva . ' KVA' : '');
+                $label = ($p->series ?: 'Tanpa seri') . ($p->kva ? ' · ' . $p->kva . ' KVA' : '');
             }
 
             return [

@@ -59,7 +59,9 @@ export default function CategoriesIndex({ rows, search, indexUrl, createUrl, can
                                 rows.data.map((c, i) => (
                                     <tr key={c.id}>
                                         <td className="au-num">{(rows.from || 1) + i}</td>
-                                        <td style={{ fontWeight: 800 }}>{c.name}</td>
+                                        <td style={{ fontWeight: 800 }}>
+                                            {c.name} {c.manual ? <Badge tone="accent">Seri manual</Badge> : null}
+                                        </td>
                                         <td className="au-mono">{c.code || '-'}</td>
                                         <td style={{ maxWidth: 280 }}>{c.description || '-'}</td>
                                         <td style={{ textAlign: 'center' }}>

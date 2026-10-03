@@ -1,26 +1,26 @@
 {
-  "_PdfViewer-Zc3E-ESl.js": {
-    "file": "assets/PdfViewer-Zc3E-ESl.js",
+  "_PdfViewer-CvrqzLfl.js": {
+    "file": "assets/PdfViewer-CvrqzLfl.js",
     "name": "PdfViewer",
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx"
     ]
   },
-  "_Ui-CMHIPL6h.js": {
-    "file": "assets/Ui-CMHIPL6h.js",
+  "_Ui-BiqM-aie.js": {
+    "file": "assets/Ui-BiqM-aie.js",
     "name": "Ui",
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx"
     ],
     "css": [
-      "assets/asata-ui-8-a4WYVo.css"
+      "assets/asata-ui-Bij0gSUe.css"
     ]
   },
-  "_asata-ui-8-a4WYVo.css": {
-    "file": "assets/asata-ui-8-a4WYVo.css",
-    "src": "_asata-ui-8-a4WYVo.css"
+  "_asata-ui-Bij0gSUe.css": {
+    "file": "assets/asata-ui-Bij0gSUe.css",
+    "src": "_asata-ui-Bij0gSUe.css"
   },
   "_axios-DCMNl9fC.js": {
     "file": "assets/axios-DCMNl9fC.js",
@@ -41,6 +41,10 @@
     "file": "assets/offlineFiles-CdpaEbDB.js",
     "name": "offlineFiles"
   },
+  "_warna-CpMWDFBe.js": {
+    "file": "assets/warna-CpMWDFBe.js",
+    "name": "warna"
+  },
   "resources/css/app.css": {
     "file": "assets/app-Cpn1L7hy.css",
     "name": "app",
@@ -51,29 +55,29 @@
     "isEntry": true
   },
   "resources/js/Pages/About.jsx": {
-    "file": "assets/About-AsprTVR9.js",
+    "file": "assets/About-ZgsLbHA7.js",
     "name": "About",
     "src": "resources/js/Pages/About.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/Accessories/Index.jsx": {
-    "file": "assets/Index-DhNSbNaf.js",
+    "file": "assets/Index-BPe793a4.js",
     "name": "Index",
     "src": "resources/js/Pages/Accessories/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/Auth/ForgotPassword.jsx": {
-    "file": "assets/ForgotPassword-B15s8_5K.js",
+    "file": "assets/ForgotPassword-Cm4pTie_.js",
     "name": "ForgotPassword",
     "src": "resources/js/Pages/Auth/ForgotPassword.jsx",
     "isDynamicEntry": true,
@@ -83,7 +87,7 @@
     ]
   },
   "resources/js/Pages/Auth/Login.jsx": {
-    "file": "assets/Login-B_PWTPJl.js",
+    "file": "assets/Login-BBXCpT8D.js",
     "name": "Login",
     "src": "resources/js/Pages/Auth/Login.jsx",
     "isDynamicEntry": true,
@@ -96,7 +100,7 @@
     ]
   },
   "resources/js/Pages/Auth/ResetPassword.jsx": {
-    "file": "assets/ResetPassword-Bd1OUMxP.js",
+    "file": "assets/ResetPassword-Ctewx0tR.js",
     "name": "ResetPassword",
     "src": "resources/js/Pages/Auth/ResetPassword.jsx",
     "isDynamicEntry": true,
@@ -106,7 +110,7 @@
     ]
   },
   "resources/js/Pages/Auth/Shell.jsx": {
-    "file": "assets/Shell-DLQ0bYUL.js",
+    "file": "assets/Shell-DXn1KIWx.js",
     "name": "Shell",
     "src": "resources/js/Pages/Auth/Shell.jsx",
     "isDynamicEntry": true,
@@ -118,108 +122,108 @@
     ]
   },
   "resources/js/Pages/Categories/Form.jsx": {
-    "file": "assets/Form-CLo5rK0M.js",
+    "file": "assets/Form-dLydZgPP.js",
     "name": "Form",
     "src": "resources/js/Pages/Categories/Form.jsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/Categories/Index.jsx": {
-    "file": "assets/Index-Cvci4B-h.js",
+    "file": "assets/Index-BhySuiCC.js",
     "name": "Index",
     "src": "resources/js/Pages/Categories/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/Chat/Admin.jsx": {
-    "file": "assets/Admin-D4m5Dnyc.js",
+    "file": "assets/Admin-DBDQoTGL.js",
     "name": "Admin",
     "src": "resources/js/Pages/Chat/Admin.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/Chat/Index.jsx": {
-    "file": "assets/Index-DL50eTD6.js",
+    "file": "assets/Index-t_MH3aBB.js",
     "name": "Index",
     "src": "resources/js/Pages/Chat/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/Dashboard.jsx": {
-    "file": "assets/Dashboard-Di3f0qSu.js",
+    "file": "assets/Dashboard-Be1W2UZg.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Dashboard.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js",
+      "_Ui-BiqM-aie.js",
       "_dialog-DwYpcmqx.js"
     ]
   },
   "resources/js/Pages/Departments/Form.jsx": {
-    "file": "assets/Form-HDGiYpLy.js",
+    "file": "assets/Form-DduPZJVO.js",
     "name": "Form",
     "src": "resources/js/Pages/Departments/Form.jsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/GambarKerja/Create.jsx": {
-    "file": "assets/Create-nAnvO542.js",
+    "file": "assets/Create-CM5cNx8-.js",
     "name": "Create",
     "src": "resources/js/Pages/GambarKerja/Create.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/GambarKerja/Group.jsx": {
-    "file": "assets/Group-DGs80Dbu.js",
+    "file": "assets/Group-D8v0_E-d.js",
     "name": "Group",
     "src": "resources/js/Pages/GambarKerja/Group.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js",
+      "_Ui-BiqM-aie.js",
       "_dialog-DwYpcmqx.js",
-      "_PdfViewer-Zc3E-ESl.js"
+      "_PdfViewer-CvrqzLfl.js"
     ]
   },
   "resources/js/Pages/GambarKerja/Index.jsx": {
-    "file": "assets/Index-CRAcLu68.js",
+    "file": "assets/Index-DwdtevyN.js",
     "name": "Index",
     "src": "resources/js/Pages/GambarKerja/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js",
+      "_Ui-BiqM-aie.js",
       "_dialog-DwYpcmqx.js"
     ]
   },
   "resources/js/Pages/Maintenance.jsx": {
-    "file": "assets/Maintenance-ZuRPWUf5.js",
+    "file": "assets/Maintenance-j4W923C4.js",
     "name": "Maintenance",
     "src": "resources/js/Pages/Maintenance.jsx",
     "isDynamicEntry": true,
@@ -228,45 +232,45 @@
       "resources/js/inertia.jsx"
     ],
     "css": [
-      "assets/asata-ui-8-a4WYVo.css"
+      "assets/asata-ui-Bij0gSUe.css"
     ]
   },
   "resources/js/Pages/Management/Index.jsx": {
-    "file": "assets/Index-CS8ALgJF.js",
+    "file": "assets/Index-BSS_4tIZ.js",
     "name": "Index",
     "src": "resources/js/Pages/Management/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/Notes/Index.jsx": {
-    "file": "assets/Index-C7ifzPio.js",
+    "file": "assets/Index-DWWiKtTi.js",
     "name": "Index",
     "src": "resources/js/Pages/Notes/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js",
+      "_Ui-BiqM-aie.js",
       "_dialog-DwYpcmqx.js"
     ]
   },
   "resources/js/Pages/Permissions/Index.jsx": {
-    "file": "assets/Index-DpGo01-j.js",
+    "file": "assets/Index-O07z2ypE.js",
     "name": "Index",
     "src": "resources/js/Pages/Permissions/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/Production/Form.jsx": {
-    "file": "assets/Form-CiP4W_C9.js",
+    "file": "assets/Form-DYOp7GtS.js",
     "name": "Form",
     "src": "resources/js/Pages/Production/Form.jsx",
     "isDynamicEntry": true,
@@ -274,143 +278,146 @@
       "_offlineFiles-CdpaEbDB.js",
       "_axios-DCMNl9fC.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/Production/Index.jsx": {
-    "file": "assets/Index-C8w3BHuE.js",
+    "file": "assets/Index-x7texu38.js",
     "name": "Index",
     "src": "resources/js/Pages/Production/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/Production/Show.jsx": {
-    "file": "assets/Show-CGZsFkm0.js",
+    "file": "assets/Show-Co6U6AqK.js",
     "name": "Show",
     "src": "resources/js/Pages/Production/Show.jsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/Production/Targets.jsx": {
-    "file": "assets/Targets-ChEb-9kb.js",
+    "file": "assets/Targets-DH8fmFsG.js",
     "name": "Targets",
     "src": "resources/js/Pages/Production/Targets.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js",
+      "_Ui-BiqM-aie.js",
       "_dialog-DwYpcmqx.js",
-      "_PdfViewer-Zc3E-ESl.js"
+      "_PdfViewer-CvrqzLfl.js"
     ]
   },
   "resources/js/Pages/Products/Form.jsx": {
-    "file": "assets/Form-CVMMON0R.js",
+    "file": "assets/Form-BoQocchg.js",
     "name": "Form",
     "src": "resources/js/Pages/Products/Form.jsx",
     "isDynamicEntry": true,
     "imports": [
+      "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js",
+      "_warna-CpMWDFBe.js"
     ]
   },
   "resources/js/Pages/Products/Index.jsx": {
-    "file": "assets/Index-BejtWXe8.js",
+    "file": "assets/Index-DNnju3Py.js",
     "name": "Index",
     "src": "resources/js/Pages/Products/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js",
+      "_warna-CpMWDFBe.js"
     ]
   },
   "resources/js/Pages/Products/Show.jsx": {
-    "file": "assets/Show-DcU9K-6S.js",
+    "file": "assets/Show-BgmSAASf.js",
     "name": "Show",
     "src": "resources/js/Pages/Products/Show.jsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/Products/Ukuran.jsx": {
-    "file": "assets/Ukuran-ChmW8ARj.js",
+    "file": "assets/Ukuran-CnBCGaHm.js",
     "name": "Ukuran",
     "src": "resources/js/Pages/Products/Ukuran.jsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/Profile/Edit.jsx": {
-    "file": "assets/Edit-K-wDfFdU.js",
+    "file": "assets/Edit-D5gCN0Mz.js",
     "name": "Edit",
     "src": "resources/js/Pages/Profile/Edit.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js",
+      "_Ui-BiqM-aie.js",
       "_dialog-DwYpcmqx.js"
     ]
   },
   "resources/js/Pages/Replacements/Index.jsx": {
-    "file": "assets/Index-uVHayJwj.js",
+    "file": "assets/Index-PRYpMbWz.js",
     "name": "Index",
     "src": "resources/js/Pages/Replacements/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/Reports/Daily.jsx": {
-    "file": "assets/Daily-DyE3g7R3.js",
+    "file": "assets/Daily-pahZKMEi.js",
     "name": "Daily",
     "src": "resources/js/Pages/Reports/Daily.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/Reports/Index.jsx": {
-    "file": "assets/Index-ThD8sWu8.js",
+    "file": "assets/Index-BN4n50nk.js",
     "name": "Index",
     "src": "resources/js/Pages/Reports/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/Settings/Bot.jsx": {
-    "file": "assets/Bot-B4A2prEF.js",
+    "file": "assets/Bot-te7LAejP.js",
     "name": "Bot",
     "src": "resources/js/Pages/Settings/Bot.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js",
+      "_Ui-BiqM-aie.js",
       "_dialog-DwYpcmqx.js"
     ]
   },
   "resources/js/Pages/SystemCheck.jsx": {
-    "file": "assets/SystemCheck-DLqBzjZm.js",
+    "file": "assets/SystemCheck-BeUDKkWV.js",
     "name": "SystemCheck",
     "src": "resources/js/Pages/SystemCheck.jsx",
     "isDynamicEntry": true,
@@ -419,24 +426,24 @@
     ]
   },
   "resources/js/Pages/Tutorial.jsx": {
-    "file": "assets/Tutorial-CVSHccTM.js",
+    "file": "assets/Tutorial-CSrQsGKh.js",
     "name": "Tutorial",
     "src": "resources/js/Pages/Tutorial.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_offlineFiles-CdpaEbDB.js",
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/Pages/Users/Form.jsx": {
-    "file": "assets/Form-DMU-4Ycb.js",
+    "file": "assets/Form-p5IzSKAW.js",
     "name": "Form",
     "src": "resources/js/Pages/Users/Form.jsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/inertia.jsx",
-      "_Ui-CMHIPL6h.js"
+      "_Ui-BiqM-aie.js"
     ]
   },
   "resources/js/app.js": {
@@ -450,7 +457,7 @@
     ]
   },
   "resources/js/inertia.jsx": {
-    "file": "assets/inertia-f2UhdeOM.js",
+    "file": "assets/inertia-Cno6vsF4.js",
     "name": "inertia",
     "src": "resources/js/inertia.jsx",
     "isEntry": true,

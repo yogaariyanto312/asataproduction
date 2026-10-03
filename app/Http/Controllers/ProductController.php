@@ -39,22 +39,30 @@ class ProductController extends Controller
             return [
                 'year'     => $tahun ? (string) $tahun : null,
                 'count'    => $items->count(),
-                'products' => $items->groupBy('name')->map(function ($variants, $name) {
+                'products' => $items->groupBy('name')
+                    // Urutan 1 = kartu paling kiri; tanpa urutan menyusul, abjad.
+                    ->sortBy(fn ($variants, $name) => [$variants->min('urutan') ?? PHP_INT_MAX, strtolower($name)])
+                    ->map(function ($variants, $name) {
                     $first = $variants->first();
 
                     return [
                         'name'     => $name,
+                        'urutan'   => $variants->min('urutan'),
+                        'warnaIkon' => $first->warna_ikon,
+                        'warnaTeks' => $first->warna_teks,
                         'category' => $first->category->name ?? '-',
                         'type'     => $first->type,
                         'addUrl'   => route('products.create') . '?' . http_build_query([
                             'name'        => $name,
                             'category_id' => $first->category_id,
                             'type'        => $first->type,
+                            'urutan'      => $variants->min('urutan'),
                         ]),
                         'variants' => $variants->map(fn ($p) => [
                             'id'        => $p->id,
                             'series'    => $p->series,
                             'kva'       => $p->kva,
+                            'manual'    => (bool) ($p->category->has_manual_serial ?? false),
                             'is_active' => (bool) $p->is_active,
                             'showUrl'   => route('products.show', $p->id),
                             'editUrl'   => route('products.edit', $p->id),
@@ -92,12 +100,38 @@ class ProductController extends Controller
             'indexUrl'   => route('products.index'),
             'categories' => $categories->map(fn ($c) => ['value' => $c->id, 'label' => $c->name])->values(),
             'maxYear'    => now()->year + 5,
+            'units'      => $this->daftarSatuan(),
+            'names'      => Product::distinct()->orderBy('name')->pluck('name'),
+            // Tombol (+) di kartu membawa nama/kategori/tipe/urutan produk itu.
+            'prefill'    => array_filter(request()->only(['name', 'category_id', 'type', 'urutan']), fn ($v) => $v !== null && $v !== ''),
         ]);
+    }
+
+    /** Pilihan cepat satuan + satuan lain yang sudah pernah dipakai. */
+    private function daftarSatuan(): array
+    {
+        return collect(['unit', 'pcs', 'lembar', 'set', 'meter', 'roll', 'kg', 'liter'])
+            ->merge(Product::whereNotNull('unit')->distinct()->pluck('unit')->map(fn ($u) => strtolower(trim($u))))
+            ->filter()->unique()->values()->all();
+    }
+
+    /** Urutan & warna kartu disimpan sama di semua varian satu nama produk. */
+    private function samakanUrutan(Product $product): void
+    {
+        Product::where('name', $product->name)->where('id', '!=', $product->id)
+            ->update($product->only(['urutan', 'warna_ikon', 'warna_teks']));
     }
 
     public function store(ProductRequest $request)
     {
-        $product = Product::create($request->validated() + ['is_active' => $request->boolean('is_active', true)]);
+        $data = $request->validated();
+        // Varian baru tanpa urutan ikut urutan nama produk yang sudah ada.
+        $grup = Product::where('name', $data['name'])->orderByDesc('id')->first();
+        $data['urutan'] ??= Product::where('name', $data['name'])->min('urutan');
+        $data['warna_ikon'] ??= $grup?->warna_ikon;
+        $data['warna_teks'] ??= $grup?->warna_teks;
+        $product = Product::create($data + ['is_active' => $request->boolean('is_active', true)]);
+        $this->samakanUrutan($product);
         ActivityLog::record('create', "Menambah produk: {$product->name}", $product);
         return redirect()->route('products.index')->with('success', "Produk '{$product->name}' berhasil ditambahkan.");
     }
@@ -150,11 +184,16 @@ class ProductController extends Controller
             'indexUrl'   => route('products.index'),
             'categories' => $categories->map(fn ($c) => ['value' => $c->id, 'label' => $c->name])->values(),
             'maxYear'    => now()->year + 5,
+            'units'      => $this->daftarSatuan(),
+            'names'      => Product::distinct()->orderBy('name')->pluck('name'),
             'product'    => [
                 'id'          => $product->id,
                 'category_id' => $product->category_id,
                 'type'        => $product->type,
                 'name'        => $product->name,
+                'urutan'      => $product->urutan,
+                'warna_ikon'  => $product->warna_ikon,
+                'warna_teks'  => $product->warna_teks,
                 'series'      => $product->series,
                 'kva'         => $product->kva,
                 'tahun'       => $product->tahun,
@@ -170,6 +209,7 @@ class ProductController extends Controller
     public function update(ProductRequest $request, Product $product)
     {
         $product->update($request->validated() + ['is_active' => $request->boolean('is_active', true)]);
+        $this->samakanUrutan($product);
         ActivityLog::record('update', "Mengubah produk: {$product->name}", $product);
         return redirect()->route('products.index')->with('success', "Produk '{$product->name}' berhasil diperbarui.");
     }

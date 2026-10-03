@@ -158,13 +158,30 @@ class ProfileController extends Controller
     public function updateAvatar(Request $request)
     {
         $user = auth()->user();
-        $request->validate(['avatar' => ['nullable', 'url', 'max:1000']]);
+
+        // Dua cara: unggah berkas (tombol "Ganti Foto") atau URL gambar (acuan).
+        if ($request->hasFile('photo')) {
+            $request->validate([
+                'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
+            ], [
+                'photo.image' => 'File harus berupa gambar.',
+                'photo.mimes' => 'Format: JPG, PNG, WebP, atau GIF.',
+                'photo.max'   => 'Ukuran maksimal 5 MB.',
+                'photo.uploaded' => 'Gagal mengunggah — ukuran file mungkin terlalu besar.',
+            ]);
+            $baru = $request->file('photo')->store('avatars', 'public');
+        } else {
+            $request->validate(['avatar' => ['nullable', 'url', 'max:1000']], [
+                'avatar.url' => 'URL foto tidak valid.',
+            ]);
+            $baru = $request->avatar ?: null;
+        }
 
         if ($user->avatar && !str_starts_with($user->avatar, 'http')) {
             Storage::disk('public')->delete($user->avatar);
         }
 
-        $user->avatar = $request->avatar ?: null;
+        $user->avatar = $baru;
         $user->save();
 
         ActivityLog::record('update', "Update avatar profil: {$user->name}");

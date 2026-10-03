@@ -10,6 +10,7 @@ export default function CategoryForm({ mode, action, indexUrl, category }) {
         code: category?.code || '',
         description: category?.description || '',
         is_active: category ? category.is_active : true,
+        has_manual_serial: category ? !!category.has_manual_serial : false,
     });
 
     function submit(e) {
@@ -60,6 +61,16 @@ export default function CategoryForm({ mode, action, indexUrl, category }) {
                             onChange={(e) => setData('description', e.target.value)}
                         />
                     </Field>
+
+                    <Check
+                        label="Seri & KVA diinput manual saat Input Produksi"
+                        checked={data.has_manual_serial}
+                        onChange={(e) => setData('has_manual_serial', e.target.checked)}
+                    />
+                    <p className="au-hint" style={{ marginTop: -6 }}>
+                        Centang untuk kategori seperti Channel/Cover/Tangki: produknya cukup dibuat satu (tanpa seri), lalu nomor seri &amp; KVA
+                        diketik operator saat input dan otomatis tersimpan sebagai varian baru.
+                    </p>
 
                     <Check
                         label="Kategori aktif"

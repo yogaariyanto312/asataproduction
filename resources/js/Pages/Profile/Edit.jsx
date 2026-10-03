@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { router, useForm } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import AppLayout from '../../Layouts/AppLayout';
 import { Badge, Btn, Card, Field, ICON, Input, Textarea } from '../../Components/Ui';
 import { konfirmasi } from '../../dialog';
@@ -15,6 +15,7 @@ export default function ProfileEdit({
     telegram,
 }) {
     const [busy, setBusy] = useState(false);
+    const galatFoto = usePage().props.errors?.photo;
 
     const profile = useForm({
         name: user.name || '',
@@ -55,7 +56,7 @@ export default function ProfileEdit({
         setBusy(true);
         router.post(
             url,
-            { avatar: file, photo: file },
+            { photo: file },
             {
                 forceFormData: true,
                 preserveScroll: true,
@@ -100,6 +101,7 @@ export default function ProfileEdit({
                                 />
                                 {busy ? 'Mengunggah...' : 'Ganti Foto'}
                             </label>
+                            {galatFoto ? <span className="au-error" style={{ display: 'block', marginTop: 6 }}>{galatFoto}</span> : null}
                         </div>
                     </div>
 

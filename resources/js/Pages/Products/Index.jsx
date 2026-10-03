@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { router } from '@inertiajs/react';
 import AppLayout from '../../Layouts/AppLayout';
 import { Btn, DeleteButton, ICON, Icon, IconBtn, Input, Select } from '../../Components/Ui';
+import { gayaIkon } from './warna';
 
 const CAL = 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z';
 const CUBE = 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4';
@@ -137,11 +138,12 @@ export default function ProductsIndex({
                                                 'au-groupcard-mark' +
                                                 (p.type === 'channel' ? ' au-groupcard-mark--blue' : '')
                                             }
+                                            style={gayaIkon(p.warnaIkon)}
                                         >
                                             <Icon path={CUBE} />
                                         </span>
                                         <div style={{ flex: 1, minWidth: 0 }}>
-                                            <h3 className="au-groupcard-title">{p.name}</h3>
+                                            <h3 className="au-groupcard-title" style={p.warnaTeks ? { color: p.warnaTeks } : undefined}>{p.name}</h3>
                                             <p className="au-groupcard-sub">
                                                 {p.category} · {p.variants.length} varian
                                             </p>
@@ -156,7 +158,7 @@ export default function ProductsIndex({
                                         ) : null}
                                     </div>
 
-                                    <div className="au-groupcard-body">
+                                    <div className="au-groupcard-body au-pd-gulir">
                                         {p.variants.map((v) => (
                                             <div className="au-itemrow" key={v.id}>
                                                 <div className="au-itemrow-main">
@@ -170,9 +172,11 @@ export default function ProductsIndex({
                                                             ) : null}
                                                         </>
                                                     ) : (
-                                                        <p className="au-manual">
-                                                            Input Seri &amp; KVA Manual
-                                                        </p>
+                                                        v.manual ? (
+                                                            <p className="au-manual">Input Seri &amp; KVA Manual</p>
+                                                        ) : (
+                                                            <p className="au-itemrow-sub">Tanpa seri</p>
+                                                        )
                                                     )}
                                                 </div>
 

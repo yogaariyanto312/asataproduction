@@ -105,7 +105,7 @@ class ProductionTargetController extends Controller
 
                     return [
                         'value'  => $p->id,
-                        'label'  => $manual ? 'Seri & KVA Manual → ' . $tag : (($p->series ?: '—') . ($p->kva ? ' · ' . $p->kva . ' KVA' : '')),
+                        'label'  => $manual ? 'Seri & KVA Manual → ' . $tag : (($p->series ?: 'Tanpa seri') . ($p->kva ? ' · ' . $p->kva . ' KVA' : '')),
                         'manual' => $manual,
                         'type'   => $p->type ?: 'regular',
                     ];
