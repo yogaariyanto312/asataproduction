@@ -1,137 +1,115 @@
 # Asata Production System
 
-Sistem pencatatan produksi dan quality control berbasis web untuk pabrik/manufaktur. Dibangun dengan Laravel 13, memungkinkan operator mencatat hasil produksi harian per shift, sementara admin dapat memantau, menganalisis, dan mengekspor laporan.
+Sistem pencatatan produksi dan quality control berbasis web untuk pabrik trafo. Operator mencatat hasil produksi harian (UP/BT untuk channel, jumlah unit untuk cover/tangki), sementara admin, supervisor, dan mandor memantau target, laporan, dan riwayat — dari PC maupun HP, termasuk lewat bot Telegram.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
 
 ## Fitur Utama
 
-| Fitur | Deskripsi |
+| Menu | Isi |
 |---|---|
-| **Input Produksi** | Catat jumlah produksi per shift (Shift 1, 2, 3) per produk setiap harinya |
-| **Gambar Kerja** | Upload dan lihat gambar kerja (JPG/PNG/PDF) tiap produk secara berurutan |
-| **Ukuran Produk** | Referensi dimensi produk (panjang × lebar) lengkap dengan KVA |
-| **Laporan** | Rekap harian & bulanan, export ke PDF dan Excel |
-| **Manajemen User** | Role Admin dan Operator dengan hak akses berbeda |
-| **Chat Internal** | Operator bisa kirim pesan ke admin, admin bisa membalas |
-| **Activity Log** | Riwayat aktivitas seluruh pengguna tercatat otomatis |
-| **Dark Mode** | Tampilan gelap/terang tersedia di semua halaman |
+| **Dashboard** | Ringkasan hari ini & bulan ini, kalender (hari libur nasional & fase bulan), tren produksi, target aktif, reject, catatan & input terbaru, log aktivitas |
+| **Catatan** | Catatan berwarna dengan editor teks, foto/kamera, tenggat, dan penerima (read-only bagi penerima) |
+| **Target Produksi** | Foto jadwal mingguan (gambar/PDF), set target per produk (jumlah unit atau sampai no. urut), progres live, hapus otomatis setelah tercapai |
+| **Chatting** | Pesan antar pengguna dan kotak masuk admin |
+| **Gambar Kerja** | Upload banyak file (JPG/PNG/PDF) per judul-seri-kVA, pratinjau PDF, cache offline |
+| **Input & Riwayat Produksi** | Input per produk dengan nomor urut UP/BT, seri & kVA manual, reject unit; riwayat per tanggal & kategori |
+| **Barang Pengganti & Aksesoris Keluar** | Pencatatan barang pengganti dan aksesoris keluar beserta ekspor |
+| **Master Produk & Kategori** | Produk dikelompokkan per tahun dan nama, urutan & warna kartu bisa diatur, kategori dengan opsi *seri manual* |
+| **Laporan** | Rekap harian & bulanan, ekspor PDF dan Excel |
+| **Manajemen & Hak Akses** | Kelola pengguna per departemen; hak akses menu & aksi per peran bisa diubah tanpa ubah kode |
+| **Bot Telegram** | Lapor produksi, cek jadwal, dan notifikasi lewat Telegram (akun ditautkan dari halaman Profil) |
+| **Mode Maintenance** | Saklar dari Settings dengan hitung mundur; developer tetap bisa masuk |
+| **Panel `/admin`** | Panel Filament untuk dashboard ringkas |
 
 ---
 
 ## Teknologi
 
-- **Backend** — Laravel 13, PHP 8.4
-- **Frontend** — Tailwind CSS v4, Alpine.js, Vite
-- **Database** — MySQL
-- **Export** — barryvdh/laravel-dompdf (PDF), maatwebsite/excel (Excel)
+- **Backend** — Laravel 13, PHP 8.4, Filament 5
+- **Frontend** — Inertia.js 3 + React 19, Vite 8, CSS kustom (tema gelap)
+- **Database** — MySQL 8 / MariaDB 11 (SQLite untuk pengujian)
+- **Ekspor** — barryvdh/laravel-dompdf (PDF), maatwebsite/excel (Excel)
+- **PDF viewer** — pdf.js (di `public/vendor/pdfjs`)
+
+---
+
+## Peran Pengguna
+
+Hak akses bawaan di bawah bisa diubah per peran lewat menu **Hak Akses Menu** (`config/menus.php` menjadi daftar menu & aksinya).
+
+| Peran | Gambaran akses bawaan |
+|---|---|
+| **Developer** | Semua menu, termasuk Kategori, Hak Akses, Settings/bot, Tutorial, dan riwayat update |
+| **Admin** | Semua menu operasional: master produk, gambar kerja, manajemen pengguna, laporan |
+| **Supervisor** | Pantau produksi, target, dan laporan |
+| **Mandor** | Pantau produksi, set target, laporan |
+| **Operator** | Input & riwayat produksi, barang pengganti, aksesoris, gambar kerja (lihat) |
+| **Visitor** | Lihat dashboard dan menu yang diizinkan |
+
+Data produksi dipisah per **departemen**; selain developer, pengguna hanya melihat data departemennya.
 
 ---
 
 ## Persyaratan Sistem
 
-- PHP >= 8.4 (dengan ekstensi: `pdo_mysql`, `gd`, `zip`, `mbstring`, `xml`, `fileinfo`, `intl`, `bcmath`, `exif`)
+- PHP >= 8.4 dengan ekstensi `pdo_mysql`, `gd`, `zip`, `mbstring`, `xml`, `fileinfo`, `intl`, `bcmath`, `exif`
 - Composer >= 2
-- Node.js >= 18 & npm
-- MySQL >= 8.4 (LTS)
-- Web server: Apache (XAMPP) atau Nginx
+- Node.js >= 20 & npm (hanya untuk build aset)
+- MySQL >= 8 atau MariaDB >= 10.6
+- Apache/LiteSpeed (`mod_rewrite`) atau Nginx
 
 ---
 
-## Instalasi Lokal (XAMPP)
-
-### 1. Clone / Letakkan Proyek
+## Instalasi Lokal (Laragon)
 
 ```bash
-# Letakkan folder proyek di dalam www (Laragon)
-D:\laragon\www\asata-production\
-```
+# 1. Letakkan proyek di folder www Laragon, lalu masuk ke foldernya
+cd G:\laragon\www\asata-production
 
-### 2. Install Dependensi PHP
-
-```bash
+# 2. Dependensi
 composer install
-```
-
-### 3. Install Dependensi Frontend
-
-```bash
 npm install
-```
 
-### 4. Konfigurasi Environment
-
-```bash
-# Salin file contoh .env
+# 3. Environment
 copy .env.example .env
-
-# Generate application key
 php artisan key:generate
 ```
 
-Lalu buka file `.env` dan sesuaikan konfigurasi database:
+Sesuaikan `.env`:
 
 ```env
 APP_NAME="Asata Production"
-APP_URL=http://asata-production.test
+APP_ENV=local
+APP_URL=http://localhost/asata-production/public
+APP_LOCALE=id
+APP_FALLBACK_LOCALE=en
 
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=qc_production_db
+DB_DATABASE=asataprdct
 DB_USERNAME=root
 DB_PASSWORD=
+
+# Inertia DevTools menambah ±250 ms tiap request — nyalakan hanya saat debug
+INERTIA_DEVTOOLS_ENABLED=false
 ```
-
-### 5. Buat Database
-
-Buka phpMyAdmin (`http://localhost/phpmyadmin`) lalu buat database baru:
-
-```sql
-CREATE DATABASE qc_production_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-### 6. Jalankan Migrasi
 
 ```bash
+# 4. Database (buat dulu database kosong utf8mb4), lalu migrasi
 php artisan migrate
-```
 
-### 7. Buat Storage Symlink
-
-```bash
+# 5. Symlink storage
 php artisan storage:link
+
+# 6. Aset frontend
+npm run build      # atau: npm run dev (hot reload)
 ```
 
-> **Penting untuk XAMPP di Windows:** Pastikan baris berikut ada di `public/.htaccess` di dalam blok `<IfModule mod_rewrite.c>`:
-> ```
-> Options +FollowSymLinks
-> ```
-> Tanpa ini, gambar yang diupload tidak akan tampil.
-
-### 8. Build Asset Frontend
-
-```bash
-# Untuk development (hot-reload)
-npm run dev
-
-# Untuk production
-npm run build
-```
-
-### 9. Konfigurasi PHP untuk Upload File Besar
-
-Buka `C:\xampp\php\php.ini` dan ubah nilai berikut:
-
-```ini
-post_max_size = 500M
-upload_max_filesize = 100M
-max_file_uploads = 50
-```
-
-Restart Apache setelah menyimpan perubahan.
-
-### 10. Buat Akun Admin Pertama
+**Akun pertama** — seeder bawaan berisi data contoh dan password lemah, jangan dipakai di server. Buat akun developer lewat tinker:
 
 ```bash
 php artisan tinker
@@ -139,105 +117,86 @@ php artisan tinker
 
 ```php
 App\Models\User::create([
-    'name'     => 'Admin',
-    'username' => 'admin',
-    'email'    => 'admin@example.com',
-    'password' => bcrypt('password'),
-    'role'     => 'admin',
-    'is_active'=> true,
+    'name'      => 'Developer',
+    'username'  => 'developer',
+    'email'     => 'developer@example.com',
+    'password'  => bcrypt('ganti-dengan-password-kuat'),
+    'role'      => 'developer',
+    'is_active' => true,
 ]);
 ```
 
-### 11. Akses Aplikasi
-
-Buka browser dan akses:
-
-```
-http://asata-production.test
-```
-
-Login menggunakan username dan password yang dibuat di langkah sebelumnya.
+Buka `http://localhost/asata-production/public` lalu login.
 
 ---
 
-## Instalasi di Shared Hosting
+## Deploy ke Shared Hosting (Hostinger)
 
-### 1. Upload File
+Deploy memakai script `deployment/deploy.py` (folder `deployment/` tidak di-commit karena berisi kredensial). Kebutuhan: Python 3 + `paramiko`.
 
-Upload semua isi folder proyek ke direktori hosting (misal: `public_html/qc/`), **kecuali** folder `node_modules`.
+Isi blok berikut di `.env` lokal:
 
-### 2. Pindahkan Isi Folder `public`
-
-Pindahkan semua isi folder `public/` ke root domain (`public_html/`) atau ke direktori yang diakses browser.
-
-Lalu buka file `public_html/index.php` dan ubah path-nya:
-
-```php
-// Sesuaikan path ke folder proyek
-require __DIR__.'/../qc/vendor/autoload.php';
-$app = require_once __DIR__.'/../qc/bootstrap/app.php';
+```env
+DEPLOY_SSH_HOST=
+DEPLOY_SSH_PORT=65002
+DEPLOY_SSH_USER=
+DEPLOY_SSH_PASS=
+DEPLOY_REMOTE_ROOT=/home/USER/domains/DOMAIN/public_html
+DEPLOY_REMOTE_PHP=/opt/alt/php84/usr/bin/php
+DEPLOY_URL=https://DOMAIN
+DEPLOY_DB_DATABASE=
+DEPLOY_DB_USERNAME=
+DEPLOY_DB_PASSWORD=
 ```
-
-### 3. Konfigurasi `.env`
-
-Upload dan sesuaikan `.env` dengan kredensial database hosting.
-
-### 4. Jalankan via SSH (jika tersedia)
 
 ```bash
-cd ~/public_html/qc
-composer install --no-dev --optimize-autoloader
-php artisan key:generate
-php artisan migrate --force
-php artisan storage:link
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+python deployment/deploy.py --check       # lihat file yang akan dikirim, server tidak diubah
+python deployment/deploy.py               # build → kirim file yang berubah → migrate → cache → uji /login
+python deployment/deploy.py --buat-akun   # (sekali) akun developer awal, password acak
+python deployment/deploy.py --push-env    # tulis ulang .env server (APP_KEY & rahasia webhook dipertahankan)
 ```
 
-### 5. Build Asset (lakukan lokal, lalu upload)
+Yang dilakukan script: build aset lokal (server tanpa Node.js), mengirim hanya file yang berubah dalam satu arsip, mode perawatan selama deploy, `composer install --no-dev` bila perlu, `migrate --force`, `storage:link`, `filament:assets`, `optimize`, lalu uji asap. Script menolak berjalan bila folder tujuan bukan domain asataproduction.
 
-Karena shared hosting biasanya tidak punya Node.js:
+Catatan hosting:
 
-```bash
-# Di komputer lokal — sesuaikan APP_URL ke domain hosting dulu di .env
-npm run build
+- `.htaccess` di akar memaksa PHP 8.4 untuk domain ini (`<IfModule LiteSpeed>`), karena PHP bawaan akun bisa lebih lama.
+- **Cron** (atur di hPanel → Cron Jobs, setiap menit) untuk jadwal otomatis — hapus foto jadwal tiap Senin 01.00 dan hapus catatan selesai:
 
-# Upload folder public/build/ ke server
-```
+  ```
+  /opt/alt/php84/usr/bin/php /home/USER/domains/DOMAIN/public_html/artisan schedule:run
+  ```
+
+- Bot Telegram diatur dari menu **Settings** setelah deploy (butuh HTTPS).
 
 ---
 
-## Struktur Role Pengguna
+## Pengujian
 
-| Role | Hak Akses |
-|---|---|
-| **Admin** | Semua fitur: manajemen user, produk, kategori, departemen, laporan, upload gambar kerja, hapus data |
-| **Operator** | Input produksi, lihat gambar kerja, lihat ukuran produk, kirim pesan ke admin |
+```bash
+php artisan test                                   # SQLite (cepat)
+php vendor/bin/phpunit -c phpunit.verify.xml       # MySQL, database khusus *_verify
+```
+
+`tests/TestCase.php` menolak `RefreshDatabase` pada database selain SQLite atau yang namanya berakhiran `_verify`, supaya data asli tidak terhapus.
 
 ---
 
 ## Perintah Berguna
 
 ```bash
-# Jalankan semua sekaligus (server + queue + log + vite)
-composer run dev
-
-# Jalankan migrasi ulang (hati-hati: menghapus semua data)
-php artisan migrate:fresh
-
-# Bersihkan cache
-php artisan cache:clear
-php artisan config:clear
-php artisan view:clear
-php artisan route:clear
-
-# Lihat semua route
-php artisan route:list
+composer run dev            # server + queue + log + vite sekaligus
+php artisan optimize:clear  # bersihkan semua cache
+php artisan route:list      # daftar route
+php artisan jadwal:clear    # hapus semua foto jadwal
+php artisan catatan:clear-done
 ```
+
+> `php artisan migrate:fresh` **menghapus semua data** — backup database dulu.
 
 ---
 
-## Lisensi
+## Lisensi & Ketentuan
 
-Proyek ini untuk keperluan internal. Tidak untuk didistribusikan ulang tanpa izin.
+- Kode sumber dirilis di bawah **[MIT License](LICENSE)**.
+- Penggunaan aplikasi yang berjalan (layanan) tunduk pada **[Ketentuan Layanan](TERMS_OF_SERVICE.md)**.
