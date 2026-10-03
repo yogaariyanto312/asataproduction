@@ -7,26 +7,26 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class MandorController extends Controller
 {
-    public function index(Request $request)
-    {
-        $mandors = User::where('role', 'mandor')
-            ->when($request->search, fn($q) => $q->where(function ($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('email', 'like', "%{$request->search}%");
-            }))
-            ->orderBy('name')
-            ->paginate(15)
-            ->withQueryString();
-
-        return view('mandors.index', compact('mandors'));
-    }
 
     public function create()
     {
-        return view('mandors.create');
+        return Inertia::render('Users/Form', [
+            'mode'   => 'create',
+            'action' => route('mandors.store'),
+            'resource' => [
+                'label'            => 'Mandor',
+                'role'             => 'mandor',
+                'emailRequired'    => true,
+                'usernameOptional' => true,
+                'withDepartment'   => false,
+                'minPassword'      => 8,
+                'indexUrl'         => route('management.index', ['tab' => 'mandor']),
+            ],
+        ]);
     }
 
     public function store(Request $request)
@@ -55,14 +55,34 @@ class MandorController extends Controller
         $mandor = User::create($data);
         ActivityLog::record('create', "Tambah mandor: {$mandor->name}", $mandor);
 
-        return redirect()->route('mandors.index')
+        return redirect()->route('management.index', ['tab' => 'mandor'])
             ->with('success', "Mandor '{$mandor->name}' berhasil ditambahkan.");
     }
 
     public function edit(User $mandor)
     {
         abort_if($mandor->role !== 'mandor', 404);
-        return view('mandors.edit', compact('mandor'));
+        return Inertia::render('Users/Form', [
+            'mode'   => 'edit',
+            'action' => route('mandors.update', $mandor->id),
+            'user'   => [
+                'id'         => $mandor->id,
+                'name'       => $mandor->name,
+                'username'   => $mandor->username,
+                'email'      => $mandor->email,
+                'department' => $mandor->department,
+                'is_active'  => (bool) $mandor->is_active,
+            ],
+            'resource' => [
+                'label'            => 'Mandor',
+                'role'             => 'mandor',
+                'emailRequired'    => true,
+                'usernameOptional' => true,
+                'withDepartment'   => false,
+                'minPassword'      => 8,
+                'indexUrl'         => route('management.index', ['tab' => 'mandor']),
+            ],
+        ]);
     }
 
     public function update(Request $request, User $mandor)
@@ -96,7 +116,7 @@ class MandorController extends Controller
         $mandor->update($data);
         ActivityLog::record('update', "Edit mandor: {$mandor->name}", $mandor);
 
-        return redirect()->route('mandors.index')
+        return redirect()->route('management.index', ['tab' => 'mandor'])
             ->with('success', "Data mandor '{$mandor->name}' berhasil diperbarui.");
     }
 
@@ -112,7 +132,7 @@ class MandorController extends Controller
         $mandor->delete();
         ActivityLog::record('delete', "Hapus mandor: {$name}");
 
-        return redirect()->route('mandors.index')
+        return redirect()->route('management.index', ['tab' => 'mandor'])
             ->with('success', "Mandor '{$name}' berhasil dihapus.");
     }
 }

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class LoginController extends Controller
 {
@@ -17,10 +18,17 @@ class LoginController extends Controller
         if (Auth::check()) {
             return redirect()->route('dashboard');
         }
-        return response(view('auth.login'))
+        // Halaman React (Inertia). Header di bawah tetap dipertahankan seperti
+        // versi Blade: mencegah browser menyajikan halaman login basi dari
+        // bfcache/tombol Back yang token CSRF-nya sudah kedaluwarsa (419).
+        return Inertia::render('Auth/Login', [
+            'backgroundUrl'     => asset('images/IFS07479-scaled.jpg'),
+            'forgotPasswordUrl' => route('password.request'),
+            'loginUrl'          => route('login'),
+            'year'              => now()->year,
+        ])
+            ->toResponse(request())
             ->header('Permissions-Policy', 'publickey-credentials-get=(), publickey-credentials-create=()')
-            // Cegah browser menyajikan halaman login basi (bfcache / tombol Back)
-            // yang token CSRF-nya sudah kedaluwarsa → penyebab 419 "Page Expired".
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
             ->header('Pragma', 'no-cache');
     }

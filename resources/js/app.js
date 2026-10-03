@@ -1,11 +1,11 @@
 import './bootstrap';
 
-// Register service worker untuk PWA installability
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
-    });
-}
+// Service worker: selain syarat PWA, juga menyimpan berkas gambar kerja di
+// browser. URL-nya dibaca dari <meta name="sw-url"> karena aplikasi dilayani
+// dari subfolder, sehingga '/sw.js' tidak akan ketemu.
+import { daftarkanServiceWorker } from './offlineFiles';
+
+window.addEventListener('load', daftarkanServiceWorker);
 
 document.addEventListener('DOMContentLoaded', () => {
 

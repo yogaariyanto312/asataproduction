@@ -33,7 +33,10 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Jangan daftarkan route /storage/{path} bawaan Laravel (unduh &
+            // unggah ke disk privat). Berkas dilayani lewat /file & /thumb yang
+            // dijaga izin per folder (App\Support\AksesBerkas).
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

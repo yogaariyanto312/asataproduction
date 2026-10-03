@@ -10,6 +10,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('icon-192.png') }}">
     <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <meta name="sw-url" content="{{ asset('sw.js') }}">
     <meta name="theme-color" content="#2563EB">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -567,7 +568,7 @@
             initToasts();
         }
 
-        /* 6. update <main> class to match new page's @section('main-class') */
+        /* 6. update <main> class to match new page's @@section('main-class') */
         var newMainEl = newDoc.getElementById('main-content');
         if (newMainEl) {
             var newClass = newMainEl.className
@@ -584,8 +585,8 @@
         /* 9. re-run inline <script> tags inside the new content */
         runScripts(main);
 
-        /* 9.5 inject page-specific styles from @stack('styles') not yet in <head>.
-               Must run before @push('scripts') so CSS is ready when libs like
+        /* 9.5 inject page-specific styles from @@stack('styles') not yet in <head>.
+               Must run before @@push('scripts') so CSS is ready when libs like
                TomSelect initialize and render their DOM. */
         newDoc.querySelectorAll('head > style, head > link[rel="stylesheet"]').forEach(function (el) {
             if (el.tagName === 'LINK') {
@@ -609,13 +610,13 @@
             }
         });
 
-        /* 10a. load external CDN scripts from @push('scripts') not yet in the page */
+        /* 10a. load external CDN scripts from @@push('scripts') not yet in the page */
         var extScripts = Array.from(newDoc.querySelectorAll('body > script[src]:not([data-spa-core])'));
         for (var _i = 0; _i < extScripts.length; _i++) {
             await loadSpaScript(extScripts[_i].getAttribute('src'));
         }
 
-        /* 10b. run inline @push('scripts') AFTER CDN libs are ready and AFTER
+        /* 10b. run inline @@push('scripts') AFTER CDN libs are ready and AFTER
                 innerHTML so DOM is ready for things like Chart.js canvas init. */
         newDoc.querySelectorAll('body > script:not([data-spa-core]):not([src])').forEach(function (s) {
             try { (0, eval)(s.textContent); } catch (e) { /* ignore */ }

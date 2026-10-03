@@ -85,6 +85,17 @@
             color: #475569;
         }
         table.data .grand { color: #1e40af; font-weight: bold; font-size: 11px; }
+
+        /* Baris pembatas kategori — urutannya sama dengan layar Laporan
+           dan Riwayat Produksi: Channel, Cover, Tangki, lalu sisanya. */
+        table.data tr.kelompok td {
+            background: #e2e8f0;
+            font-weight: bold;
+            font-size: 10px;
+            color: #1e293b;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
         table.data .urut {
             font-family: 'DejaVu Sans Mono', monospace;
             font-size: 8.5px;
@@ -126,7 +137,7 @@
             <tr>
                 <td>
                     <h1>LAPORAN PRODUKSI BULANAN</h1>
-                    <div class="sub">Asata Production System &nbsp;&bull;&nbsp; Dicetak {{ now()->format('d/m/Y H:i') }}</div>
+                    <div class="sub">QC Production System &nbsp;&bull;&nbsp; Dicetak {{ now()->format('d/m/Y H:i') }}</div>
                 </td>
                 <td style="text-align: right;">
                     <span class="period-badge">{{ strtoupper($monthName) }} {{ $year }}</span>
@@ -138,8 +149,8 @@
     {{-- Summary --}}
     @php
         $totalProduk = $report->count();
-        $totalUp     = $report->sum('total_shift1');
-        $totalBt     = $report->sum('total_shift2');
+        $totalUp     = $report->sum('total_up');
+        $totalBt     = $report->sum('total_bt');
         $grandAll    = $report->sum('grand_total');
     @endphp
     <table class="summary">
@@ -174,21 +185,34 @@
                 <th class="center" style="width: 7%;">UP</th>
                 <th class="center" style="width: 7%;">BT</th>
                 <th class="center" style="width: 11%;">Grand Total</th>
-                <th style="width: 22%;">No. Urut Terakhir</th>
+                <th style="width: 22%;">No. Urut</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($report as $i => $row)
+            @php
+                $kelompok = \App\Support\UrutanProduksi::kelompokkan($report);
+                $nomor    = 0;
+            @endphp
+            @forelse($kelompok as $namaKelompok => $barisKelompok)
+            <tr class="kelompok">
+                <td colspan="4">{{ $namaKelompok }} &middot; {{ $barisKelompok->count() }} produk</td>
+                <td class="center">{{ number_format($barisKelompok->sum('total_up')) }}</td>
+                <td class="center">{{ number_format($barisKelompok->sum('total_bt')) }}</td>
+                <td class="center">{{ number_format($barisKelompok->sum('grand_total')) }}</td>
+                <td></td>
+            </tr>
+            @foreach($barisKelompok as $row)
             <tr>
-                <td class="center no">{{ $i + 1 }}</td>
+                <td class="center no">{{ ++$nomor }}</td>
                 <td class="produk">{{ $row->product->name ?? '-' }}</td>
                 <td class="seri">{{ $row->product->series_with_kva ?: '-' }}</td>
                 <td class="kategori">{{ $row->product->category->name ?? '-' }}</td>
-                <td class="center">{{ number_format($row->total_shift1) }}</td>
-                <td class="center">{{ number_format($row->total_shift2) }}</td>
+                <td class="center">{{ number_format($row->total_up) }}</td>
+                <td class="center">{{ number_format($row->total_bt) }}</td>
                 <td class="center grand">{{ number_format($row->grand_total) }}</td>
-                <td class="urut">{{ $row->last_notes ?: '-' }}</td>
+                <td class="urut">{{ $row->nomor_urut ?: '-' }}</td>
             </tr>
+            @endforeach
             @empty
             <tr>
                 <td colspan="8" class="center" style="padding: 20px; color: #94a3b8;">
@@ -214,7 +238,7 @@
     <div class="page-footer">
         <table>
             <tr>
-                <td>Asata Production System &copy; {{ date('Y') }}</td>
+                <td>QC Production System &copy; {{ date('Y') }}</td>
                 <td class="right">Laporan Produksi {{ $monthName }} {{ $year }}</td>
             </tr>
         </table>

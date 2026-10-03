@@ -7,26 +7,26 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class AdminController extends Controller
 {
-    public function index(Request $request)
-    {
-        $admins = User::where('role', 'admin')
-            ->when($request->search, fn($q) => $q->where(function ($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('email', 'like', "%{$request->search}%");
-            }))
-            ->orderBy('name')
-            ->paginate(15)
-            ->withQueryString();
-
-        return view('admins.index', compact('admins'));
-    }
 
     public function create()
     {
-        return view('admins.create');
+        return Inertia::render('Users/Form', [
+            'mode'   => 'create',
+            'action' => route('admins.store'),
+            'resource' => [
+                'label'            => 'Admin',
+                'role'             => 'admin',
+                'emailRequired'    => true,
+                'usernameOptional' => true,
+                'withDepartment'   => false,
+                'minPassword'      => 8,
+                'indexUrl'         => route('management.index', ['tab' => 'admin']),
+            ],
+        ]);
     }
 
     public function store(Request $request)
@@ -55,14 +55,34 @@ class AdminController extends Controller
         $admin = User::create($data);
         ActivityLog::record('create', "Tambah admin: {$admin->name}", $admin);
 
-        return redirect()->route('admins.index')
+        return redirect()->route('management.index', ['tab' => 'admin'])
             ->with('success', "Admin '{$admin->name}' berhasil ditambahkan.");
     }
 
     public function edit(User $admin)
     {
         abort_if($admin->role !== 'admin', 404);
-        return view('admins.edit', compact('admin'));
+        return Inertia::render('Users/Form', [
+            'mode'   => 'edit',
+            'action' => route('admins.update', $admin->id),
+            'user'   => [
+                'id'         => $admin->id,
+                'name'       => $admin->name,
+                'username'   => $admin->username,
+                'email'      => $admin->email,
+                'department' => $admin->department,
+                'is_active'  => (bool) $admin->is_active,
+            ],
+            'resource' => [
+                'label'            => 'Admin',
+                'role'             => 'admin',
+                'emailRequired'    => true,
+                'usernameOptional' => true,
+                'withDepartment'   => false,
+                'minPassword'      => 8,
+                'indexUrl'         => route('management.index', ['tab' => 'admin']),
+            ],
+        ]);
     }
 
     public function update(Request $request, User $admin)
@@ -96,7 +116,7 @@ class AdminController extends Controller
         $admin->update($data);
         ActivityLog::record('update', "Edit admin: {$admin->name}", $admin);
 
-        return redirect()->route('admins.index')
+        return redirect()->route('management.index', ['tab' => 'admin'])
             ->with('success', "Data admin '{$admin->name}' berhasil diperbarui.");
     }
 
@@ -112,7 +132,7 @@ class AdminController extends Controller
         $admin->delete();
         ActivityLog::record('delete', "Hapus admin: {$name}");
 
-        return redirect()->route('admins.index')
+        return redirect()->route('management.index', ['tab' => 'admin'])
             ->with('success', "Admin '{$name}' berhasil dihapus.");
     }
 }

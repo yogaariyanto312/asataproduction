@@ -1,6 +1,6 @@
 # Asata Production System
 
-Sistem pencatatan produksi dan quality control berbasis web untuk pabrik/manufaktur. Dibangun dengan Laravel 12, memungkinkan operator mencatat hasil produksi harian per shift, sementara admin dapat memantau, menganalisis, dan mengekspor laporan.
+Sistem pencatatan produksi dan quality control berbasis web untuk pabrik/manufaktur. Dibangun dengan Laravel 13, memungkinkan operator mencatat hasil produksi harian per shift, sementara admin dapat memantau, menganalisis, dan mengekspor laporan.
 
 ---
 
@@ -21,7 +21,7 @@ Sistem pencatatan produksi dan quality control berbasis web untuk pabrik/manufak
 
 ## Teknologi
 
-- **Backend** — Laravel 12, PHP 8.2
+- **Backend** — Laravel 13, PHP 8.4
 - **Frontend** — Tailwind CSS v4, Alpine.js, Vite
 - **Database** — MySQL
 - **Export** — barryvdh/laravel-dompdf (PDF), maatwebsite/excel (Excel)
@@ -30,10 +30,10 @@ Sistem pencatatan produksi dan quality control berbasis web untuk pabrik/manufak
 
 ## Persyaratan Sistem
 
-- PHP >= 8.2 (dengan ekstensi: `pdo_mysql`, `gd`, `zip`, `mbstring`, `xml`, `fileinfo`)
+- PHP >= 8.4 (dengan ekstensi: `pdo_mysql`, `gd`, `zip`, `mbstring`, `xml`, `fileinfo`, `intl`, `bcmath`, `exif`)
 - Composer >= 2
 - Node.js >= 18 & npm
-- MySQL >= 8.0
+- MySQL >= 8.4 (LTS)
 - Web server: Apache (XAMPP) atau Nginx
 
 ---

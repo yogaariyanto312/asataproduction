@@ -10,6 +10,7 @@ use App\Models\Scopes\DepartmentScope;
 use App\Models\SchedulePhoto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 class ProductionTargetController extends Controller
 {
@@ -62,10 +63,61 @@ class ProductionTargetController extends Controller
         $scheduleDate  = $weekStart->toDateString();
         $schedulePhoto = SchedulePhoto::with('uploader')->where('target_date', $scheduleDate)->first();
 
-        return view('production.targets.index', compact(
-            'targets', 'actuals', 'weekStart', 'weekEnd', 'date', 'scheduleDate', 'products',
-            'totalTarget', 'totalActual', 'schedulePhoto'
-        ));
+        $canEdit   = \App\Support\MenuAccess::can(auth()->user(), 'targets.edit');
+        $canDelete = \App\Support\MenuAccess::can(auth()->user(), 'targets.delete');
+
+        return Inertia::render('Production/Targets', [
+            'liveUrl'      => route('api.targets.live'),
+            'actualQtyUrl' => route('api.targets.actual-qty'),
+            'storeUrl'     => route('production.targets.store'),
+            'photoUrl'     => route('production.targets.schedule-photo.store'),
+            'photoDestroyUrl' => route('production.targets.schedule-photo.destroy'),
+            'canEdit'      => $canEdit,
+            'canDelete'    => $canDelete,
+            'weekLabel'    => 'Minggu ' . $weekStart->locale('id')->isoFormat('DD MMM') . ' – ' . $weekEnd->locale('id')->isoFormat('DD MMM YYYY'),
+            'scheduleDate' => $scheduleDate,
+            'pdfjs'        => GambarKerjaController::pdfjs(),
+            'totals'       => [
+                'target' => $totalTarget,
+                'actual' => $totalActual,
+                'pct'    => $totalTarget > 0 ? min((int) round($totalActual / $totalTarget * 100), 100) : 0,
+            ],
+            'targets'      => $targets->map(fn ($t) => [
+                'id'         => $t->id,
+                'productId'  => $t->product_id,
+                'product'    => $t->product->name ?? '-',
+                'seriesKva'  => $t->product?->series_with_kva ?: null,
+                'target'     => (int) $t->target_qty,
+                'actual'     => (int) ($actuals[$t->product_id] ?? 0),
+                'notes'      => $t->notes,
+                // Target tercapai dihapus otomatis 2 jam kemudian (target:clear-reached).
+                'hapusOtomatis' => $t->reached_at ? $t->reached_at->copy()->addHours(2)->locale('id')->diffForHumans() : null,
+                'deleteUrl'  => route('production.targets.destroy', $t->id),
+            ])->values(),
+            // Dikelompokkan per nama produk seperti referensi; produk placeholder
+            // kategori seri manual berlabel "Seri & KVA Manual → PLN/Swasta/TypeTest".
+            'productGroups' => $products->groupBy('name')->map(fn ($isi, $nama) => [
+                'label'   => (string) $nama,
+                'options' => $isi->map(function ($p) {
+                    $manual = (bool) (($p->category->has_manual_serial ?? false) && ! $p->series);
+                    $nl  = strtolower($p->name);
+                    $tag = str_contains($nl, 'swasta') ? 'Swasta' : (str_contains($nl, 'type') ? 'TypeTest' : 'PLN');
+
+                    return [
+                        'value'  => $p->id,
+                        'label'  => $manual ? 'Seri & KVA Manual → ' . $tag : (($p->series ?: '—') . ($p->kva ? ' · ' . $p->kva . ' KVA' : '')),
+                        'manual' => $manual,
+                        'type'   => $p->type ?: 'regular',
+                    ];
+                })->values(),
+            ])->values(),
+            'schedulePhoto' => $schedulePhoto ? [
+                'url'      => route('storage.file', ['path' => $schedulePhoto->file_path]),
+                'isPdf'    => str_ends_with(strtolower($schedulePhoto->file_path), '.pdf'),
+                'uploader' => $schedulePhoto->uploader->name ?? '-',
+                'ago'      => $schedulePhoto->updated_at?->locale('id')->diffForHumans(),
+            ] : null,
+        ]);
     }
 
     public function store(Request $request)

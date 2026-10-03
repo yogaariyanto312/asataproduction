@@ -38,6 +38,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Session Serialization
+    |--------------------------------------------------------------------------
+    |
+    | Laravel 13 mengubah default skeleton menjadi "json" untuk mencegah
+    | serangan PHP deserialization gadget chain. Nilai ini sengaja ditahan di
+    | "php" agar sesi yang sedang aktif tidak ikut hangus saat upgrade —
+    | SESSION_LIFETIME aplikasi ini 480 menit, jadi mengubahnya sekarang akan
+    | melempar semua user yang sedang login. Pindahkan ke "json" pada jendela
+    | maintenance berikutnya; aplikasi ini tidak menyimpan objek PHP di sesi.
+    |
+    | Supported: "php", "json"
+    |
+    */
+
+    'serialization' => env('SESSION_SERIALIZATION', 'php'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Session Encryption
     |--------------------------------------------------------------------------
     |

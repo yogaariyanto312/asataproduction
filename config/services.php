@@ -45,4 +45,14 @@ return [
         'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET'),
     ],
 
+    /*
+    | verify_tls: apakah sertifikat server tujuan (api.telegram.org, Discord)
+    | diperiksa. Bawaannya false demi menjaga perilaku lama (sebagian hosting
+    | tidak punya berkas CA). Nyalakan BOT_VERIFY_TLS=true setelah dipastikan
+    | jalan — yang dikirim termasuk Bot Token Telegram.
+    */
+    'bot' => [
+        'verify_tls' => env('BOT_VERIFY_TLS', false),
+    ],
+
 ];

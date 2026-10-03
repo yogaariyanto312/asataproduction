@@ -11,12 +11,25 @@ class CalendarEventController extends Controller
     /** Ambil semua event untuk bulan tertentu (JSON), dikelompokkan per tanggal. */
     public function byMonth(Request $request)
     {
-        $year  = (int) $request->input('year', now()->year);
-        $month = (int) $request->input('month', now()->month);
+        // Dijaga di rentang wajar (±5 tahun): tiap tahun yang berbeda memicu
+        // panggilan Google Calendar API & entri cache baru di HolidayService,
+        // jadi input bebas bisa dipakai menghabiskan kuota API.
+        $data = $request->validate([
+            'year'  => ['nullable', 'integer', 'between:' . (now()->year - 5) . ',' . (now()->year + 5)],
+            'month' => ['nullable', 'integer', 'between:1,12'],
+        ]);
 
-        $events = CalendarEvent::where('user_id', auth()->id())
-            ->whereYear('event_date', $year)
-            ->whereMonth('event_date', $month)
+        $year  = (int) ($data['year'] ?? now()->year);
+        $month = (int) ($data['month'] ?? now()->month);
+
+        $awal    = \Illuminate\Support\Carbon::create($year, $month, 1)->toDateString();
+        $sesudah = \Illuminate\Support\Carbon::create($year, $month, 1)->addMonth()->toDateString();
+
+        $bolehAgenda = \App\Support\MenuAccess::can(auth()->user(), 'dashboard.agenda');
+
+        $events = ! $bolehAgenda ? collect() : CalendarEvent::where('user_id', auth()->id())
+            ->where('event_date', '>=', $awal)
+            ->where('event_date', '<', $sesudah)
             ->orderBy('event_date')
             ->orderBy('created_at')
             ->get(['id', 'event_date', 'title', 'description', 'user_id', 'created_by_name']);
@@ -33,7 +46,16 @@ class CalendarEventController extends Controller
             ];
         }
 
-        return response()->json(['events' => $grouped]);
+        // Hari libur ikut dikirim supaya kalender React bisa berpindah bulan
+        // (termasuk lintas tahun) tanpa kehilangan penanda hari libur.
+        $holidays = app(\App\Services\HolidayService::class)
+            ->getHolidays($year)
+            ->filter(fn ($v, $date) => str_starts_with($date, sprintf('%04d-%02d', $year, $month)));
+
+        return response()->json([
+            'events'   => $grouped,
+            'holidays' => $holidays,
+        ]);
     }
 
     public function store(Request $request)

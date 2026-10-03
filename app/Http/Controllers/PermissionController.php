@@ -6,137 +6,266 @@ use App\Models\ActivityLog;
 use App\Models\Department;
 use App\Models\DepartmentMenuPermission;
 use App\Models\RoleMenuPermission;
+use App\Models\User;
 use App\Support\MenuAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class PermissionController extends Controller
 {
+    /** Banyaknya perubahan yang dirinci di catatan aktivitas sebelum diringkas. */
+    private const RINCIAN_MAKS = 12;
+
     /**
-     * Bangun daftar menu yang bisa diatur, masing-masing beserta baris permission-nya
-     * (view + aksi). Bentuk: [ ['label'=>, 'icon'/'paths'=>, 'perms'=>[ ['key','label','shared'], ... ] ], ... ]
+     * Daftar menu yang bisa diatur beserta baris permission-nya (view + aksi).
+     *
+     *  - 'locked'            : ikut ditampilkan supaya daftarnya lengkap, tapi
+     *                          saklarnya dikunci (Hak Akses & Settings — memberi
+     *                          kendali atas sistem izin itu sendiri).
+     *  - 'manageable'=>'actions' : hanya aksinya yang diatur (mis. Dashboard,
+     *                          halaman awal yang tidak boleh bisa dimatikan).
      */
     protected function matrix(): array
     {
         $rows = [];
         foreach (MenuAccess::items() as $item) {
-            if (!($item['manageable'] ?? false)) continue;
+            $manageable = $item['manageable'] ?? false;
+            if (!$manageable) continue;
 
-            $shared = (bool) ($item['dept_shared'] ?? false);
-
-            $perms = [[
-                'key'    => $item['key'],
-                'label'  => 'Lihat',
-                'shared' => $shared,
+            $perms = $manageable === 'actions' ? [] : [[
+                'key'     => $item['key'],
+                'label'   => 'Lihat',
+                'is_view' => true,
             ]];
             foreach ($item['actions'] ?? [] as $act) {
-                $perms[] = ['key' => $act['key'], 'label' => $act['label'], 'shared' => $shared];
+                $perms[] = ['key' => $act['key'], 'label' => $act['label'], 'is_view' => false];
             }
 
+            // 'icon' satu path, 'paths' beberapa — disatukan supaya tampilan tak perlu menebak.
+            $paths = $item['paths'] ?? array_filter([$item['icon'] ?? null]);
+
             $rows[] = [
+                'key'    => $item['key'],
                 'label'  => $item['label'],
-                'icon'   => $item['icon']  ?? null,
-                'paths'  => $item['paths'] ?? null,
+                'paths'  => array_values($paths),
+                'locked' => (bool) ($item['locked'] ?? false),
+                'shared' => (bool) ($item['dept_shared'] ?? false),
                 'perms'  => $perms,
-                'shared' => $shared,
             ];
         }
         return $rows;
     }
 
-    /** Semua permission key yang dikelola (untuk validasi saat simpan). */
+    /**
+     * Permission key yang benar-benar bisa disimpan. Menu terkunci dikecualikan:
+     * saklarnya tidak dikirim, jadi kalau ikut, semuanya tertulis "tidak boleh"
+     * tiap kali Simpan ditekan.
+     */
     protected function allKeys(): array
     {
         $keys = [];
         foreach ($this->matrix() as $row) {
+            if ($row['locked']) continue;
             foreach ($row['perms'] as $p) $keys[] = $p['key'];
         }
         return $keys;
+    }
+
+    /** Label permission untuk catatan aktivitas: key => "Menu > Aksi". */
+    protected function labelKey(): array
+    {
+        $label = [];
+        foreach ($this->matrix() as $row) {
+            foreach ($row['perms'] as $p) {
+                $label[$p['key']] = $row['label'] . ' > ' . $p['label'];
+            }
+        }
+        return $label;
+    }
+
+    /** Label, warna, keterangan, dan jumlah pengguna tiap role. */
+    protected function roleMeta(array $roles): array
+    {
+        $jumlah = User::query()
+            ->whereIn('role', $roles)
+            ->groupBy('role')
+            ->pluck(DB::raw('count(*)'), 'role');
+
+        $meta = [];
+        foreach ($roles as $role) {
+            $info = ManagementController::PERAN[$role] ?? [];
+            $meta[$role] = [
+                'label' => $info['label'] ?? ucfirst($role),
+                'warna' => $info['warna'] ?? 'slate',
+                'ket'   => $info['ket']   ?? '',
+                'user'  => (int) ($jumlah[$role] ?? 0),
+            ];
+        }
+        return $meta;
+    }
+
+    protected function departemenAktif()
+    {
+        return Department::where('is_active', true)->orderBy('name')->pluck('name');
     }
 
     public function index(Request $request)
     {
         $rows        = $this->matrix();
         $roles       = config('menus.manageable_roles', []);
-        $departments = Department::where('is_active', true)->orderBy('name')->pluck('name');
+        $departments = $this->departemenAktif();
 
-        // Mode departemen bila ?department= valid; selain itu mode role (default).
+        // Mode departemen bila ?department= valid; selain itu mode role (bawaan).
         $selectedDept = $request->input('department');
         if ($selectedDept && !$departments->contains($selectedDept)) {
             $selectedDept = null;
         }
 
-        if ($selectedDept) {
-            // State per departemen (single-dimensi): key => bool.
-            $deptState = [];
-            foreach ($this->allKeys() as $key) {
-                $deptState[$key] = MenuAccess::departmentAllowed($selectedDept, $key);
-            }
+        // Dua peta: state = yang berlaku sekarang (posisi saklar), bawaan = nilai
+        // dari config (penanda "diubah" & tombol "Kembalikan ke bawaan").
+        $state  = [];
+        $bawaan = [];
 
-            return view('permissions.index', compact(
-                'rows', 'roles', 'departments', 'selectedDept', 'deptState'
-            ));
+        foreach ($rows as $row) {
+            foreach ($row['perms'] as $perm) {
+                if ($selectedDept) {
+                    $state[$perm['key']]  = MenuAccess::departmentAllowed($selectedDept, $perm['key']);
+                    $bawaan[$perm['key']] = true; // departemen mengizinkan sampai dicabut
+                    continue;
+                }
+                foreach ($roles as $role) {
+                    $sel = "{$role}|{$perm['key']}";
+                    $state[$sel]  = MenuAccess::allowed($role, $perm['key']);
+                    $bawaan[$sel] = in_array($role, MenuAccess::defaultRoles($perm['key']), true);
+                }
+            }
         }
 
-        // Mode role: status efektif tiap sel (role|key) => bool, untuk state switch.
-        $state = [];
-        foreach ($roles as $role) {
-            foreach ($this->allKeys() as $key) {
-                $state["{$role}|{$key}"] = MenuAccess::allowed($role, $key);
-            }
-        }
-
-        return view('permissions.index', compact(
-            'rows', 'roles', 'departments', 'selectedDept', 'state'
-        ));
+        return Inertia::render('Permissions/Index', [
+            'mode'         => $selectedDept ? 'department' : 'role',
+            'indexUrl'     => route('permissions.index'),
+            'updateUrl'    => route('permissions.update'),
+            'rows'         => $rows,
+            'roles'        => $roles,
+            'roleMeta'     => $this->roleMeta($roles),
+            'departments'  => $departments->map(fn ($d) => ['value' => $d, 'label' => $d])->values(),
+            'selectedDept' => $selectedDept,
+            'state'        => $state,
+            'bawaan'       => $bawaan,
+        ]);
     }
 
     public function update(Request $request)
     {
-        $departments = Department::where('is_active', true)->orderBy('name')->pluck('name');
         $selectedDept = $request->input('department');
+        $checked      = (array) $request->input('allowed', []);
+        $allKeys      = $this->allKeys();
+        $now          = now();
 
-        // Mode departemen: simpan ke department_menu_permissions (skip menu dept_shared).
-        if ($selectedDept && $departments->contains($selectedDept)) {
-            $checked = (array) $request->input('allowed', []);
+        // ── Mode departemen ────────────────────────────────────────────────
+        if ($selectedDept && $this->departemenAktif()->contains($selectedDept)) {
+            $sebelum = DepartmentMenuPermission::where('department', $selectedDept)
+                ->pluck('allowed', 'menu_key')->map(fn ($v) => (bool) $v)->all();
 
-            DB::transaction(function () use ($selectedDept, $checked) {
-                foreach ($this->allKeys() as $key) {
-                    DepartmentMenuPermission::updateOrCreate(
-                        ['department' => $selectedDept, 'menu_key' => $key],
-                        ['allowed' => isset($checked[$key])],
-                    );
+            $baris = [];
+            $berubah = [];
+            foreach ($allKeys as $key) {
+                $nilai = isset($checked[$key]);
+                if (($sebelum[$key] ?? true) !== $nilai) {
+                    $berubah[] = ['siapa' => $selectedDept, 'key' => $key, 'jadi' => $nilai];
+                }
+                $baris[] = ['department' => $selectedDept, 'menu_key' => $key, 'allowed' => $nilai,
+                            'created_at' => $now, 'updated_at' => $now];
+            }
+
+            DB::transaction(function () use ($baris) {
+                foreach (array_chunk($baris, 200) as $bagian) {
+                    DepartmentMenuPermission::upsert($bagian, ['department', 'menu_key'], ['allowed', 'updated_at']);
                 }
             });
 
             MenuAccess::flush();
-            ActivityLog::record('update', "Perbarui hak akses menu departemen: {$selectedDept}");
+            ActivityLog::record('update', $this->ringkasan($berubah, "departemen {$selectedDept}"));
 
             return redirect()->route('permissions.index', ['department' => $selectedDept])
-                ->with('success', "Hak akses departemen {$selectedDept} berhasil diperbarui.");
+                ->with('success', $berubah === []
+                    ? 'Tidak ada perubahan hak akses.'
+                    : "Hak akses departemen {$selectedDept} diperbarui (" . count($berubah) . ' perubahan).');
         }
 
-        // Mode role (default).
-        $roles   = config('menus.manageable_roles', []);
-        $allKeys = $this->allKeys();
-        $checked = (array) $request->input('allowed', []);
+        // ── Mode role ──────────────────────────────────────────────────────
+        $roles = config('menus.manageable_roles', []);
 
-        DB::transaction(function () use ($roles, $allKeys, $checked) {
-            foreach ($roles as $role) {
-                foreach ($allKeys as $key) {
-                    $allowed = isset($checked[$role][$key]);
-                    RoleMenuPermission::updateOrCreate(
-                        ['role' => $role, 'menu_key' => $key],
-                        ['allowed' => $allowed],
-                    );
+        $sebelum = RoleMenuPermission::query()
+            ->get(['role', 'menu_key', 'allowed'])
+            ->mapWithKeys(fn ($r) => ["{$r->role}|{$r->menu_key}" => (bool) $r->allowed])
+            ->all();
+
+        // Satu upsert untuk semua sel, bukan updateOrCreate per sel (dulu ratusan query).
+        $baris   = [];
+        $berubah = [];
+
+        foreach ($roles as $role) {
+            foreach ($allKeys as $key) {
+                $nilai = isset($checked[$role][$key]);
+                $sel   = "{$role}|{$key}";
+
+                // Baris yang belum pernah disimpan dibandingkan dengan bawaannya,
+                // supaya "perubahan" tidak salah dihitung saat pertama kali Simpan.
+                $lama = $sebelum[$sel] ?? in_array($role, MenuAccess::defaultRoles($key), true);
+
+                if ($lama !== $nilai) {
+                    $berubah[] = ['siapa' => $role, 'key' => $key, 'jadi' => $nilai];
                 }
+
+                $baris[] = ['role' => $role, 'menu_key' => $key, 'allowed' => $nilai,
+                            'created_at' => $now, 'updated_at' => $now];
+            }
+        }
+
+        DB::transaction(function () use ($baris) {
+            foreach (array_chunk($baris, 200) as $bagian) {
+                RoleMenuPermission::upsert($bagian, ['role', 'menu_key'], ['allowed', 'updated_at']);
             }
         });
 
         MenuAccess::flush();
-        ActivityLog::record('update', 'Perbarui hak akses menu & aksi per role');
+        ActivityLog::record('update', $this->ringkasan($berubah));
 
         return redirect()->route('permissions.index')
-            ->with('success', 'Hak akses berhasil diperbarui.');
+            ->with('success', $berubah === []
+                ? 'Tidak ada perubahan hak akses.'
+                : 'Hak akses berhasil diperbarui (' . count($berubah) . ' perubahan).');
+    }
+
+    /**
+     * Kalimat untuk catatan aktivitas — merinci izin apa yang DIBERI/DICABUT
+     * untuk siapa, supaya perubahan izin bisa ditelusuri.
+     */
+    protected function ringkasan(array $berubah, ?string $lingkup = null): string
+    {
+        $judul = $lingkup ? "hak akses {$lingkup}" : 'hak akses';
+
+        if ($berubah === []) {
+            return "Simpan {$judul} — tidak ada yang berubah";
+        }
+
+        $label = $this->labelKey();
+        $peran = ManagementController::PERAN;
+
+        $rinci = [];
+        foreach (array_slice($berubah, 0, self::RINCIAN_MAKS) as $b) {
+            $rinci[] = sprintf('%s: %s %s',
+                $peran[$b['siapa']]['label'] ?? ucfirst($b['siapa']),
+                $label[$b['key']] ?? $b['key'],
+                $b['jadi'] ? 'DIBERI' : 'DICABUT',
+            );
+        }
+
+        $sisa = count($berubah) - count($rinci);
+        if ($sisa > 0) $rinci[] = "dan {$sisa} perubahan lain";
+
+        return "Ubah {$judul} (" . count($berubah) . '): ' . implode('; ', $rinci);
     }
 }
