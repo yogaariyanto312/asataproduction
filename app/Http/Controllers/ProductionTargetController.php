@@ -16,6 +16,12 @@ class ProductionTargetController extends Controller
 {
     public function index(Request $request)
     {
+        return Inertia::render('Production/Targets', $this->dataTarget());
+    }
+
+    /** Data halaman Target Produksi (web & API Android). */
+    public function dataTarget(): array
+    {
         // Target tanpa batas waktu: 1 target aktif per produk.
         $rawTargets = ProductionTarget::with(['product'])->get();
 
@@ -66,7 +72,7 @@ class ProductionTargetController extends Controller
         $canEdit   = \App\Support\MenuAccess::can(auth()->user(), 'targets.edit');
         $canDelete = \App\Support\MenuAccess::can(auth()->user(), 'targets.delete');
 
-        return Inertia::render('Production/Targets', [
+        return [
             'liveUrl'      => route('api.targets.live'),
             'actualQtyUrl' => route('api.targets.actual-qty'),
             'storeUrl'     => route('production.targets.store'),
@@ -117,10 +123,16 @@ class ProductionTargetController extends Controller
                 'uploader' => $schedulePhoto->uploader->name ?? '-',
                 'ago'      => $schedulePhoto->updated_at?->locale('id')->diffForHumans(),
             ] : null,
-        ]);
+        ];
     }
 
     public function store(Request $request)
+    {
+        return back()->with('success', $this->simpanTarget($request));
+    }
+
+    /** Inti set target (tanpa sesi) — dipakai web & API Android. Mengembalikan pesan sukses. */
+    public function simpanTarget(Request $request): string
     {
         $request->validate([
             'product_id'    => ['required', 'exists:products,id'],
@@ -162,12 +174,12 @@ class ProductionTargetController extends Controller
         );
 
         if (!$product) {
-            return back()->withErrors(['product_id' => 'Produk tidak ditemukan.']);
+            throw \Illuminate\Validation\ValidationException::withMessages(['product_id' => 'Produk tidak ditemukan.']);
         }
 
         ActivityLog::record('create', "Set target produksi: {$product->name} = {$request->target_qty} unit", $target);
 
-        return back()->with('success', "Target untuk {$product->name} berhasil disimpan.");
+        return "Target untuk {$product->name} berhasil disimpan.";
     }
 
     public function liveData(Request $request)
@@ -281,9 +293,15 @@ class ProductionTargetController extends Controller
 
     public function destroy(ProductionTarget $productionTarget)
     {
+        $this->hapusTarget($productionTarget);
+        return back()->with('success', 'Target berhasil dihapus.');
+    }
+
+    /** Inti hapus target (tanpa sesi) — dipakai web & API Android. */
+    public function hapusTarget(ProductionTarget $productionTarget): void
+    {
         $info = $productionTarget->product?->name ?? 'produk #' . $productionTarget->product_id;
         $productionTarget->delete();
         ActivityLog::record('delete', "Hapus target produksi: {$info}");
-        return back()->with('success', 'Target berhasil dihapus.');
     }
 }

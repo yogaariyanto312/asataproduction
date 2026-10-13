@@ -22,10 +22,12 @@ class SupervisorController extends Controller
                 'role'             => 'supervisor',
                 'emailRequired'    => true,
                 'usernameOptional' => true,
-                'withDepartment'   => false,
+                'withDepartment'   => true,
                 'minPassword'      => 8,
                 'indexUrl'         => route('management.index', ['tab' => 'supervisor']),
             ],
+            'departments' => \App\Models\Department::where('is_active', true)->orderBy('name')->pluck('name')
+                ->map(fn ($d) => ['value' => $d, 'label' => $d])->values(),
         ]);
     }
 
@@ -36,6 +38,7 @@ class SupervisorController extends Controller
             'email'    => ['required', 'email', 'max:150', 'unique:users,email'],
             'username' => ['nullable', 'string', 'max:50', 'alpha_dash', 'unique:users,username'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'department' => ['nullable', 'string', 'max:100', 'exists:departments,name'],
         ], [
             'name.required'      => 'Nama lengkap wajib diisi.',
             'email.required'     => 'Email wajib diisi.',
@@ -46,6 +49,7 @@ class SupervisorController extends Controller
             'password.required'  => 'Password wajib diisi.',
             'password.min'       => 'Password minimal 8 karakter.',
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'department.exists'  => 'Departemen tidak ditemukan.',
         ]);
 
         $data['role']      = 'supervisor';
@@ -78,10 +82,12 @@ class SupervisorController extends Controller
                 'role'             => 'supervisor',
                 'emailRequired'    => true,
                 'usernameOptional' => true,
-                'withDepartment'   => false,
+                'withDepartment'   => true,
                 'minPassword'      => 8,
                 'indexUrl'         => route('management.index', ['tab' => 'supervisor']),
             ],
+            'departments' => \App\Models\Department::where('is_active', true)->orderBy('name')->pluck('name')
+                ->map(fn ($d) => ['value' => $d, 'label' => $d])->values(),
         ]);
     }
 
@@ -94,6 +100,7 @@ class SupervisorController extends Controller
             'email'    => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($supervisor->id)],
             'username' => ['nullable', 'string', 'max:50', 'alpha_dash', Rule::unique('users', 'username')->ignore($supervisor->id)],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'department' => ['nullable', 'string', 'max:100', 'exists:departments,name'],
         ], [
             'name.required'      => 'Nama lengkap wajib diisi.',
             'email.required'     => 'Email wajib diisi.',
@@ -103,6 +110,7 @@ class SupervisorController extends Controller
             'username.alpha_dash' => 'Username hanya boleh huruf, angka, tanda hubung, dan garis bawah.',
             'password.min'       => 'Password minimal 8 karakter.',
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'department.exists'  => 'Departemen tidak ditemukan.',
         ]);
 
         if (empty($data['password'])) {

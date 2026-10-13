@@ -3,6 +3,7 @@
 namespace App\Services\Telegram;
 
 use App\Models\User;
+use App\Support\MenuAccess;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -20,25 +21,39 @@ class PenautanAkun
 
     private const AWALAN = 'tg_tautkan_';
 
+    /** Kunci izin di config/menus.php — diatur di menu Hak Akses ("Bot Telegram"). */
+    public const IZIN = 'telegram';
+
     /**
-     * Peran yang boleh menautkan Telegram & memakai bot secara pribadi.
-     * Diminta Yoga 2026-09-30: operator, mandor, dan visitor tidak memakai bot.
-     * Grup yang terdaftar di Settings tetap bisa memakai perintah baca.
+     * Peran yang boleh menautkan Telegram & memakai bot secara pribadi, menurut Hak Akses.
+     * Bawaan: developer, admin, supervisor. Grup yang terdaftar di Settings tetap bisa
+     * memakai perintah baca.
+     *
+     * @return list<string>
      */
-    public const PERAN = ['developer', 'admin', 'supervisor'];
+    public static function peran(): array
+    {
+        return array_values(array_filter(
+            array_merge(['developer'], config('menus.manageable_roles', [])),
+            fn ($r) => $r === 'developer' || MenuAccess::allowed($r, self::IZIN),
+        ));
+    }
 
     /** Untuk ditulis di pesan bot & layar: "developer, admin, dan supervisor". */
     public static function daftarPeran(): string
     {
-        $peran = self::PERAN;
+        $peran = self::peran();
+        if (count($peran) < 2) {
+            return implode('', $peran);
+        }
         $akhir = array_pop($peran);
 
-        return implode(', ', $peran) . ', dan ' . $akhir;
+        return implode(', ', $peran) . (count($peran) > 1 ? ', dan ' : ' dan ') . $akhir;
     }
 
     public static function boleh(?User $user): bool
     {
-        return $user !== null && in_array($user->role, self::PERAN, true);
+        return MenuAccess::can($user, self::IZIN);
     }
 
     /** Buat (atau perbarui) kode penautan untuk seorang pengguna. */
@@ -101,10 +116,9 @@ class PenautanAkun
 
         // Tautan lama milik peran yang kini tidak diizinkan dianggap tidak ada —
         // bot tidak mengenali orangnya, jadi tidak bisa mengubah data apa pun.
-        return User::where('telegram_user_id', $telegramUserId)
-            ->where('is_active', true)
-            ->whereIn('role', self::PERAN)
-            ->first();
+        $user = User::where('telegram_user_id', $telegramUserId)->where('is_active', true)->first();
+
+        return self::boleh($user) ? $user : null;
     }
 
     public static function putuskan(User $user): void

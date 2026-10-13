@@ -21,10 +21,12 @@ class VisitorController extends Controller
                 'role'             => 'visitor',
                 'emailRequired'    => false,
                 'usernameOptional' => false,
-                'withDepartment'   => false,
+                'withDepartment'   => true,
                 'minPassword'      => 8,
                 'indexUrl'         => route('management.index', ['tab' => 'visitor']),
             ],
+            'departments' => \App\Models\Department::where('is_active', true)->orderBy('name')->pluck('name')
+                ->map(fn ($d) => ['value' => $d, 'label' => $d])->values(),
         ]);
     }
 
@@ -34,6 +36,7 @@ class VisitorController extends Controller
             'name'     => ['required', 'string', 'max:150'],
             'username' => ['required', 'string', 'max:50', 'alpha_dash', 'unique:users,username'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'department' => ['nullable', 'string', 'max:100', 'exists:departments,name'],
         ], [
             'name.required'       => 'Nama lengkap wajib diisi.',
             'username.required'   => 'Username wajib diisi.',
@@ -76,10 +79,12 @@ class VisitorController extends Controller
                 'role'             => 'visitor',
                 'emailRequired'    => false,
                 'usernameOptional' => false,
-                'withDepartment'   => false,
+                'withDepartment'   => true,
                 'minPassword'      => 8,
                 'indexUrl'         => route('management.index', ['tab' => 'visitor']),
             ],
+            'departments' => \App\Models\Department::where('is_active', true)->orderBy('name')->pluck('name')
+                ->map(fn ($d) => ['value' => $d, 'label' => $d])->values(),
         ]);
     }
 
@@ -91,6 +96,7 @@ class VisitorController extends Controller
             'name'     => ['required', 'string', 'max:150'],
             'username' => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('users', 'username')->ignore($visitor->id)],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'department' => ['nullable', 'string', 'max:100', 'exists:departments,name'],
         ], [
             'name.required'       => 'Nama lengkap wajib diisi.',
             'username.required'   => 'Username wajib diisi.',

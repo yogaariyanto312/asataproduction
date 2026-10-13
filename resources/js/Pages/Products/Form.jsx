@@ -33,6 +33,7 @@ export default function ProductForm({ mode, action, indexUrl, categories, maxYea
         unit: product?.unit || 'unit',
         description: product?.description || '',
         is_active: product ? product.is_active : true,
+        manual: !!categories.find((c) => String(c.value) === String(product?.category_id ?? prefill.category_id ?? ''))?.manual,
     });
 
     const adaDetail = !!(data.panjang || data.lebar || data.description || errors.panjang || errors.lebar || errors.description);
@@ -83,7 +84,10 @@ export default function ProductForm({ mode, action, indexUrl, categories, maxYea
                                 error={errors.category_id}
                                 placeholder="— Pilih kategori —"
                                 options={categories}
-                                onChange={(e) => setData('category_id', e.target.value)}
+                                onChange={(e) => {
+                                    const kat = categories.find((c) => String(c.value) === e.target.value);
+                                    setData((d) => ({ ...d, category_id: e.target.value, manual: !!kat?.manual }));
+                                }}
                             />
                         </Field>
 
@@ -226,7 +230,16 @@ export default function ProductForm({ mode, action, indexUrl, categories, maxYea
                     ) : null}
 
                     <div className="au-pf-bawah">
-                        <Check label="Produk aktif" checked={data.is_active} onChange={(e) => setData('is_active', e.target.checked)} />
+                        <div>
+                            <Check
+                                label="Seri & KVA diinput manual saat Input Produksi"
+                                checked={data.manual}
+                                disabled={!data.category_id}
+                                onChange={(e) => setData('manual', e.target.checked)}
+                            />
+                            <p className="au-hint">Berlaku untuk semua produk di kategori ini. Kosongkan Seri &amp; kVA di atas.</p>
+                            <Check label="Produk aktif" checked={data.is_active} onChange={(e) => setData('is_active', e.target.checked)} />
+                        </div>
                         <div className="au-form-actions">
                             <Btn as="a" href={indexUrl} tone="ghost">
                                 Batal

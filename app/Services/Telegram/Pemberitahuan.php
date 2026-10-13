@@ -85,7 +85,8 @@ class Pemberitahuan
 
         $tertaut = User::whereNotNull('telegram_user_id')
             ->where('is_active', true)
-            ->whereIn('role', PenautanAkun::PERAN)
+            ->get(['id', 'role', 'department', 'telegram_user_id'])
+            ->filter(fn ($u) => PenautanAkun::boleh($u))
             ->pluck('telegram_user_id', 'id');
 
         $pesan = [];

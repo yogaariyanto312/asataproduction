@@ -24,6 +24,17 @@ class BotSetting extends Model
         'maintenance_mode',
         'maintenance_message',
         'maintenance_until',
+        'gk_popup_enabled',
+        'gk_popup_detik',
+        'gk_popup_pesan',
+        'fitur_departemen',
+    ];
+
+    /** Bawaan sama dengan kolom DB; tanpa ini baris yang baru dibuat membaca null (= nonaktif) di Settings. */
+    protected $attributes = [
+        'gk_popup_enabled' => true,
+        'gk_popup_detik'   => 3,
+        'fitur_departemen' => true,
     ];
 
     protected $casts = [
@@ -34,6 +45,9 @@ class BotSetting extends Model
         'disable_devtools'  => 'boolean',
         'maintenance_mode'  => 'boolean',
         'maintenance_until' => 'datetime',
+        'gk_popup_enabled'  => 'boolean',
+        'gk_popup_detik'    => 'integer',
+        'fitur_departemen'  => 'boolean',
     ];
 
     /**
@@ -63,6 +77,29 @@ class BotSetting extends Model
     public static function lupakan(): void
     {
         static::$ingatan = null;
+    }
+
+    /** Pesan bawaan popup Gambar Kerja bila kolom pesan di Settings dikosongkan. */
+    public const PESAN_PENGINGAT_GK = 'Gambar kerja di aplikasi ini hanya sebagai referensi, jangan dijadikan patokan. '
+        . 'Sebelum bekerja, cari dan pastikan dengan gambar kerja aslinya terlebih dahulu.';
+
+    /** Data popup pengingat untuk halaman Gambar Kerja (web & API Android). */
+    public function pengingatGambarKerja(): array
+    {
+        return [
+            'aktif' => (bool) ($this->gk_popup_enabled ?? true),
+            'detik' => (int) ($this->gk_popup_detik ?: 3),
+            'pesan' => $this->gk_popup_pesan ?: self::PESAN_PENGINGAT_GK,
+        ];
+    }
+
+    /**
+     * Pilihan & saring departemen di Input/Riwayat Produksi hanya untuk developer,
+     * dan bisa dimatikan di Settings (data tetap tercatat dengan departemen pembuatnya).
+     */
+    public static function departemenUntuk(?User $user): bool
+    {
+        return $user?->role === 'developer' && (bool) (static::instance()->fitur_departemen ?? true);
     }
 
     public static function instance(): static

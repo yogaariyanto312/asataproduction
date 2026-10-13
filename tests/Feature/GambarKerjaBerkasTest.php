@@ -53,4 +53,21 @@ class GambarKerjaBerkasTest extends TestCase
     {
         $this->getJson('/api/gambar-kerja/berkas')->assertUnauthorized();
     }
+
+    public function test_simpan_perubahan_ikut_menyimpan_kategori_seri(): void
+    {
+        $admin = $this->admin();
+        GambarKerja::create([
+            'judul' => 'Trafo', 'seri' => 'S1', 'kva' => '50', 'tahun' => 2026, 'kategori_seri' => 'pln',
+            'file_path' => 'gambar-kerja/a.jpg', 'file_type' => 'image', 'uploaded_by' => $admin->id, 'urutan' => 1,
+        ]);
+
+        $this->actingAs($admin)->patch(route('gambar-kerja.update-info'), [
+            'judul' => 'Trafo', 'seri' => 'S1', 'kva' => '50', 'tahun' => 2026,
+            'judul_baru' => 'Trafo Baru', 'keterangan' => 'catatan', 'kategori_seri' => 'swasta',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $g = GambarKerja::first();
+        $this->assertSame(['Trafo Baru', 'catatan', 'swasta'], [$g->judul, $g->keterangan, $g->kategori_seri]);
+    }
 }

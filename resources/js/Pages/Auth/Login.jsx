@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import '../../../css/login-robot.css';
+import { useBlokirDevtools } from '../../blokirDevtools';
 
 const FEATURES = [
     { icon: 'M13 10V3L4 14h7v7l9-11h-7z', text: 'Input Cepat' },
@@ -21,7 +22,7 @@ const FEATURES = [
 const METER_LABELS = ['TIDAK MELIHAT', 'TERLALU PENDEK', 'LUMAYAN', 'KUAT', 'SANGAT KUAT'];
 
 const SAY = {
-    idle: 'Halo. Saya Volt, penjaga form ini.',
+    idle: 'Halo. Saya Agoy, penjaga form ini.',
     identifierFocus: [
         'Ada tamu. Sebutkan identitas Anda.',
         'Terdeteksi ketikan. Silakan, saya perhatikan.',
@@ -36,6 +37,16 @@ const SAY = {
     needIdentifier: 'Saya belum tahu Anda siapa.',
     needPassword: 'Passwordnya belum diisi.',
     strong: 'Password sekelas brankas. Hormat saya.',
+    // Reaksi saat robot diketuk langsung (mata / kepala / antena).
+    poked: [
+        'Aduh! Mataku!',
+        'Hei! Itu mata, bukan tombol.',
+        'Aww... pandanganku berbintang.',
+        'Oke, cukup. Saya ngambek.',
+    ],
+    tickled: ['Hihi, geli!', 'Kepala saya bukan bedug.', 'Ketuk-ketuk... ada orang di dalam? Ada. Saya.'],
+    zapped: ['Bzzt! Itu antena, bukan saklar.', 'Sinyal penuh. Rambut saya berdiri. Kalau punya.'],
+    turnedPoke: 'Saya lagi balik badan. Jangan dicolek.',
 };
 
 function LogoMark({ className }) {
@@ -69,6 +80,7 @@ function scorePassword(value) {
 }
 
 export default function Login({ backgroundUrl, forgotPasswordUrl, loginUrl, year }) {
+    useBlokirDevtools();
     const { errors, flash } = usePage().props;
 
     const { data, setData, post, processing } = useForm({
@@ -90,6 +102,12 @@ export default function Login({ backgroundUrl, forgotPasswordUrl, loginUrl, year
     const [panelLabel, setPanelLabel] = useState(METER_LABELS[0]);
     const [showPassword, setShowPassword] = useState(false);
     const [shaking, setShaking] = useState(false);
+    // Reaksi ketukan: 'knock-l' | 'knock-r' | 'tickle' | 'zap'. hit = mata yang kena.
+    const [reaction, setReaction] = useState(null);
+    const [hit, setHit] = useState(null);
+    const [dizzy, setDizzy] = useState(false);
+    const pokeRef = useRef({ count: 0, last: 0 });
+    const reactTimer = useRef(null);
 
     // Saat login gagal, kursor user biasanya MASIH di atas tombol. Tanpa kunci
     // ini, mouseenter/mouseleave langsung menimpa mood 'error' dan mengganti
@@ -240,6 +258,8 @@ export default function Login({ backgroundUrl, forgotPasswordUrl, loginUrl, year
         if (pesan) say(pesan);
     }, [flash, say]);
 
+    useEffect(() => () => clearTimeout(reactTimer.current), []);
+
     // ── kedip berkala ────────────────────────────────────────────────────
 
     useEffect(() => {
@@ -387,6 +407,59 @@ export default function Login({ backgroundUrl, forgotPasswordUrl, loginUrl, year
         }
     }
 
+    // ── robot diketuk langsung ───────────────────────────────────────────
+
+    // Animasi diulang dari awal walau kelas yang sama dipasang berturut-turut.
+    function react(kind, text, ms) {
+        clearTimeout(reactTimer.current);
+        setReaction(null);
+        requestAnimationFrame(() => setReaction(kind));
+        say(text);
+        reactTimer.current = setTimeout(() => {
+            setReaction(null);
+            setHit(null);
+            setDizzy(false);
+        }, ms);
+    }
+
+    function pokeEye(e) {
+        e.stopPropagation();
+        if (turned) {
+            react('tickle', SAY.turnedPoke, 900);
+            return;
+        }
+
+        // Ketukan beruntun (< 4 detik) makin membuatnya kesal.
+        const now = Date.now();
+        const p = pokeRef.current;
+        p.count = now - p.last < 4000 ? p.count + 1 : 1;
+        p.last = now;
+
+        const rect = e.currentTarget.getBoundingClientRect();
+        const side = e.clientX < rect.left + rect.width / 2 ? 'l' : 'r';
+        setHit(side);
+        setDizzy(p.count >= 3);
+        react('knock-' + side, SAY.poked[Math.min(p.count, SAY.poked.length) - 1], p.count >= 3 ? 2200 : 1400);
+
+        // Ketukan ke-4: ngambek, membelakangi sebentar.
+        if (p.count >= SAY.poked.length) {
+            p.count = 0;
+            setTimeout(() => setTurned(true), 500);
+            setTimeout(() => {
+                if (document.activeElement?.id !== 'password') setTurned(false);
+            }, 2600);
+        }
+    }
+
+    function tickle() {
+        react('tickle', turned ? SAY.turnedPoke : pick(SAY.tickled), 900);
+    }
+
+    function zap(e) {
+        e.stopPropagation();
+        react('zap', pick(SAY.zapped), 900);
+    }
+
     function onPressDown() {
         setPressed(true);
         setMood('pressed');
@@ -446,6 +519,8 @@ export default function Login({ backgroundUrl, forgotPasswordUrl, loginUrl, year
         hyped ? 'is-hyped' : '',
         pressed ? 'is-pressed' : '',
         spinning ? 'is-spinning' : '',
+        reaction ? 'is-' + reaction : '',
+        hit ? 'is-knocked' : '',
     ]
         .filter(Boolean)
         .join(' ');
@@ -515,24 +590,30 @@ export default function Login({ backgroundUrl, forgotPasswordUrl, loginUrl, year
                             <span>{bubble}</span>
                         </div>
 
-                        <div className="lr-antenna" aria-hidden="true">
+                        <div className={'lr-stars' + (dizzy ? ' is-on' : '')} aria-hidden="true">
+                            <i>★</i>
+                            <i>★</i>
+                            <i>★</i>
+                        </div>
+
+                        <div className="lr-antenna" aria-hidden="true" onPointerDown={zap}>
                             <span className="lr-antenna-rod" />
                             <span className="lr-antenna-tip" />
                         </div>
 
-                        <div className="lr-head3d" ref={headRef} aria-hidden="true">
+                        <div className="lr-head3d" ref={headRef} aria-hidden="true" onPointerDown={tickle}>
                             <div className="lr-head">
                                 <span className="lr-ear lr-ear--l" />
                                 <span className="lr-ear lr-ear--r" />
 
                                 <div className="lr-face lr-face--front">
-                                    <div className="lr-visor">
+                                    <div className="lr-visor" onPointerDown={pokeEye}>
                                         <div
                                             className={'lr-eyes' + (blinking ? ' is-blinking' : '')}
                                             ref={eyesRef}
                                         >
-                                            <span className="lr-eye lr-eye--l" />
-                                            <span className="lr-eye lr-eye--r" />
+                                            <span className={'lr-eye lr-eye--l' + (hit === 'l' ? ' is-hit' : '')} />
+                                            <span className={'lr-eye lr-eye--r' + (hit === 'r' ? ' is-hit' : '')} />
                                         </div>
                                         <span className="lr-cheek lr-cheek--l" />
                                         <span className="lr-cheek lr-cheek--r" />

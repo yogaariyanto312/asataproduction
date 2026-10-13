@@ -67,6 +67,11 @@ class RouteSmokeTest extends TestCase
                     continue;
                 }
 
+                // Route API Android (auth:sanctum) memindah guard bawaan ke "sanctum";
+                // di server tiap request proses baru, di tes ini satu proses — kembalikan.
+                $this->app['auth']->shouldUse('web');
+                $this->app['auth']->forgetGuards();
+
                 try {
                     $status = $this->actingAs($actor)->get('/' . ltrim($uri, '/'))->getStatusCode();
                 } catch (\Throwable $e) {

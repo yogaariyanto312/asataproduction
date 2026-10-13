@@ -18,6 +18,7 @@ class BotSettingController extends Controller
         'telegram_report_chat_id',
         'discord_webhook',
         'maintenance_message',
+        'gk_popup_pesan',
     ];
 
     /** Field saklar. */
@@ -27,6 +28,8 @@ class BotSettingController extends Controller
         'report_enabled',
         'disable_devtools',
         'maintenance_mode',
+        'gk_popup_enabled',
+        'fitur_departemen',
     ];
 
     public function index()
@@ -53,7 +56,12 @@ class BotSettingController extends Controller
                 'maintenance_message'     => $setting->maintenance_message,
                 // Format isian datetime-local, seperti referensi.
                 'maintenance_until'       => $setting->maintenance_until?->format('Y-m-d\TH:i'),
+                'gk_popup_enabled'        => (bool) $setting->gk_popup_enabled,
+                'gk_popup_detik'          => (int) ($setting->gk_popup_detik ?: 3),
+                'gk_popup_pesan'          => $setting->gk_popup_pesan,
+                'fitur_departemen'        => (bool) $setting->fitur_departemen,
             ],
+            'pesanPengingatBawaan' => BotSetting::PESAN_PENGINGAT_GK,
             'maintenanceUntilLabel' => $setting->maintenance_until
                 ? $setting->maintenance_until->timezone('Asia/Jakarta')->format('d M Y, H:i') . ' WIB'
                 : null,
@@ -90,6 +98,10 @@ class BotSettingController extends Controller
             'maintenance_mode'        => ['nullable', 'boolean'],
             'maintenance_message'     => ['nullable', 'string', 'max:500'],
             'maintenance_until'       => ['nullable', 'date'],
+            'gk_popup_enabled'        => ['nullable', 'boolean'],
+            'gk_popup_detik'          => ['nullable', 'integer', 'min:1', 'max:30'],
+            'gk_popup_pesan'          => ['nullable', 'string', 'max:300'],
+            'fitur_departemen'        => ['nullable', 'boolean'],
         ], [
             'telegram_token.regex'           => 'Format Bot Token tidak sesuai. Contoh dari BotFather: 1234567890:AAF-xxxxxxxxxxxxxxxxxxxxxxxxxxxx',
             'telegram_chat_id.regex'         => 'Chat ID harus berupa angka (boleh diawali -) atau @namachannel.',
@@ -98,6 +110,10 @@ class BotSettingController extends Controller
             'reject_threshold.numeric'       => 'Batas reject harus berupa angka.',
             'reject_threshold.min'           => 'Batas reject minimal 0%.',
             'reject_threshold.max'           => 'Batas reject maksimal 100%.',
+            'gk_popup_detik.integer'         => 'Lama tampil harus berupa angka detik.',
+            'gk_popup_detik.min'             => 'Lama tampil minimal 1 detik.',
+            'gk_popup_detik.max'             => 'Lama tampil maksimal 30 detik.',
+            'gk_popup_pesan.max'             => 'Pesan pengingat maksimal 300 karakter.',
         ]);
 
         $setting = BotSetting::instance();
@@ -139,6 +155,10 @@ class BotSettingController extends Controller
         if ($request->has('reject_threshold')) {
             $nilai = $request->input('reject_threshold');
             $isian['reject_threshold'] = ($nilai === null || $nilai === '') ? 5.0 : $nilai;
+        }
+
+        if ($request->has('gk_popup_detik')) {
+            $isian['gk_popup_detik'] = (int) ($request->input('gk_popup_detik') ?: 3);
         }
 
         if ($request->has('maintenance_until')) {

@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {{-- Pilihan sidebar kecil harus berlaku sebelum CSS dimuat, kalau tidak sidebar berkedip. --}}
     <script>try { if (localStorage.getItem('qc:sidebar-mini') === '1') document.documentElement.classList.add('sb-mini'); } catch (_) {}</script>
+    {{-- Tema terang/gelap dipasang sebelum CSS dimuat supaya tidak berkedip. --}}
+    <script>try { if (localStorage.getItem('au:tema') === 'terang') { document.documentElement.dataset.tema = 'terang'; document.documentElement.classList.remove('dark'); } } catch (_) {}</script>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="csrf-refresh" content="{{ route('csrf.token') }}">
 
@@ -16,14 +18,14 @@
     <link rel="manifest" href="{{ asset('manifest.json') }}">
     <meta name="sw-url" content="{{ asset('sw.js') }}">
 
-    {{-- Inter disamakan dengan layouts/auth.blade.php & layouts/app.blade.php,
-         karena --font-sans di resources/css/app.css memang menunjuk Inter. --}}
+    {{-- Halaman React hanya memakai Sora (Inter cuma cadangan) — satu keluarga
+         font = lebih sedikit unduhan yang menahan tampilan pertama di HP. --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
 
     @viteReactRefresh
-    @vite(['resources/css/app.css', 'resources/js/inertia.jsx'])
+    @vite(['resources/css/inertia.css', 'resources/js/inertia.jsx'])
     @inertiaHead
 </head>
 <body class="h-full font-sans antialiased bg-slate-900 text-slate-100">

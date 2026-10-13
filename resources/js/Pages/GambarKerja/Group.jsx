@@ -32,7 +32,6 @@ export default function GambarKerjaGroup({
     files,
     backUrl,
     infoUrl,
-    kategoriUrl,
     thumbUrl,
     thumbDestroyUrl,
     addFileUrl,
@@ -47,6 +46,8 @@ export default function GambarKerjaGroup({
     const [thumbFile, setThumbFile] = useState(null);
     const [zoom, setZoom] = useState({});
     const [simpanan, setSimpanan] = useState({ set: new Set() });
+    // Edit keterangan per file (mis. "Revisi ke-2") langsung di kartu file.
+    const [edit, setEdit] = useState(null);
 
     // Viewer PDF.js membersihkan dirinya lewat event 'spa:leave'; dikirim saat
     // halaman ditinggalkan, bukan saat satu berkas hilang dari daftar.
@@ -89,15 +90,11 @@ export default function GambarKerjaGroup({
 
     const kataKeterangan = keterangan.trim() ? keterangan.trim().split(/\s+/).length : 0;
 
-    function simpanKategori() {
-        router.patch(kategoriUrl, { ...identity, kategori_seri: kat }, { preserveScroll: true });
-    }
-
     function simpanInfo(e) {
         e.preventDefault();
         router.patch(
             infoUrl,
-            { ...identity, judul_baru: judul, keterangan },
+            { ...identity, judul_baru: judul, keterangan, kategori_seri: kat },
             { preserveScroll: true },
         );
     }
@@ -126,6 +123,11 @@ export default function GambarKerjaGroup({
         if (!(await konfirmasi('Hapus thumbnail kelompok ini?', { title: 'Hapus Thumbnail', okText: 'Hapus' }))) return;
         setThumbPreview('');
         router.delete(thumbDestroyUrl, { data: identity, preserveScroll: true });
+    }
+
+    function simpanCatatan(e) {
+        e.preventDefault();
+        router.patch(edit.url, { catatan: edit.teks }, { preserveScroll: true, onSuccess: () => setEdit(null) });
     }
 
     async function hapusFile(f) {
@@ -228,7 +230,6 @@ export default function GambarKerjaGroup({
                                         {k.label}
                                     </button>
                                 ))}
-                                <Btn onClick={simpanKategori}>Simpan</Btn>
                             </div>
                         </div>
 
@@ -291,7 +292,7 @@ export default function GambarKerjaGroup({
                                 <span className="au-filecard-no">{f.urutan}</span>
                                 <span className="au-filecard-info">
                                     <b>File {f.urutan}</b>
-                                    {f.keterangan ? <i>{f.keterangan}</i> : null}
+                                    {f.catatan ? <i className="au-filecard-catatan">{f.catatan}</i> : null}
                                 </span>
                                 <span
                                     className={
@@ -311,6 +312,17 @@ export default function GambarKerjaGroup({
 
                             <span className="au-filecard-right">
                                 <span className="au-filecard-date">{f.at || '—'}</span>
+
+                                {can.edit ? (
+                                    <button
+                                        type="button"
+                                        className="au-filebtn"
+                                        onClick={() => setEdit({ id: f.id, url: f.catatanUrl, teks: f.catatan || '' })}
+                                    >
+                                        <Icon path={ICON.edit} />
+                                        Keterangan
+                                    </button>
+                                ) : null}
 
                                 {can.download ? (
                                     <a
@@ -338,6 +350,22 @@ export default function GambarKerjaGroup({
                             </span>
                         </div>
 
+                        {edit && edit.id === f.id ? (
+                            <form className="au-filecard-edit" onSubmit={simpanCatatan}>
+                                <Input
+                                    autoFocus
+                                    value={edit.teks}
+                                    maxLength={200}
+                                    placeholder="Keterangan file ini, mis. Revisi ke-2"
+                                    onChange={(e) => setEdit({ ...edit, teks: e.target.value })}
+                                />
+                                <Btn type="submit">Simpan</Btn>
+                                <Btn tone="ghost" onClick={() => setEdit(null)}>
+                                    Batal
+                                </Btn>
+                            </form>
+                        ) : null}
+
                         {f.isPdf ? (
                             <PdfViewer
                                 id={'pdf-' + f.id}
@@ -349,6 +377,8 @@ export default function GambarKerjaGroup({
                         ) : (
                             <div className="au-filepreview">
                                 <img
+                                    loading="lazy"
+                                    decoding="async"
                                     className={zoom[f.id] ? 'is-zoom' : ''}
                                     src={f.url}
                                     alt={'File ' + f.urutan}

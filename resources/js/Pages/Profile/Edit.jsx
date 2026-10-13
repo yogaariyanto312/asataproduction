@@ -20,7 +20,6 @@ export default function ProfileEdit({
     const profile = useForm({
         name: user.name || '',
         email: user.email || '',
-        avatar: user.avatar && String(user.avatar).startsWith('http') ? user.avatar : '',
         current_password: '',
         password: '',
         password_confirmation: '',
@@ -51,12 +50,12 @@ export default function ProfileEdit({
         about.post(aboutInfoUrl, { preserveScroll: true });
     }
 
-    function uploadAvatar(file, url) {
+    async function uploadAvatar(file, url) {
         if (!file) return;
         setBusy(true);
         router.post(
             url,
-            { photo: file },
+            { photo: await kecilkan(file) },
             {
                 forceFormData: true,
                 preserveScroll: true,
@@ -71,6 +70,9 @@ export default function ProfileEdit({
 
     return (
         <AppLayout title="Profil" subtitle={user.name}>
+            <div style={{ marginBottom: 16 }}>
+                <PilihAvatar user={user} url={avatarUrl} />
+            </div>
             <div className="au-grid au-grid-2">
                 <Card title="Data Akun">
                     <div className="au-dev" style={{ marginBottom: 16 }}>
@@ -125,18 +127,6 @@ export default function ProfileEdit({
                             />
                         </Field>
 
-                        <Field
-                            label="URL foto"
-                            error={profile.errors.avatar}
-                            hint="Alternatif dari unggah berkas — isi dengan URL gambar"
-                        >
-                            <Input
-                                value={profile.data.avatar}
-                                error={profile.errors.avatar}
-                                maxLength={1000}
-                                onChange={(e) => profile.setData('avatar', e.target.value)}
-                            />
-                        </Field>
 
                         <Field
                             label="Password saat ini"
@@ -358,4 +348,91 @@ function TelegramCard({ telegram }) {
             ) : null}
         </Card>
     );
+}
+
+/* Avatar siap pakai (DiceBear), sama dengan versi lama. */
+const AVATAR_DASAR = 'https://api.dicebear.com/9.x/adventurer/svg?backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf&seed=';
+const AVATAR_SEED = [
+    'Felix', 'Aneka', 'Liam', 'Sophie', 'Max', 'Lily', 'Jack', 'Emma', 'Oliver', 'Zoe',
+    'Henry', 'Grace', 'Ethan', 'Mia', 'Noah', 'Ava', 'Leo', 'Sara', 'Adam', 'Luna',
+    'Kai', 'Nara', 'Rio', 'Hana', 'Budi', 'Indah', 'Raka', 'Sari', 'Dani', 'Putri',
+    'Arya', 'Wulan', 'Bagas', 'Tari', 'Rian', 'Dewi', 'Fajar', 'Laras', 'Dimas', 'Ayu',
+    'Agus', 'Bayu', 'Citra', 'Doni', 'Eka', 'Fitri', 'Gilang', 'Hendra', 'Intan', 'Joko',
+    'Kartika', 'Lukman', 'Maya', 'Nanda', 'Oki', 'Pandu', 'Qori', 'Reza', 'Sinta', 'Tono',
+    'Umar', 'Vina', 'Wahyu', 'Yuni', 'Zaki', 'Andi', 'Bella', 'Candra', 'Dina', 'Eko',
+    'Farah', 'Galih', 'Hesti', 'Irfan', 'Jihan', 'Kevin', 'Lina', 'Mario', 'Nisa', 'Yoga',
+];
+
+function PilihAvatar({ user, url }) {
+    const sekarang = AVATAR_SEED.find((s) => String(user.avatar || '').includes('seed=' + s)) || '';
+    const [pilih, setPilih] = useState(sekarang);
+    const [busy, setBusy] = useState(false);
+
+    function simpan() {
+        setBusy(true);
+        router.post(url, { avatar: pilih ? AVATAR_DASAR + pilih : '' }, { preserveScroll: true, onFinish: () => setBusy(false) });
+    }
+
+    return (
+        <Card title="Avatar Profil">
+            <p className="au-hint" style={{ marginTop: -6, marginBottom: 14 }}>
+                Pilih avatar dari pilihan di bawah, atau biarkan kosong untuk memakai inisial nama Anda.
+            </p>
+            <div className="au-avp-kepala">
+                <span className="au-avatar" style={{ width: 60, height: 60, fontSize: 22 }}>
+                    {pilih ? <img src={AVATAR_DASAR + pilih} alt="" /> : user.name.charAt(0).toUpperCase()}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <p className="au-avp-judul">{pilih ? 'Avatar dipilih: ' + pilih : 'Belum ada avatar'}</p>
+                    {pilih ? (
+                        <button type="button" className="au-avp-hapus" onClick={() => setPilih('')}>
+                            Hapus avatar
+                        </button>
+                    ) : (
+                        <p className="au-hint">Pilih avatar dari pilihan di bawah</p>
+                    )}
+                </div>
+                <Btn onClick={simpan} disabled={busy || pilih === sekarang}>
+                    {busy ? 'Menyimpan...' : 'Simpan Avatar'}
+                </Btn>
+            </div>
+            <p className="au-avp-label">Pilih avatar</p>
+            <div className="au-avp-grid">
+                {AVATAR_SEED.map((s) => (
+                    <button
+                        key={s}
+                        type="button"
+                        title={s}
+                        aria-label={'Avatar ' + s}
+                        aria-pressed={pilih === s}
+                        className={pilih === s ? 'is-aktif' : ''}
+                        onClick={() => setPilih(s)}
+                    >
+                        <img src={AVATAR_DASAR + s} alt="" loading="lazy" />
+                    </button>
+                ))}
+            </div>
+        </Card>
+    );
+}
+
+/**
+ * Foto profil diperkecil di browser (sisi terpanjang 512px, JPEG) sebelum
+ * dikirim: foto HP 5–12 MB jadi puluhan KB — cepat di koneksi pabrik dan
+ * tidak kena batas 5 MB. GIF/berkas yang gagal dibaca dikirim apa adanya.
+ */
+async function kecilkan(file, sisi = 512) {
+    if (!file.type.startsWith('image/') || file.type === 'image/gif') return file;
+    try {
+        const bmp = await createImageBitmap(file);
+        const skala = Math.min(1, sisi / Math.max(bmp.width, bmp.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(bmp.width * skala);
+        c.height = Math.round(bmp.height * skala);
+        c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+        const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.85));
+        return blob ? new File([blob], 'avatar.jpg', { type: 'image/jpeg' }) : file;
+    } catch {
+        return file;
+    }
 }

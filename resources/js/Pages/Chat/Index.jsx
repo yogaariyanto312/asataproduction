@@ -90,6 +90,9 @@ export default function ChatIndex({
         let alive = true;
 
         async function tick() {
+            // Aplikasi di latar belakang / layar HP mati: jangan polling (hemat kuota &
+            // baterai, dan status "online" memang tidak boleh menyala).
+            if (document.hidden) return;
             try {
                 await fetch(pingUrl, {
                     method: 'PATCH',
@@ -245,6 +248,7 @@ export default function ChatIndex({
                                         <span className="au-chat-avatar">
                                             {c.avatar ? (
                                                 <img
+                                                    loading="lazy"
                                                     src={c.avatar}
                                                     alt=""
                                                     onError={(e) => {

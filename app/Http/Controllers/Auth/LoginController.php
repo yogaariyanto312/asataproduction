@@ -22,7 +22,7 @@ class LoginController extends Controller
         // versi Blade: mencegah browser menyajikan halaman login basi dari
         // bfcache/tombol Back yang token CSRF-nya sudah kedaluwarsa (419).
         return Inertia::render('Auth/Login', [
-            'backgroundUrl'     => asset('images/IFS07479-scaled.jpg'),
+            'backgroundUrl'     => asset('images/login-latar.webp'), // WebP 1600px: 117 KB, dulu JPG 2560px 567 KB
             'forgotPasswordUrl' => route('password.request'),
             'loginUrl'          => route('login'),
             'year'              => now()->year,

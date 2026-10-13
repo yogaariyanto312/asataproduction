@@ -61,6 +61,7 @@ class MenuPermissionTest extends TestCase
             $mw = implode(',', $route->gatherMiddleware());
             if (!str_contains($mw, 'auth')) continue;      // login/logout/webhook
             if (str_contains($mw, 'role:')) continue;      // sudah dikunci role
+            if (str_contains($mw, 'izin:')) continue;      // API Android: dikunci kunci menu
 
             if (MenuAccess::permissionKeyForRoute($name) === null) {
                 $unguarded[] = $name;
@@ -77,6 +78,11 @@ class MenuPermissionTest extends TestCase
             // sendiri (dari $request->user()), tidak bisa menyentuh akun lain.
             'profile.telegram.kode', 'profile.telegram.putus',
             'calendar.events.store', 'calendar.events.destroy',
+            // API Android: logout & profil milik sendiri.
+            'api.v1.logout', 'api.v1.profil.update', 'api.v1.profil.keluar-lain', 'api.v1.profil.avatar',
+            'api.v1.profil.tentang', 'api.v1.profil.tentang.foto', // developer saja (dicek di controller)
+            'api.v1.profil.telegram.kode', 'api.v1.profil.telegram.putus',
+            'api.v1.agenda.store', 'api.v1.agenda.destroy',
         ];
 
         $this->assertSame([], array_values(array_diff($unguarded, $allowlist)),

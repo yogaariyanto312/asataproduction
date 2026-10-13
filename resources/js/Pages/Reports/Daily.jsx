@@ -111,7 +111,7 @@ export default function ReportsDaily({
                             {logs.length ? (
                                 logs.map((l, i) => (
                                     <tr key={l.id}>
-                                        <td style={{ color: '#94a3b8' }}>{i + 1}</td>
+                                        <td style={{ color: 'var(--au-muted)' }}>{i + 1}</td>
                                         <td style={{ fontWeight: 800 }}>{l.product}</td>
                                         <td className="au-mono">{l.seriesKva}</td>
                                         <td>{l.category}</td>
@@ -124,7 +124,7 @@ export default function ReportsDaily({
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={9} style={{ padding: '48px 16px', textAlign: 'center', color: '#94a3b8' }}>
+                                    <td colSpan={9} style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--au-muted)' }}>
                                         Tidak ada data produksi untuk tanggal ini
                                     </td>
                                 </tr>

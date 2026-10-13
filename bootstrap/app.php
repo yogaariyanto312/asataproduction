@@ -7,11 +7,16 @@ use Illuminate\Foundation\Configuration\Middleware;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+
+        // Alias untuk API aplikasi Android ada di pemanggilan alias() di bawah (harus
+        // satu panggilan — alias() kedua menimpa yang pertama). Maintenance dipasang
+        // di route SETELAH auth:sanctum, kalau di grup user token belum terbaca.
 
         // Simpan hash password di sesi agar fitur "logout semua perangkat"
         // (Auth::logoutOtherDevices) bisa membatalkan sesi di perangkat lain.
@@ -21,6 +26,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \Illuminate\Session\Middleware\AuthenticateSession::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
+            // Request Inertia yang dibalas JSON polos → redirect kembali (lihat kelasnya).
+            \App\Http\Middleware\InertiaTanpaJson::class,
             // Setelah HandleInertiaRequests (layar maintenance butuh root view &
             // versi aset Inertia) dan sebelum cek hak akses: selama jeda,
             // non-developer selalu melihat layar maintenance apa pun URL-nya.
@@ -29,7 +36,11 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'role'        => \App\Http\Middleware\RoleMiddleware::class,
+            'izin'        => \App\Http\Middleware\IzinMenu::class,
+            'penjaga.api' => \App\Http\Middleware\PenjagaApi::class,
+            'jembatan'    => \App\Http\Middleware\JembatanWeb::class,
+            'maintenance' => \App\Http\Middleware\MaintenanceMode::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [
@@ -37,6 +48,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // API aplikasi Android selalu dibalas JSON (validasi 422, 401, 403, 404…),
+        // walau klien lupa mengirim header Accept.
+        $exceptions->shouldRenderJsonWhen(fn (\Illuminate\Http\Request $r) => $r->is('api/v1/*') || $r->expectsJson());
+
         // Tangani "Page Expired" (419 / CSRF token mismatch) dengan mulus:
         // arahkan user kembali daripada menampilkan halaman error mentah.
         //

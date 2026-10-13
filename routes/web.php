@@ -10,6 +10,7 @@ use App\Http\Controllers\MandorController;
 use App\Http\Controllers\SupervisorController;
 use App\Http\Controllers\GambarKerjaController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\InfoController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
@@ -52,6 +53,14 @@ Route::get('/csrf-token', fn () => response()
     ->header('Cache-Control', 'no-store, no-cache, private')
 )->middleware('throttle:60,1')->name('csrf.token');
 
+// Unduh APK aplikasi Android terbaru (tujuan QR di halaman Tentang). Tanpa login:
+// HP pekerja yang scan QR belum tentu pernah masuk ke web.
+Route::get('/unduh/aplikasi', [InfoController::class, 'unduhAplikasi'])
+    ->middleware('throttle:20,1')->name('unduh.aplikasi');
+// Unduh installer aplikasi Windows terbaru (tombol di halaman Tentang & auto update aplikasi Windows).
+Route::get('/unduh/aplikasi-windows', [InfoController::class, 'unduhAplikasiWindows'])
+    ->middleware('throttle:20,1')->name('unduh.aplikasi.windows');
+
 // File serve — bypass junction/symlink issue pada local dev
 Route::get('/file/{path}', [GambarKerjaController::class, 'serveFile'])
     ->where('path', '.+')->middleware('auth')->name('storage.file');
@@ -68,66 +77,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/dashboard-calendar', [DashboardController::class, 'calendar'])->name('api.dashboard.calendar');
     Route::get('/api/dashboard-aktivitas', [DashboardController::class, 'aktivitas'])->name('api.dashboard.aktivitas');
 
-    // Tutorial
-    Route::get('/tutorial', function () {
-        $iframeUrl = \App\Models\BotSetting::instance()->tutorial_iframe_url;
-
-        return \Inertia\Inertia::render('Tutorial', [
-            'iframeUrl'   => $iframeUrl,
-            // Diatur lewat Hak Akses Menu (tutorial.edit), bukan dikunci developer.
-            'canEdit'     => \App\Support\MenuAccess::can(auth()->user(), 'tutorial.edit'),
-            'embedAction' => route('tutorial.embed.update'),
-            'panduanUrl'  => asset('panduan/index.html'),
-            'chatUrl'     => \App\Support\MenuAccess::can(auth()->user(), 'chatting') ? route('chatting') : null,
-        ]);
-    })->name('tutorial');
-    Route::post('/tutorial/embed', function (\Illuminate\Http\Request $request) {
-        // Izinnya dijaga Hak Akses Menu (tutorial.edit) lewat route ini — dulu
-        // dikunci developer di sini, sehingga saklar di Hak Akses tidak ada artinya.
-        $request->validate(['iframe_url' => ['nullable', 'string', 'max:1000']]);
-        \App\Models\BotSetting::instance()->update(['tutorial_iframe_url' => $request->iframe_url ?: null]);
-        return back()->with('success', 'URL embed berhasil diperbarui.');
-    })->name('tutorial.embed.update'); // akses via Hak Akses Menu (tutorial.edit)
-
-    // About — load developer pertama yang aktif + changelog
-    Route::get('/about', function () {
-        $developer  = \App\Models\User::where('role', 'developer')->where('is_active', true)->first();
-        // id ikut menentukan urutan: beberapa entri bisa lahir di detik yang sama.
-        $changelogs = \App\Models\Changelog::latest()->latest('id')->get();
-
-        // Username GitHub dari link_github (https://github.com/username → username).
-        $github = $developer?->link_github ? basename(rtrim($developer->link_github, '/')) : null;
-
-        return \Inertia\Inertia::render('About', [
-            // Versi aplikasi mengikuti entri Riwayat Update terbaru, bukan angka tetap.
-            'versi'     => \App\Models\Changelog::versiAplikasi(),
-            'year'      => now()->year,
-            'githubUser' => $github,
-            'canManage' => auth()->user()->isDeveloper(),
-            'storeUrl'  => route('about.changelog.store'),
-            'baseUrl'   => url('/about/changelog'),
-            'developer' => $developer ? [
-                'name'      => $developer->name,
-                'handle'    => $developer->handle,
-                'bio'       => $developer->bio,
-                'avatar'    => $developer->about_avatar
-                    ? route('storage.file', ['path' => $developer->about_avatar])
-                    : $developer->avatarUrl(),
-                'instagram' => $developer->link_instagram,
-                'github'    => $developer->link_github,
-                'portfolio' => $developer->link_portfolio,
-                'email'     => $developer->link_email,
-            ] : null,
-            'changelogs' => $changelogs->map(fn ($c) => [
-                'id'          => $c->id,
-                'type'        => $c->type,
-                'version'     => $c->version,
-                'title'       => $c->title,
-                'description' => $c->description,
-                'date'        => $c->created_at?->timezone('Asia/Jakarta')->locale('id')->isoFormat('DD MMM YYYY'),
-            ])->values(),
-        ]);
-    })->name('about');
+    // Tutorial & Tentang Aplikasi
+    Route::get('/tutorial', [InfoController::class, 'tutorial'])->name('tutorial');
+    Route::post('/tutorial/embed', [InfoController::class, 'tutorialEmbed'])->name('tutorial.embed.update'); // akses via Hak Akses Menu (tutorial.edit)
+    Route::get('/about', [InfoController::class, 'about'])->name('about');
 
     // Profil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -196,6 +149,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/gambar-kerja/group/thumbnail',       [GambarKerjaController::class, 'deleteThumbnail'])->name('gambar-kerja.delete-thumbnail');
     Route::patch('/gambar-kerja/group/kategori',         [GambarKerjaController::class, 'updateKategori'])->name('gambar-kerja.update-kategori');
     Route::patch('/gambar-kerja/group/info',             [GambarKerjaController::class, 'updateInfo'])->name('gambar-kerja.update-info');
+    Route::patch('/gambar-kerja/{gambarKerja}/catatan', [GambarKerjaController::class, 'updateCatatan'])->name('gambar-kerja.update-catatan');
     Route::delete('/gambar-kerja/{gambarKerja}', [GambarKerjaController::class, 'destroy'])->name('gambar-kerja.destroy');
 
     // Barang Pengganti / Repair — akses diatur via Hak Akses Menu
@@ -210,6 +164,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/accessories', [AccessoryController::class, 'store'])->name('accessories.store');
     Route::put('/accessories/{accessory}', [AccessoryController::class, 'update'])->name('accessories.update');
     Route::delete('/accessories/{accessory}', [AccessoryController::class, 'destroy'])->name('accessories.destroy');
+    Route::patch('/accessories/categories/{category}', [AccessoryController::class, 'updateCategory'])->name('accessories.categories.update');
+    Route::delete('/accessories/categories/{category}', [AccessoryController::class, 'destroyCategory'])->name('accessories.categories.destroy');
 
     // Notes
     Route::get('/notes', [NoteController::class, 'index'])->name('notes.index');
@@ -263,22 +219,8 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/messages/{message}', [MessageController::class, 'destroy'])->name('messages.destroy');
 
     // Changelog (riwayat update aplikasi) — akses via Hak Akses Menu (about.edit).
-    // Dikeluarkan dari grup role:developer supaya saklarnya benar-benar berlaku.
-    Route::post('/about/changelog', function (\Illuminate\Http\Request $request) {
-        $request->validate([
-            'type'        => ['required', 'in:feature,fix,improvement,security'],
-            'version'     => ['nullable', 'string', 'max:20'],
-            'title'       => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
-        ]);
-        \App\Models\Changelog::create($request->only('type', 'version', 'title', 'description'));
-        return back()->with('success', 'Entry changelog berhasil ditambahkan.');
-    })->name('about.changelog.store');
-
-    Route::delete('/about/changelog/{changelog}', function (\App\Models\Changelog $changelog) {
-        $changelog->delete();
-        return back()->with('success', 'Entry changelog berhasil dihapus.');
-    })->name('about.changelog.destroy');
+    Route::post('/about/changelog', [InfoController::class, 'changelogStore'])->name('about.changelog.store');
+    Route::delete('/about/changelog/{changelog}', [InfoController::class, 'changelogDestroy'])->name('about.changelog.destroy');
 
     // Halaman Manajemen — akses diatur via Hak Akses Menu
     Route::get('/management', [ManagementController::class, 'index'])->name('management.index');

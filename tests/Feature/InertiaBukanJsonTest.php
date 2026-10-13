@@ -82,4 +82,20 @@ class InertiaBukanJsonTest extends TestCase
             ->assertOk()
             ->assertJson(['success' => true]);
     }
+
+    /** Pengaman global: endpoint yang selalu balas JSON tetap aman dipanggil lewat router Inertia. */
+    public function test_toggle_aktif_produk_lewat_inertia_dibalas_redirect(): void
+    {
+        $dev = User::factory()->create(['role' => 'developer']);
+        $kat = Category::create(['name' => 'Channel-PLN', 'is_active' => true]);
+        $p = Product::create(['category_id' => $kat->id, 'type' => 'channel', 'name' => 'Channel-PLN', 'unit' => 'unit', 'is_active' => true]);
+
+        $this->actingAs($dev)->from('/products')->withHeaders($this->headerInertia())
+            ->patch(route('products.toggle-active', $p))
+            ->assertStatus(303)->assertRedirect('/products');
+        $this->assertFalse($p->fresh()->is_active);
+
+        // fetch/axios biasa tetap menerima JSON.
+        $this->flushHeaders()->patchJson(route('products.toggle-active', $p))->assertOk()->assertJson(['is_active' => true]);
+    }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import '../../css/asata-ui.css';
+import { useBlokirDevtools } from '../blokirDevtools';
 
 /**
  * Kerangka aplikasi — mengikuti layouts/app.blade.php Production-QC-Logging-System
@@ -288,7 +289,7 @@ function useAnimasiMasuk() {
 export default function AppLayout({ title, subtitle, children }) {
     pasangPantauPindah();
     const animasiMasuk = useAnimasiMasuk();
-    const { auth, menu, flash, routeName, logoutUrl, profileUrl, notifUrl, chatUrl, notesUrl, appName, disableDevtools, maintenanceAktif } =
+    const { auth, menu, flash, routeName, logoutUrl, profileUrl, notifUrl, chatUrl, notesUrl, appName, maintenanceAktif } =
         usePage().props;
     const user = auth.user;
 
@@ -348,31 +349,7 @@ export default function AppLayout({ title, subtitle, children }) {
     }, [userMenu]);
 
     // Blokir klik kanan & pintasan DevTools (Settings → non-developer).
-    useEffect(() => {
-        if (!disableDevtools) return undefined;
-        const ctx = (e) => {
-            e.preventDefault();
-            tambahToast({ type: 'error', text: 'Klik kanan dinonaktifkan oleh Developer.' });
-        };
-        const key = (e) => {
-            const k = (e.key || '').toUpperCase();
-            const diblok =
-                e.key === 'F12' ||
-                (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(k)) ||
-                (e.ctrlKey && k === 'U');
-            if (!diblok) return;
-            e.preventDefault();
-            e.stopPropagation();
-            tambahToast({ type: 'error', text: 'Pintasan ini diblokir oleh Developer.' });
-        };
-        document.addEventListener('contextmenu', ctx);
-        document.addEventListener('keydown', key, true);
-        return () => {
-            document.removeEventListener('contextmenu', ctx);
-            document.removeEventListener('keydown', key, true);
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [disableDevtools]);
+    useBlokirDevtools((text) => tambahToast({ type: 'error', text }));
 
     const initial = user ? user.name.trim().charAt(0).toUpperCase() : '?';
     const renderedGroupKeys = new Set(groupItems.map((m) => m.key));
@@ -499,6 +476,7 @@ export default function AppLayout({ title, subtitle, children }) {
                             {subtitle ? <p className="au-page-sub">{subtitle}</p> : null}
                         </div>
                         <Jam />
+                        <TombolTema />
                     </header>
 
                     <main className={'au-content' + (animasiMasuk ? ' au-masuk' : '')}>
@@ -559,5 +537,35 @@ export default function AppLayout({ title, subtitle, children }) {
                 </div>
             ) : null}
         </div>
+    );
+}
+
+/** Ganti tema terang/gelap; pilihan disimpan di localStorage (dibaca lagi di <head>). */
+function TombolTema() {
+    const [terang, setTerang] = useState(() => document.documentElement.dataset.tema === 'terang');
+
+    function ganti() {
+        const berikut = !terang;
+        const html = document.documentElement;
+        if (berikut) html.dataset.tema = 'terang';
+        else delete html.dataset.tema;
+        html.classList.toggle('dark', !berikut);
+        try {
+            localStorage.setItem('au:tema', berikut ? 'terang' : 'gelap');
+        } catch (_) {
+            /* mode privat: tema tetap berlaku sampai halaman ditutup */
+        }
+        window.dispatchEvent(new Event('au:tema'));
+        setTerang(berikut);
+    }
+
+    return (
+        <button type="button" className="au-tema-tombol" onClick={ganti} title={terang ? 'Ganti ke mode gelap' : 'Ganti ke mode terang'} aria-label={terang ? 'Ganti ke mode gelap' : 'Ganti ke mode terang'}>
+            {terang ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" /></svg>
+            ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" /></svg>
+            )}
+        </button>
     );
 }

@@ -56,6 +56,14 @@ class ProfileController extends Controller
 
     public function update(Request $request)
     {
+        $this->simpanProfil($request);
+
+        return back()->with('success', 'Profil berhasil diperbarui.');
+    }
+
+    /** Inti simpan profil (tanpa sesi) — dipakai web & API Android. */
+    public function simpanProfil(Request $request): void
+    {
         $user = auth()->user();
 
         $rules = [
@@ -85,9 +93,9 @@ class ProfileController extends Controller
 
         if (!empty($data['password'])) {
             if (!Hash::check($data['current_password'], $user->password)) {
-                return back()
-                    ->withErrors(['current_password' => 'Password saat ini tidak sesuai.'])
-                    ->withInput();
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'current_password' => 'Password saat ini tidak sesuai.',
+                ]);
             }
             $user->password  = Hash::make($data['password']);
             $passwordChanged = true;
@@ -129,8 +137,6 @@ class ProfileController extends Controller
                 } catch (\Exception $e) {}
             }
         }
-
-        return back()->with('success', 'Profil berhasil diperbarui.');
     }
 
     public function logoutOtherDevices(Request $request)
@@ -160,7 +166,9 @@ class ProfileController extends Controller
         $user = auth()->user();
 
         // Dua cara: unggah berkas (tombol "Ganti Foto") atau URL gambar (acuan).
-        if ($request->hasFile('photo')) {
+        // files->has, bukan hasFile: upload yang gagal (mis. kebesaran) harus
+        // muncul sebagai pesan, bukan diam-diam menghapus foto lama.
+        if ($request->files->has('photo') || $request->has('photo')) {
             $request->validate([
                 'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
             ], [
@@ -258,7 +266,7 @@ class ProfileController extends Controller
     public function telegramKode(Request $request)
     {
         abort_unless(\App\Services\Telegram\PenautanAkun::boleh($request->user()), 403,
-            'Fitur Telegram hanya untuk ' . \App\Services\Telegram\PenautanAkun::daftarPeran() . '.');
+            'Fitur Telegram belum diaktifkan untuk peran Anda. Minta developer mengaktifkannya di Hak Akses Menu (Bot Telegram).');
 
         $kode = \App\Services\Telegram\PenautanAkun::buatKode($request->user());
 

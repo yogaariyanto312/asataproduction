@@ -16,6 +16,27 @@ const CAL = 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-
 const DOC =
     'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z';
 const CHEV = 'M9 5l7 7-7 7';
+const UPLOAD = 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12';
+
+/** "Baru saja", "5 Menit yg lalu", "2 Jam yg lalu", "3 Hari yg lalu", "1 Minggu yg lalu", "4 Bulan yg lalu", "1 Tahun yg lalu". */
+function waktuLalu(iso, kini = Date.now()) {
+    const t = Date.parse(iso);
+    if (Number.isNaN(t)) return '';
+    const detik = Math.max(0, Math.floor((kini - t) / 1000));
+    const menit = Math.floor(detik / 60);
+    const jam = Math.floor(menit / 60);
+    const hari = Math.floor(jam / 24);
+    if (menit < 1) return 'Baru saja';
+    if (jam < 1) return menit + ' Menit yg lalu';
+    if (hari < 1) return jam + ' Jam yg lalu';
+    if (hari < 7) return hari + ' Hari yg lalu';
+    if (hari < 30) return Math.floor(hari / 7) + ' Minggu yg lalu';
+    if (hari < 365) return Math.min(11, Math.floor(hari / 30)) + ' Bulan yg lalu';
+    return Math.floor(hari / 365) + ' Tahun yg lalu';
+}
+
+const tanggalLengkap = (iso) =>
+    new Date(iso).toLocaleString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 const URUTAN = [
     ['seri', 'Seri terkecil'],
     ['seri_desc', 'Seri terbesar'],
@@ -40,7 +61,69 @@ const SUBS = [
  * jumlah berkas, judul, seri, keterangan, tautan "Lihat gambar", serta tombol
  * hapus satu kelompok di kaki kartu.
  */
+const WARN = 'M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z';
+
+/**
+ * Popup tiap kali menu dibuka: gambar di aplikasi bukan patokan, cari gambar
+ * kerja aslinya dulu. Tertutup otomatis setelah N detik (diatur di Settings),
+ * atau lebih cepat lewat tombol / klik latar / Esc.
+ */
+function Pengingat({ pengingat }) {
+    const detik = Math.max(1, Number(pengingat?.detik) || 3);
+    const [buka, setBuka] = useState(() => Boolean(pengingat?.aktif));
+    const [sisa, setSisa] = useState(detik);
+    const tombol = useRef(null);
+
+    useEffect(() => {
+        if (!buka) return undefined;
+        tombol.current?.focus();
+        const mulai = Date.now();
+        const t = setInterval(() => {
+            const s = detik - Math.floor((Date.now() - mulai) / 1000);
+            if (s <= 0) setBuka(false);
+            else setSisa(s);
+        }, 200);
+        const esc = (e) => e.key === 'Escape' && setBuka(false);
+        document.addEventListener('keydown', esc);
+        return () => {
+            clearInterval(t);
+            document.removeEventListener('keydown', esc);
+        };
+    }, [buka, detik]);
+
+    if (!buka) return null;
+
+    return (
+        <div className="au-modal-backdrop" onClick={() => setBuka(false)}>
+            <div
+                className="au-modal au-gk-ingat"
+                role="alertdialog"
+                aria-modal="true"
+                aria-labelledby="gk-ingat-judul"
+                aria-describedby="gk-ingat-pesan"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <span className="au-gk-ingat-ikon">
+                    <Icon path={WARN} />
+                </span>
+                <h3 id="gk-ingat-judul" className="au-modal-title">Perhatian</h3>
+                <p id="gk-ingat-pesan" className="au-modal-text">{pengingat.pesan}</p>
+                <div className="au-gk-ingat-bar" aria-hidden="true">
+                    <span style={{ animationDuration: detik + 's' }} />
+                </div>
+                <div className="au-gk-ingat-kaki">
+                    <span>Tertutup otomatis dalam {sisa} detik</span>
+                    <Btn ref={tombol} sm onClick={() => setBuka(false)}>
+                        Mengerti
+                    </Btn>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function GambarKerjaIndex({
+    pengingat,
     years,
     search,
     sort,
@@ -54,6 +137,12 @@ export default function GambarKerjaIndex({
 }) {
     const [q, setQ] = useState(search || '');
     const [urut, setUrut] = useState(sort || 'seri');
+    // Teks "… yg lalu" ikut berjalan tanpa memuat ulang halaman.
+    const [kini, setKini] = useState(() => Date.now());
+    useEffect(() => {
+        const t = setInterval(() => setKini(Date.now()), 60000);
+        return () => clearInterval(t);
+    }, []);
     // Dibaca saat jeda ketik selesai, supaya urutan yang baru dipilih tidak tertimpa.
     const urutRef = useRef(urut);
     urutRef.current = urut;
@@ -85,6 +174,7 @@ export default function GambarKerjaIndex({
         if (!pollUrl) return undefined;
         let alive = true;
         async function poll() {
+            if (document.hidden) return; // aplikasi di latar belakang: lewati
             try {
                 const res = await fetch(pollUrl, { credentials: 'same-origin' });
                 if (!res.ok || !alive) return;
@@ -133,6 +223,7 @@ export default function GambarKerjaIndex({
 
     return (
         <AppLayout title="Gambar Kerja" subtitle="Dokumen gambar teknik produksi">
+            <Pengingat pengingat={pengingat} />
             <div className="au-panel">
                 <form className="au-filter" onSubmit={applyFilter}>
                     <div className="au-filter-field is-wide">
@@ -224,6 +315,8 @@ export default function GambarKerjaIndex({
                                                     <div className="au-gk-thumb">
                                                         {g.thumbnail ? (
                                                             <img
+                                                                loading="lazy"
+                                                                decoding="async"
                                                                 src={g.thumbnail}
                                                                 alt={g.judul}
                                                                 onError={(e) => {
@@ -270,6 +363,17 @@ export default function GambarKerjaIndex({
                                                         {g.keterangan ? (
                                                             <p className="au-gk-note">
                                                                 {g.keterangan}
+                                                            </p>
+                                                        ) : null}
+
+                                                        {g.diunggah ? (
+                                                            <p className="au-gk-up" title={'Diupload ' + tanggalLengkap(g.diunggah)}>
+                                                                <Icon path={UPLOAD} />
+                                                                <span>
+                                                                    {g.pengunggah ? <b>{g.pengunggah}</b> : 'Diupload'}
+                                                                    {' · '}
+                                                                    <time dateTime={g.diunggah}>{waktuLalu(g.diunggah, kini)}</time>
+                                                                </span>
                                                             </p>
                                                         ) : null}
 

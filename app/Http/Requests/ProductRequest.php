@@ -28,6 +28,7 @@ class ProductRequest extends FormRequest
             'unit'         => ['required', 'string', 'max:20'],
             'description'  => ['nullable', 'string', 'max:500'],
             'is_active'    => ['boolean'],
+            'manual'       => ['boolean'],
         ];
     }
 

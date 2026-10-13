@@ -186,7 +186,7 @@ export default function ReplacementsIndex({
                                                     '—'
                                                 )}
                                             </td>
-                                            <td style={{ fontSize: 11, color: '#94a3b8' }}>{r.operator}</td>
+                                            <td style={{ fontSize: 11, color: 'var(--au-muted)' }}>{r.operator}</td>
                                             <td style={{ textAlign: 'center' }}>
                                                 {r.canToggle ? (
                                                     <button
@@ -237,7 +237,7 @@ export default function ReplacementsIndex({
                                 <tr>
                                     <td
                                         colSpan={cols}
-                                        style={{ padding: '60px 20px', textAlign: 'center', color: '#94a3b8' }}
+                                        style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--au-muted)' }}
                                     >
                                         Belum ada data barang pengganti.
                                     </td>

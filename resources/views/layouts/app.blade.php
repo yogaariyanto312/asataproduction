@@ -198,7 +198,7 @@
             @endphp
 
             @foreach($navItems as $item)
-                @if(\App\Support\MenuAccess::can(auth()->user(), $item['key']))
+                @if(($item['nav'] ?? true) && \App\Support\MenuAccess::can(auth()->user(), $item['key']))
                     @php
                         $isActive    = $isActiveFn($item);
                         $inProdGroup = $isDev && ($item['group'] ?? null) === 'produksi';

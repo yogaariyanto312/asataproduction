@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { router, useForm } from '@inertiajs/react';
 import AppLayout from '../../Layouts/AppLayout';
 import { Btn, DeleteButton, Field, ICON, Icon, IconBtn, Input, Pagination, Select, Textarea } from '../../Components/Ui';
+import { konfirmasi } from '../../dialog';
 
 const MONTHS = [
     { value: '1', label: 'Januari' }, { value: '2', label: 'Februari' },
@@ -12,9 +13,72 @@ const MONTHS = [
     { value: '11', label: 'November' }, { value: '12', label: 'Desember' },
 ];
 const INFO = 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
+const TAG = 'M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const pad = (n) => String(Math.round(n)).padStart(3, '0');
+
+/**
+ * "Pilih atau ketik" (TomSelect create:true di acuan): fokus/ketik membuka daftar nama yang pernah dipakai,
+ * tersaring sesuai ketikan; nama baru dipakai lewat baris "Tambah …". Panah atas/bawah + Enter, Esc menutup.
+ */
+function PilihKetik({ value, onChange, options, placeholder, error, autoFocus }) {
+    const [buka, setBuka] = useState(false);
+    const [aktif, setAktif] = useState(0);
+    const q = (value || '').trim();
+    const qk = q.toLowerCase();
+    const cocok = options.filter((o) => !qk || o.toLowerCase().includes(qk));
+    const tambah = q && !options.some((o) => o.toLowerCase() === qk);
+    const item = [...(tambah ? [{ nilai: q, baru: true }] : []), ...cocok.map((o) => ({ nilai: o }))];
+
+    function pilih(v) {
+        onChange(v);
+        setBuka(false);
+    }
+
+    function tombol(e) {
+        if (e.key === 'ArrowDown') { e.preventDefault(); setBuka(true); setAktif((i) => Math.min(i + 1, item.length - 1)); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); setAktif((i) => Math.max(i - 1, 0)); }
+        else if (e.key === 'Enter' && buka && item[aktif]) { e.preventDefault(); pilih(item[aktif].nilai); }
+        else if (e.key === 'Escape' && buka) { e.stopPropagation(); setBuka(false); }
+    }
+
+    return (
+        <div className="au-pilihketik">
+            <Input
+                value={value}
+                error={error}
+                autoFocus={autoFocus}
+                maxLength={150}
+                placeholder={placeholder}
+                autoComplete="off"
+                onFocus={() => { setBuka(true); setAktif(0); }}
+                onClick={() => setBuka(true)}
+                onBlur={() => setBuka(false)}
+                onKeyDown={tombol}
+                onChange={(e) => { onChange(e.target.value); setBuka(true); setAktif(0); }}
+            />
+            <Icon path={ICON.chevronDown || 'M19 9l-7 7-7-7'} />
+            {buka && item.length ? (
+                <ul className="au-pilihketik-daftar" role="listbox">
+                    {item.map((it, i) => (
+                        <li
+                            key={(it.baru ? '+' : '') + it.nilai}
+                            role="option"
+                            aria-selected={i === aktif}
+                            className={(i === aktif ? 'is-aktif' : '') + (it.baru ? ' is-baru' : '')}
+                            onMouseEnter={() => setAktif(i)}
+                            // mousedown + preventDefault: pilihan masuk sebelum input kehilangan fokus.
+                            onMouseDown={(e) => { e.preventDefault(); pilih(it.nilai); }}
+                        >
+                            {it.baru ? <><Icon path={ICON.plus} /> Tambah &quot;{it.nilai}&quot;</> : it.nilai}
+                        </li>
+                    ))}
+                </ul>
+            ) : null}
+        </div>
+    );
+}
 
 /** Dropdown produk berkelompok (grup "Nomor Seri" + per nama produk). */
 function SelectProduk({ value, onChange, groups, error }) {
@@ -54,17 +118,20 @@ export default function AccessoriesIndex({
     productSeries,
     accessoryNames,
     lastSerials,
+    categories,
 }) {
     const [f, setF] = useState({
         search: filters.search || '',
         month: filters.month || '',
         year: filters.year || '',
+        category: filters.category || '',
         department: filters.department || '',
     });
+    const [kelola, setKelola] = useState(false);
     const [tambah, setTambah] = useState(false);
     const [edit, setEdit] = useState(null);
 
-    const adaFilter = !!(filters.search || filters.month || filters.year || filters.department);
+    const adaFilter = !!(filters.search || filters.month || filters.year || filters.category || filters.department);
     const actionCol = can.create || can.edit || can.delete;
 
     function terapkan(e) {
@@ -74,12 +141,6 @@ export default function AccessoriesIndex({
 
     return (
         <AppLayout title="Aksesoris Keluar" subtitle="Catatan aksesoris yang keluar dari produksi">
-            <datalist id="nama-aksesoris">
-                {accessoryNames.map((n) => (
-                    <option key={n} value={n} />
-                ))}
-            </datalist>
-
             <div className="au-panel">
                 <form className="au-filter" onSubmit={terapkan}>
                     <div className="au-filter-field is-wide">
@@ -94,6 +155,15 @@ export default function AccessoriesIndex({
                         <label className="au-filter-label">Tahun</label>
                         <Select value={f.year} placeholder="Semua Tahun" options={years} onChange={(e) => setF({ ...f, year: e.target.value })} />
                     </div>
+                    <div className="au-filter-field">
+                        <label className="au-filter-label">Kategori</label>
+                        <Select
+                            value={f.category}
+                            placeholder="Semua Kategori"
+                            options={categories.map((k) => ({ value: k.name, label: k.name }))}
+                            onChange={(e) => setF({ ...f, category: e.target.value })}
+                        />
+                    </div>
                     {departments.length ? (
                         <div className="au-filter-field">
                             <label className="au-filter-label">Departemen</label>
@@ -105,6 +175,11 @@ export default function AccessoriesIndex({
                         {adaFilter ? (
                             <Btn as="a" href={indexUrl} tone="ghost">
                                 Reset
+                            </Btn>
+                        ) : null}
+                        {can.edit || can.delete ? (
+                            <Btn tone="ghost" icon={TAG} onClick={() => setKelola(true)}>
+                                Kategori
                             </Btn>
                         ) : null}
                         {can.export ? (
@@ -242,14 +317,16 @@ export default function AccessoriesIndex({
                     productGroups={productGroups}
                     productSeries={productSeries}
                     lastSerials={lastSerials}
+                    accessoryNames={accessoryNames}
                 />
             ) : null}
-            {edit ? <ModalEdit row={edit} onClose={() => setEdit(null)} units={units} productGroups={productGroups} /> : null}
+            {edit ? <ModalEdit row={edit} onClose={() => setEdit(null)} units={units} productGroups={productGroups} accessoryNames={accessoryNames} /> : null}
+            {kelola ? <ModalKategori categories={categories} can={can} onClose={() => setKelola(false)} /> : null}
         </AppLayout>
     );
 }
 
-function ModalTambah({ onClose, storeUrl, units, productGroups, productSeries, lastSerials }) {
+function ModalTambah({ onClose, storeUrl, units, productGroups, productSeries, lastSerials, accessoryNames }) {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         accessory_date: today(),
@@ -305,21 +382,23 @@ function ModalTambah({ onClose, storeUrl, units, productGroups, productSeries, l
                 <div className="au-modal-body">
                     <div className="au-form">
                         <Field label="Nama / Jenis Aksesoris" required error={errors.name}>
-                            <Input list="nama-aksesoris" value={data.name} error={errors.name} autoFocus maxLength={150}
-                                placeholder="Pilih atau ketik jenis baru" onChange={(e) => setData('name', e.target.value)} />
-                        </Field>
-                        <Field label="Tanggal" required error={errors.accessory_date}>
-                            <Input type="date" value={data.accessory_date} error={errors.accessory_date} onChange={(e) => setData('accessory_date', e.target.value)} />
+                            <PilihKetik value={data.name} options={accessoryNames} error={errors.name} autoFocus
+                                placeholder="Pilih atau ketik nama aksesoris baru..." onChange={(v) => setData('name', v)} />
                         </Field>
                         <div className="au-form-grid au-form-grid-2">
-                            <Field label="Jumlah" required error={errors.qty}>
-                                <Input type="number" min={1} max={99999} value={data.qty} error={errors.qty} onChange={(e) => setData('qty', e.target.value)} />
+                            <Field label="Tanggal" required error={errors.accessory_date}>
+                                <Input type="date" value={data.accessory_date} error={errors.accessory_date} onChange={(e) => setData('accessory_date', e.target.value)} />
                             </Field>
-                            <Field label="Satuan" error={errors.unit}>
-                                <Select value={data.unit} options={units.map((u) => ({ value: u, label: u }))} onChange={(e) => setData('unit', e.target.value)} />
-                            </Field>
+                            <div className="au-form-grid au-form-grid-2 au-aks-jumlah">
+                                <Field label="Jumlah" required error={errors.qty}>
+                                    <Input type="number" min={1} max={99999} value={data.qty} error={errors.qty} onChange={(e) => setData('qty', e.target.value)} />
+                                </Field>
+                                <Field label="Satuan" error={errors.unit}>
+                                    <Select value={data.unit} options={units.map((u) => ({ value: u, label: u }))} onChange={(e) => setData('unit', e.target.value)} />
+                                </Field>
+                            </div>
                         </div>
-                        <div className="au-aks-opsional">
+                        <div className="au-form-grid au-form-grid-2">
                             <Field label="Seri Produk Terkait (opsional)" error={errors.product_id}>
                                 <SelectProduk value={data.product_id} groups={productGroups} error={errors.product_id} onChange={(v) => setData('product_id', v)} />
                             </Field>
@@ -355,13 +434,13 @@ function ModalTambah({ onClose, storeUrl, units, productGroups, productSeries, l
                                 </div>
                                 {errors.serial_number ? <span className="au-error">{errors.serial_number}</span> : null}
                             </div>
-                            <Field label="Keterangan (opsional)" error={errors.keterangan}>
-                                <Textarea rows={2} maxLength={1000} value={data.keterangan} error={errors.keterangan} onChange={(e) => setData('keterangan', e.target.value)} />
-                            </Field>
                         </div>
+                        <Field label="Keterangan (opsional)" error={errors.keterangan}>
+                            <Textarea rows={2} maxLength={1000} value={data.keterangan} error={errors.keterangan} onChange={(e) => setData('keterangan', e.target.value)} />
+                        </Field>
                     </div>
                 </div>
-                <div className="au-modal-foot">
+                <div className="au-modal-foot au-modal-foot--rata">
                     <Btn tone="ghost" onClick={onClose} disabled={processing}>
                         Batal
                     </Btn>
@@ -374,7 +453,7 @@ function ModalTambah({ onClose, storeUrl, units, productGroups, productSeries, l
     );
 }
 
-function ModalEdit({ row, onClose, units, productGroups }) {
+function ModalEdit({ row, onClose, units, productGroups, accessoryNames }) {
     const { data, setData, put, processing, errors } = useForm({
         name: row.name || '',
         accessory_date: row.dateInput || today(),
@@ -405,33 +484,36 @@ function ModalEdit({ row, onClose, units, productGroups }) {
                 <div className="au-modal-body">
                     <div className="au-form">
                         <Field label="Nama / Jenis Aksesoris" required error={errors.name}>
-                            <Input list="nama-aksesoris" value={data.name} error={errors.name} maxLength={150} onChange={(e) => setData('name', e.target.value)} />
-                        </Field>
-                        <Field label="Tanggal" required error={errors.accessory_date}>
-                            <Input type="date" value={data.accessory_date} error={errors.accessory_date} onChange={(e) => setData('accessory_date', e.target.value)} />
+                            <PilihKetik value={data.name} options={accessoryNames} error={errors.name}
+                                placeholder="Pilih atau ketik nama aksesoris baru..." onChange={(v) => setData('name', v)} />
                         </Field>
                         <div className="au-form-grid au-form-grid-2">
-                            <Field label="Jumlah" required error={errors.qty}>
-                                <Input type="number" min={1} max={99999} value={data.qty} error={errors.qty} onChange={(e) => setData('qty', e.target.value)} />
+                            <Field label="Tanggal" required error={errors.accessory_date}>
+                                <Input type="date" value={data.accessory_date} error={errors.accessory_date} onChange={(e) => setData('accessory_date', e.target.value)} />
                             </Field>
-                            <Field label="Satuan" error={errors.unit}>
-                                <Select value={data.unit} options={units.map((u) => ({ value: u, label: u }))} onChange={(e) => setData('unit', e.target.value)} />
-                            </Field>
+                            <div className="au-form-grid au-form-grid-2 au-aks-jumlah">
+                                <Field label="Jumlah" required error={errors.qty}>
+                                    <Input type="number" min={1} max={99999} value={data.qty} error={errors.qty} onChange={(e) => setData('qty', e.target.value)} />
+                                </Field>
+                                <Field label="Satuan" error={errors.unit}>
+                                    <Select value={data.unit} options={units.map((u) => ({ value: u, label: u }))} onChange={(e) => setData('unit', e.target.value)} />
+                                </Field>
+                            </div>
                         </div>
-                        <div className="au-aks-opsional">
+                        <div className="au-form-grid au-form-grid-2">
                             <Field label="Seri Produk Terkait (opsional)" error={errors.product_id}>
                                 <SelectProduk value={data.product_id} groups={productGroups} error={errors.product_id} onChange={(v) => setData('product_id', v)} />
                             </Field>
                             <Field label="Nomor Urut Aksesoris (opsional)" error={errors.serial_number}>
                                 <Input value={data.serial_number} maxLength={150} placeholder="Contoh: NO.015-017" error={errors.serial_number} onChange={(e) => setData('serial_number', e.target.value)} />
                             </Field>
-                            <Field label="Keterangan (opsional)" error={errors.keterangan}>
-                                <Textarea rows={2} maxLength={1000} value={data.keterangan} error={errors.keterangan} onChange={(e) => setData('keterangan', e.target.value)} />
-                            </Field>
                         </div>
+                        <Field label="Keterangan (opsional)" error={errors.keterangan}>
+                            <Textarea rows={2} maxLength={1000} value={data.keterangan} error={errors.keterangan} onChange={(e) => setData('keterangan', e.target.value)} />
+                        </Field>
                     </div>
                 </div>
-                <div className="au-modal-foot">
+                <div className="au-modal-foot au-modal-foot--rata">
                     <Btn tone="ghost" onClick={onClose} disabled={processing}>
                         Batal
                     </Btn>
@@ -440,6 +522,77 @@ function ModalEdit({ row, onClose, units, productGroups }) {
                     </Btn>
                 </div>
             </form>
+        </div>
+    );
+}
+
+/**
+ * Kelola kategori (nama/jenis) aksesoris: ubah nama — semua data ikut berganti, nama yang sudah ada
+ * otomatis digabung — dan hapus kategori yang tidak dipakai data apa pun.
+ */
+function ModalKategori({ categories, can, onClose }) {
+    const [ubah, setUbah] = useState(null);
+    const [galat, setGalat] = useState('');
+    const [busy, setBusy] = useState(false);
+
+    function simpan(e) {
+        e.preventDefault();
+        setBusy(true);
+        router.patch(ubah.url, { name: ubah.name }, {
+            preserveScroll: true,
+            onSuccess: () => { setUbah(null); setGalat(''); },
+            onError: (er) => setGalat(er.name || 'Gagal menyimpan.'),
+            onFinish: () => setBusy(false),
+        });
+    }
+
+    async function hapus(k) {
+        if (!(await konfirmasi("Hapus kategori '" + k.name + "'?", { title: 'Hapus Kategori', okText: 'Hapus' }))) return;
+        router.delete(k.deleteUrl, { preserveScroll: true, onSuccess: () => setGalat(''), onError: (er) => setGalat(er.name || 'Gagal menghapus.') });
+    }
+
+    return (
+        <div className="au-modal-backdrop" onClick={() => !busy && onClose()}>
+            <div className="au-modal au-modal--wide au-aks-kat" onClick={(e) => e.stopPropagation()}>
+                <div className="au-modal-banner">
+                    <div>
+                        <h3>Kategori Aksesoris</h3>
+                        <p>Ubah nama atau hapus kategori yang tidak dipakai</p>
+                    </div>
+                    <button type="button" onClick={onClose} aria-label="Tutup">
+                        <Icon path={ICON.close} />
+                    </button>
+                </div>
+                <div className="au-modal-body">
+                    {galat ? <p className="au-aks-kat-galat">{galat}</p> : null}
+                    {categories.length ? (
+                        categories.map((k) =>
+                            ubah && ubah.id === k.id ? (
+                                <form className="au-aks-kat-baris" key={k.id} onSubmit={simpan}>
+                                    <Input autoFocus value={ubah.name} maxLength={150} onChange={(e) => setUbah({ ...ubah, name: e.target.value })} />
+                                    <Btn type="submit" disabled={busy || !ubah.name.trim()}>Simpan</Btn>
+                                    <Btn tone="ghost" onClick={() => setUbah(null)} disabled={busy}>Batal</Btn>
+                                </form>
+                            ) : (
+                                <div className="au-aks-kat-baris" key={k.id}>
+                                    <b>{k.name}</b>
+                                    <span className="au-aks-kat-jumlah">{k.count} data</span>
+                                    <span className="au-actions">
+                                        {can.edit ? <IconBtn icon={ICON.edit} title="Ubah nama" onClick={() => { setGalat(''); setUbah({ id: k.id, url: k.updateUrl, name: k.name }); }} /> : null}
+                                        {can.delete ? <IconBtn icon={ICON.trash} title="Hapus" onClick={() => hapus(k)} /> : null}
+                                    </span>
+                                </div>
+                            ),
+                        )
+                    ) : (
+                        <p className="au-aks-kosong">Belum ada kategori. Kategori dibuat otomatis saat menambah aksesoris.</p>
+                    )}
+                    <p className="au-aks-kat-catatan">Mengubah nama mengganti nama di semua data aksesoris. Bila nama baru sudah ada, kedua kategori digabung.</p>
+                </div>
+                <div className="au-modal-foot">
+                    <Btn tone="ghost" onClick={onClose}>Tutup</Btn>
+                </div>
+            </div>
         </div>
     );
 }

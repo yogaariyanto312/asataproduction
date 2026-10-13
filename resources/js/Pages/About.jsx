@@ -28,7 +28,7 @@ const TAMPIL = 6;
  * pengembang (foto, bio, angka ringkas, tautan), portfolio, teknologi, dan
  * Riwayat Update (6 entri terlihat, sisanya digulir; form tambah developer).
  */
-export default function About({ versi, year, githubUser, developer, changelogs, canManage, storeUrl, baseUrl }) {
+export default function About({ versi, aplikasi, aplikasiWindows, year, githubUser, developer, changelogs, canManage, storeUrl, baseUrl }) {
     const { appName } = usePage().props;
     const [repo, setRepo] = useState(githubUser ? null : '—');
     const [form, setForm] = useState(false);
@@ -69,6 +69,9 @@ export default function About({ versi, year, githubUser, developer, changelogs, 
                         <p>Sistem Pencatatan &amp; Monitoring Produksi</p>
                     </div>
                 </div>
+
+                <UnduhAplikasi aplikasi={aplikasi} />
+                <UnduhWindows aplikasi={aplikasiWindows} />
 
                 <div className="au-ab-kartu au-ab-pad">
                     <h2 className="au-ab-judul">Tentang Sistem</h2>
@@ -315,6 +318,83 @@ function Riwayat({ changelogs, canManage, storeUrl, baseUrl, form, setForm }) {
             ) : (
                 <div className="au-ab-kosong">Belum ada riwayat update.</div>
             )}
+        </div>
+    );
+}
+
+const ANDROID = 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z';
+const UNDUH = 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4';
+// Layar monitor (ikon aplikasi Windows).
+const WINDOWS = 'M4 5h16a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zm4 15h8m-4-3v3';
+
+/** QR dari baris modul "0101…" (server: AplikasiAndroid::qr) — satu path SVG, tanpa library. */
+function KodeQr({ baris, ukuran = 168 }) {
+    const n = baris.length;
+    let d = '';
+    baris.forEach((b, y) => {
+        for (let x = 0; x < b.length; x++) if (b[x] === '1') d += `M${x + 2} ${y + 2}h1v1h-1z`;
+    });
+    return (
+        <svg className="au-ab-qr" width={ukuran} height={ukuran} viewBox={`0 0 ${n + 4} ${n + 4}`} shapeRendering="crispEdges" role="img" aria-label="QR unduh aplikasi Android">
+            <rect width={n + 4} height={n + 4} fill="#fff" />
+            <path d={d} fill="#0f172a" />
+        </svg>
+    );
+}
+
+/** Kartu unduh installer aplikasi Windows (MSI) — tampil bila sudah dipush lewat windows-update/push_update.py. */
+function UnduhWindows({ aplikasi }) {
+    if (!aplikasi) return null;
+    const mb = (aplikasi.ukuran / 1048576).toFixed(1) + ' MB';
+    return (
+        <div className="au-ab-kartu au-ab-pad au-ab-unduh">
+            <span className="au-ab-unduh-kosong">
+                <Icon path={WINDOWS} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+                <h2 className="au-ab-judul">Aplikasi Windows</h2>
+                <p className="au-ab-unduh-versi">
+                    Versi {aplikasi.versionName} <small>· {mb}{aplikasi.tanggal ? ' · ' + aplikasi.tanggal : ''}</small>
+                </p>
+                <p className="au-ab-teks">Unduh installer-nya, lalu buka berkas .msi untuk memasang di komputer Windows 10/11. Setelah terpasang, aplikasi akan memberi tahu bila ada versi baru.</p>
+                {aplikasi.catatan ? <p className="au-ab-unduh-catatan">{aplikasi.catatan}</p> : null}
+                <a className="au-btn au-ab-unduh-btn" href={aplikasi.url}>
+                    <Icon path={UNDUH} />
+                    Unduh untuk Windows
+                </a>
+            </div>
+        </div>
+    );
+}
+
+/** Kartu unduh APK: scan QR dengan kamera HP → langsung ke link unduh. */
+function UnduhAplikasi({ aplikasi }) {
+    const mb = aplikasi ? (aplikasi.ukuran / 1048576).toFixed(1) + ' MB' : '';
+    return (
+        <div className="au-ab-kartu au-ab-pad au-ab-unduh">
+            {aplikasi ? <KodeQr baris={aplikasi.qr} /> : (
+                <span className="au-ab-unduh-kosong">
+                    <Icon path={ANDROID} />
+                </span>
+            )}
+            <div style={{ minWidth: 0 }}>
+                <h2 className="au-ab-judul">Aplikasi Android</h2>
+                {aplikasi ? (
+                    <>
+                        <p className="au-ab-unduh-versi">
+                            Versi {aplikasi.versionName} <small>· {mb}{aplikasi.tanggal ? ' · ' + aplikasi.tanggal : ''}</small>
+                        </p>
+                        <p className="au-ab-teks">Scan QR ini dengan kamera HP Android, lalu buka link-nya untuk mengunduh aplikasi. Setelah terpasang, aplikasi akan memberi tahu bila ada versi baru.</p>
+                        {aplikasi.catatan ? <p className="au-ab-unduh-catatan">{aplikasi.catatan}</p> : null}
+                        <a className="au-btn au-ab-unduh-btn" href={aplikasi.url}>
+                            <Icon path={UNDUH} />
+                            Unduh APK
+                        </a>
+                    </>
+                ) : (
+                    <p className="au-ab-teks">Aplikasi Android belum diunggah ke server.</p>
+                )}
+            </div>
         </div>
     );
 }

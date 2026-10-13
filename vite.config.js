@@ -16,6 +16,7 @@ export default defineConfig(({ command }) => ({
             // bertahap — halaman yang belum dipindahkan tetap berfungsi.
             input: [
                 'resources/css/app.css',
+                'resources/css/inertia.css',
                 'resources/js/app.js',
                 'resources/js/inertia.jsx',
             ],

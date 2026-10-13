@@ -1,6 +1,14 @@
 # Asata Production System
 
-Sistem pencatatan produksi dan quality control berbasis web untuk pabrik trafo. Operator mencatat hasil produksi harian (UP/BT untuk channel, jumlah unit untuk cover/tangki), sementara admin, supervisor, dan mandor memantau target, laporan, dan riwayat — dari PC maupun HP, termasuk lewat bot Telegram.
+Sistem pencatatan produksi dan quality control untuk pabrik trafo. Operator mencatat hasil produksi harian (UP/BT untuk channel, jumlah unit untuk cover/tangki), sementara admin, supervisor, dan mandor memantau target, laporan, dan riwayat.
+
+Tersedia dalam tiga bentuk yang memakai data & hak akses yang sama:
+
+- **Web** — Laravel + Inertia/React (repo ini).
+- **Aplikasi Android** — aplikasi native (Kotlin + Jetpack Compose), bukan WebView.
+- **Aplikasi Windows** — aplikasi native (Kotlin + Compose Multiplatform Desktop), dipasang lewat installer MSI.
+
+Ditambah bot Telegram untuk lapor produksi dan cek jadwal dari HP.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -13,13 +21,15 @@ Sistem pencatatan produksi dan quality control berbasis web untuk pabrik trafo. 
 | **Dashboard** | Ringkasan hari ini & bulan ini, kalender (hari libur nasional & fase bulan), tren produksi, target aktif, reject, catatan & input terbaru, log aktivitas |
 | **Catatan** | Catatan berwarna dengan editor teks, foto/kamera, tenggat, dan penerima (read-only bagi penerima) |
 | **Target Produksi** | Foto jadwal mingguan (gambar/PDF), set target per produk (jumlah unit atau sampai no. urut), progres live, hapus otomatis setelah tercapai |
-| **Chatting** | Pesan antar pengguna dan kotak masuk admin |
-| **Gambar Kerja** | Upload banyak file (JPG/PNG/PDF) per judul-seri-kVA, pratinjau PDF, cache offline |
-| **Input & Riwayat Produksi** | Input per produk dengan nomor urut UP/BT, seri & kVA manual, reject unit; riwayat per tanggal & kategori |
-| **Barang Pengganti & Aksesoris Keluar** | Pencatatan barang pengganti dan aksesoris keluar beserta ekspor |
+| **Chatting** | Pesan antar pengguna (termasuk sesama developer/admin), status mengetik & dibaca |
+| **Gambar Kerja** | Upload banyak file (JPG/PNG/PDF) per judul-seri-kVA, pratinjau PDF, cache offline, **keterangan per file** (mis. "Revisi ke-2") |
+| **Input & Riwayat Produksi** | Input per produk dengan nomor urut UP/BT, seri & kVA manual, reject unit; riwayat per tanggal & kategori, input cepat lewat modal |
+| **Barang Pengganti & Aksesoris Keluar** | Pencatatan barang pengganti dan aksesoris keluar beserta ekspor; **kategori aksesoris** bisa difilter, diubah nama (otomatis digabung bila sama), dan dihapus bila tidak dipakai |
 | **Master Produk & Kategori** | Produk dikelompokkan per tahun dan nama, urutan & warna kartu bisa diatur, kategori dengan opsi *seri manual* |
 | **Laporan** | Rekap harian & bulanan, ekspor PDF dan Excel |
-| **Manajemen & Hak Akses** | Kelola pengguna per departemen; hak akses menu & aksi per peran bisa diubah tanpa ubah kode |
+| **Manajemen & Hak Akses** | Kelola pengguna per departemen; hak akses menu & aksi per peran (tampilan matriks) bisa diubah tanpa ubah kode |
+| **Profil** | 80 pilihan avatar kartun atau foto sendiri, ganti password, logout perangkat lain, tautkan Telegram |
+| **Tutorial** | Panduan bergambar tiap menu dengan penanda bernomor & garis penunjuk |
 | **Bot Telegram** | Lapor produksi, cek jadwal, dan notifikasi lewat Telegram (akun ditautkan dari halaman Profil) |
 | **Mode Maintenance** | Saklar dari Settings dengan hitung mundur; developer tetap bisa masuk |
 | **Panel `/admin`** | Panel Filament untuk dashboard ringkas |
@@ -33,6 +43,31 @@ Sistem pencatatan produksi dan quality control berbasis web untuk pabrik trafo. 
 - **Database** — MySQL 8 / MariaDB 11 (SQLite untuk pengujian)
 - **Ekspor** — barryvdh/laravel-dompdf (PDF), maatwebsite/excel (Excel)
 - **PDF viewer** — pdf.js (di `public/vendor/pdfjs`)
+- **API aplikasi** — REST JSON `/api/v1` dengan Laravel Sanctum (token per perangkat)
+- **Aplikasi** — Kotlin 2.1, Jetpack Compose (Android), Compose Multiplatform 1.8 + JDK 21 (Windows)
+
+---
+
+## Aplikasi Android & Windows
+
+Kedua aplikasi native memakai API `/api/v1` (lihat `routes/api.php`) — hak akses, departemen, dan saklar fitur sama persis dengan web, jadi fitur baru di server langsung berlaku di ketiganya.
+
+| | Unduh | Cek versi |
+|---|---|---|
+| Android | `/unduh/aplikasi` (juga lewat QR di menu **Tentang Aplikasi**) | `GET /api/v1/aplikasi/versi?platform=android` |
+| Windows | `/unduh/aplikasi-windows` (installer MSI) | `GET /api/v1/aplikasi/versi?platform=windows` |
+
+- Aplikasi mengecek versi saat dibuka dan menawarkan update otomatis bila versi di server lebih baru.
+- Gambar kerja & foto yang sudah diunduh disimpan di perangkat sehingga tidak diunduh ulang (penting untuk koneksi pabrik yang lambat).
+- Kode sumber aplikasi ada di proyek terpisah (Android Studio). Berkas APK/MSI dan script unggahnya (`android-update/`, `windows-update/`) **tidak** di-commit karena berukuran besar dan memakai kredensial SSH dari `.env`.
+
+Rilis update (dari folder proyek web, butuh Python 3 + `paramiko`):
+
+```bash
+# Naikkan dulu versionCode/versionName di proyek aplikasi, lalu:
+python android-update/push_update.py --build --catatan "Ringkasan perubahan"
+python windows-update/push_update.py --build --catatan "Ringkasan perubahan"
+```
 
 ---
 
@@ -67,7 +102,7 @@ Data produksi dipisah per **departemen**; selain developer, pengguna hanya melih
 
 ```bash
 # 1. Letakkan proyek di folder www Laragon, lalu masuk ke foldernya
-cd G:\laragon\www\asata-production
+cd D:\laragon\www\asata-production
 
 # 2. Dependensi
 composer install

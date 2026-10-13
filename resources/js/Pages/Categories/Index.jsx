@@ -95,7 +95,7 @@ export default function CategoriesIndex({ rows, search, indexUrl, createUrl, can
                                 <tr>
                                     <td
                                         colSpan={cols}
-                                        style={{ padding: '60px 20px', textAlign: 'center', color: '#94a3b8' }}
+                                        style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--au-muted)' }}
                                     >
                                         Belum ada kategori.
                                         {canManage ? (

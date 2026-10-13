@@ -66,8 +66,9 @@ class HandleInertiaRequests extends Middleware
             'chatUrl'  => fn () => $user && \App\Support\MenuAccess::can($user, 'chatting') ? route('chatting') : null,
             'notesUrl' => fn () => $user && \App\Support\MenuAccess::can($user, 'notes') ? route('notes.index') : null,
 
-            // Settings → blokir klik kanan & DevTools untuk selain developer.
-            'disableDevtools' => fn () => $user && $user->role !== 'developer'
+            // Settings → blokir klik kanan & DevTools untuk selain developer,
+            // termasuk tamu di halaman login/lupa password.
+            'disableDevtools' => fn () => (! $user || $user->role !== 'developer')
                 && (bool) \App\Models\BotSetting::instance()->disable_devtools,
 
             // Developer tetap bisa memakai aplikasi selama maintenance — beri
@@ -146,7 +147,7 @@ class HandleInertiaRequests extends Middleware
         $out  = [];
 
         foreach (MenuAccess::items() as $item) {
-            if (! MenuAccess::can($user, $item['key'])) {
+            if (($item['nav'] ?? true) === false || ! MenuAccess::can($user, $item['key'])) {
                 continue;
             }
 

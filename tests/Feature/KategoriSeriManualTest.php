@@ -34,6 +34,20 @@ class KategoriSeriManualTest extends TestCase
         $this->assertFalse($kat->fresh()->has_manual_serial);
     }
 
+    public function test_centang_seri_manual_di_form_produk_mengubah_kategorinya(): void
+    {
+        $dev = $this->dev();
+        $kat = Category::create(['name' => 'Channel-PLN', 'is_active' => true]);
+        $p = Product::create(['category_id' => $kat->id, 'type' => 'channel', 'name' => 'Channel-PLN', 'unit' => 'unit', 'is_active' => true]);
+        $isi = ['category_id' => $kat->id, 'type' => 'channel', 'name' => 'Channel-PLN', 'unit' => 'unit', 'is_active' => true];
+
+        $this->actingAs($dev)->put("/products/{$p->id}", $isi + ['manual' => true])->assertSessionHasNoErrors();
+        $this->assertTrue($kat->fresh()->has_manual_serial);
+
+        $this->put("/products/{$p->id}", $isi + ['manual' => false])->assertSessionHasNoErrors();
+        $this->assertFalse($kat->fresh()->has_manual_serial);
+    }
+
     public function test_dropdown_input_produksi_tidak_lagi_menampilkan_tanda_strip(): void
     {
         $dev = $this->dev();

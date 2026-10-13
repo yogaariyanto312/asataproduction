@@ -1,0 +1,37 @@
+/*
+ * CSS dasar halaman React (Inertia). Pengganti app.css yang dulu ikut dimuat:
+ * app.css memindai semua view Blade lama (127 KB, memblokir render) dan
+ * memasang transisi pada SEMUA elemen — berat di HP. Di sini hanya reset
+ * Tailwind + utilitas yang benar-benar dipakai di resources/js; gaya utama
+ * tetap di asata-ui.css.
+ */
+@import 'tailwindcss' source(none);
+@source '../js';
+@source '../views/inertia.blade.php';
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: 'Sora', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Scrollbar disembunyikan tapi tetap bisa digulir */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+html, body { scrollbar-width: none; -ms-overflow-style: none; }
+html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+
+/* Ikon kalender input tanggal: putih di mode gelap */
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+.dark input[type="month"]::-webkit-calendar-picker-indicator {
+    filter: brightness(0) invert(1);
+    cursor: pointer;
+}
+
+@media print {
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+        display: none !important;
+    }
+}

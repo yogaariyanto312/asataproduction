@@ -8,8 +8,26 @@ import { useEffect, useMemo, useRef, useState } from 'react';
  *
  * groups: [{ label, options: [{ value, label }] }]
  */
-export default function PilihProduk({ groups, value, onChange, placeholder = '-- Pilih Produk --', error }) {
-    const [buka, setBuka] = useState(false);
+export default function PilihProduk({ groups, value, onChange, placeholder = '-- Pilih Produk --', error, nada }) {
+    const [buka, setBukaMentah] = useState(false);
+    // Panel tetap terpasang sebentar saat ditutup supaya animasi keluarnya sempat tampil.
+    const [keluar, setKeluar] = useState(false);
+    const jedaTutup = useRef(null);
+    const setBuka = (nilai) => {
+        const jadi = typeof nilai === 'function' ? nilai(buka) : nilai;
+        clearTimeout(jedaTutup.current);
+        if (jadi) {
+            setKeluar(false);
+            setBukaMentah(true);
+        } else if (buka) {
+            setKeluar(true);
+            jedaTutup.current = setTimeout(() => {
+                setBukaMentah(false);
+                setKeluar(false);
+            }, 160);
+        }
+    };
+    useEffect(() => () => clearTimeout(jedaTutup.current), []);
     const [cari, setCari] = useState('');
     const [aktif, setAktif] = useState(0);
     const akar = useRef(null);
@@ -34,6 +52,7 @@ export default function PilihProduk({ groups, value, onChange, placeholder = '--
             document.removeEventListener('mousedown', luar);
             document.removeEventListener('touchstart', luar);
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [buka]);
 
     // Saat dibuka: fokus ke kotak cari & sorot pilihan sekarang.
@@ -77,12 +96,13 @@ export default function PilihProduk({ groups, value, onChange, placeholder = '--
     let grupSebelum = null;
 
     return (
-        <div className={'au-pp' + (buka ? ' is-buka' : '')} ref={akar}>
+        <div className={'au-pp' + (nada ? ' is-' + nada : '') + (buka && !keluar ? ' is-buka' : '')} ref={akar}>
             <button
                 type="button"
                 className={'au-pp-tombol' + (error ? ' has-error' : '')}
-                onClick={() => setBuka((b) => !b)}
+                onClick={() => setBuka(!buka || keluar)}
                 onKeyDown={(e) => {
+                    if (buka && e.key === 'Escape') setBuka(false);
                     if (!buka && (e.key === 'ArrowDown' || e.key === 'Enter')) {
                         e.preventDefault();
                         setBuka(true);
@@ -98,7 +118,7 @@ export default function PilihProduk({ groups, value, onChange, placeholder = '--
             </button>
 
             {buka ? (
-                <div className="au-pp-panel">
+                <div className={'au-pp-panel' + (keluar ? ' is-keluar' : '')}>
                     <div className="au-pp-cari">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

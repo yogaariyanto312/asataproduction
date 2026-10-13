@@ -35,7 +35,8 @@ class PermissionController extends Controller
 
             $perms = $manageable === 'actions' ? [] : [[
                 'key'     => $item['key'],
-                'label'   => 'Lihat',
+                // 'view_label': saklar utama yang bukan "membuka halaman" (mis. Bot Telegram).
+                'label'   => $item['view_label'] ?? 'Lihat',
                 'is_view' => true,
             ]];
             foreach ($item['actions'] ?? [] as $act) {

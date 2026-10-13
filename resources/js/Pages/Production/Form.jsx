@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { router } from '@inertiajs/react';
-import axios from 'axios';
 import AppLayout from '../../Layouts/AppLayout';
+import '../../../css/asata-ui.css';
 import { Btn, Field, ICON, Icon, Input, Select, Textarea } from '../../Components/Ui';
+import PilihProduk from '../../Components/PilihProduk';
 
 /**
  * Form Input / Edit Produksi — perilaku dan perhitungannya disalin dari
@@ -43,7 +44,50 @@ const INFO = 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
 const TAG = 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z';
 const CHEV = 'M19 9l-7 7-7-7';
 
+/** Mode modal (iframe di Riwayat Produksi): tanpa sidebar & header halaman. */
+function Polos({ children }) {
+    return <div className="au-app au-prod-modal-isi">{children}</div>;
+}
+
+/** Kabari halaman induk (Riwayat Produksi) yang membuka form ini di iframe. */
+function kabariInduk(type) {
+    if (window.parent !== window) window.parent.postMessage({ type }, window.location.origin);
+}
+
+/**
+ * POST JSON memakai fetch bawaan (dulu axios: +50 KB hanya untuk satu kiriman,
+ * di halaman yang paling sering dibuka operator lewat HP). Token CSRF dibaca
+ * dari cookie XSRF-TOKEN seperti axios, jadi selalu yang terbaru.
+ */
+async function kirimJson(url, data) {
+    const m = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]+)/);
+    const res = await fetch(url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-XSRF-TOKEN': m ? decodeURIComponent(m[1]) : '',
+        },
+        body: JSON.stringify(data),
+    });
+    let isi = null;
+    try {
+        isi = await res.json();
+    } catch (_) {
+        /* bukan JSON */
+    }
+    if (!res.ok) {
+        const err = new Error('HTTP ' + res.status);
+        err.response = { status: res.status, data: isi };
+        throw err;
+    }
+    return { data: isi };
+}
+
 export default function ProductionForm({
+    modal = false,
     mode,
     action,
     indexUrl,
@@ -92,7 +136,6 @@ export default function ProductionForm({
     const [hint, setHint] = useState(null);
     const [savedVisible, setSavedVisible] = useState(true);
     const [rejectOpen, setRejectOpen] = useState(Number(log?.reject_qty) > 0);
-    const [search, setSearch] = useState('');
     const [errors, setErrors] = useState({});
     const [processing, setProcessing] = useState(false);
     const [toasts, setToasts] = useState([]);
@@ -331,11 +374,11 @@ export default function ProductionForm({
             return;
         }
 
-        axios
-            .post(action, payload(), { headers: { Accept: 'application/json' } })
+        kirimJson(action, payload())
             .then((res) => {
                 toast(res.data?.message || 'Data produksi berhasil disimpan.');
                 resetForNextEntry();
+                kabariInduk('prod-changed');
                 try {
                     localStorage.setItem('prod:changed', Date.now().toString());
                 } catch (_) {
@@ -360,19 +403,15 @@ export default function ProductionForm({
             .finally(() => setProcessing(false));
     }
 
-    // ── Dropdown produk: dikelompokkan per nama, bisa dicari ─────────────────
+    // ── Dropdown produk: dikelompokkan per nama; pencarian ada di dalam PilihProduk ──
     const groups = useMemo(() => {
-        const q = search.trim().toLowerCase();
         const map = new Map();
         products.forEach((p) => {
-            if (q && !(p.label + ' ' + p.group).toLowerCase().includes(q) && String(p.value) !== String(data.product_id)) {
-                return;
-            }
             if (!map.has(p.group)) map.set(p.group, []);
             map.get(p.group).push(p);
         });
-        return [...map.entries()];
-    }, [products, search, data.product_id]);
+        return [...map.entries()].map(([label, options]) => ({ label, options }));
+    }, [products]);
 
     const qtyErr = errors.total_qty || errors.up_qty || errors.bt_qty;
     const fillCls = (k) => (filled[k] ? ' au-pf-filled' : '');
@@ -380,17 +419,20 @@ export default function ProductionForm({
     const subtitle = isEdit
         ? `${selected?.group || ''} — ${(log?.production_date || '').split('-').reverse().join('/')}`
         : 'Isi data produksi dengan lengkap';
+    const Shell = modal ? Polos : AppLayout;
 
     return (
-        <AppLayout
+        <Shell
             title={isEdit ? 'Edit Data Produksi' : 'Input Produksi'}
             subtitle={isEdit ? 'Ubah data produksi yang sudah diinput' : 'Tambah data produksi harian'}
         >
             <div className="au-formcard">
-                <div className="au-formcard-head">
-                    <h2>{isEdit ? 'Edit Data Produksi' : 'Form Input Produksi Harian'}</h2>
-                    <p>{subtitle}</p>
-                </div>
+                {modal ? null : (
+                    <div className="au-formcard-head">
+                        <h2>{isEdit ? 'Edit Data Produksi' : 'Form Input Produksi Harian'}</h2>
+                        <p>{subtitle}</p>
+                    </div>
+                )}
 
                 <div className="au-formcard-body">
                     <form onSubmit={submit} ref={formRef}>
@@ -499,29 +541,7 @@ export default function ProductionForm({
                                     <label className="au-label">
                                         Produk<span className="au-req"> *</span>
                                     </label>
-                                    <input
-                                        type="search"
-                                        className="au-input au-pf-search"
-                                        placeholder="Cari produk / seri..."
-                                        value={search}
-                                        onChange={(e) => setSearch(e.target.value)}
-                                    />
-                                    <select
-                                        className={'au-select' + (errors.product_id ? ' has-error' : '')}
-                                        value={data.product_id}
-                                        onChange={(e) => pickProduct(e.target.value)}
-                                    >
-                                        <option value="">-- Pilih Produk --</option>
-                                        {groups.map(([name, items]) => (
-                                            <optgroup label={name} key={name}>
-                                                {items.map((p) => (
-                                                    <option value={p.value} key={p.value}>
-                                                        {p.label}
-                                                    </option>
-                                                ))}
-                                            </optgroup>
-                                        ))}
-                                    </select>
+                                    <PilihProduk groups={groups} value={data.product_id} error={errors.product_id} onChange={pickProduct} nada="biru" />
                                     {errors.product_id ? <span className="au-error">{errors.product_id}</span> : null}
                                 </div>
 
@@ -716,9 +736,15 @@ export default function ProductionForm({
                         </div>
 
                         <div className="au-pf-actions">
-                            <Btn as="a" href={indexUrl} tone="ghost">
-                                Batal
-                            </Btn>
+                            {modal ? (
+                                <Btn tone="ghost" onClick={() => kabariInduk('prod-modal-close')}>
+                                    Tutup
+                                </Btn>
+                            ) : (
+                                <Btn as="a" href={indexUrl} tone="ghost">
+                                    Batal
+                                </Btn>
+                            )}
                             <Btn type="submit" icon={ICON.save} disabled={processing}>
                                 {processing ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Simpan Data Produksi'}
                             </Btn>
@@ -741,6 +767,6 @@ export default function ProductionForm({
                     ))}
                 </div>
             ) : null}
-        </AppLayout>
+        </Shell>
     );
 }

@@ -1,26 +1,29 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import {
-    ArcElement,
-    BarController,
-    BarElement,
-    CategoryScale,
-    Chart as ChartJS,
-    DoughnutController,
-    LineController,
-    LineElement,
-    LinearScale,
-    PointElement,
-    Tooltip,
-} from 'chart.js';
-import { Chart } from 'react-chartjs-2';
+import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import AppLayout from '../Layouts/AppLayout';
 import Calendar from '../Components/Calendar';
 import { Icon, ICON as UI } from '../Components/Ui';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, BarController, LineElement, LineController, PointElement, ArcElement, DoughnutController, Tooltip);
+// Chart.js dimuat menyusul (lihat Components/GrafikChart.jsx).
+const GrafikChart = lazy(() => import('../Components/GrafikChart'));
 
-const TEXT = '#94a3b8';
-const GRID = 'rgba(255,255,255,0.05)';
+/** Warna grafik mengikuti tema: dibaca dari variabel CSS saat digambar. */
+const tc = (h) => getComputedStyle(document.documentElement).getPropertyValue('--tc-' + h).trim() || '#' + h;
+const teks = () => tc('94a3b8');
+// Animasi grafik dimatikan di HP & bila pengguna memilih kurangi gerakan:
+// tiap frame animasi Chart.js memakan CPU yang di HP lebih baik untuk tampil.
+const animasiGrafik = () => !window.matchMedia('(max-width: 768px), (prefers-reduced-motion: reduce)').matches;
+const garis = () => (document.documentElement.dataset.tema === 'terang' ? 'rgba(15,23,42,0.07)' : 'rgba(255,255,255,0.05)');
+
+/** Nilai berubah tiap tema diganti — dipakai sebagai key agar grafik digambar ulang. */
+function useTema() {
+    const [tema, setTema] = useState(() => document.documentElement.dataset.tema || 'gelap');
+    useEffect(() => {
+        const ubah = () => setTema(document.documentElement.dataset.tema || 'gelap');
+        window.addEventListener('au:tema', ubah);
+        return () => window.removeEventListener('au:tema', ubah);
+    }, []);
+    return tema;
+}
 // Palet ungu monokrom (gelap → terang), sama dengan referensi.
 const DONUT = ['#5b52e8', '#7c73f0', '#a5a0f7', '#4338ca', '#c7c3fb', '#8b83f3', '#6d63ec'];
 const NOTE_HEX = { blue: '#3b82f6', green: '#22c55e', yellow: '#facc15', amber: '#f59e0b', red: '#ef4444', purple: '#a855f7', teal: '#14b8a6', slate: '#64748b' };
@@ -54,7 +57,7 @@ const labelBar = {
                 const v = ds.data[j];
                 if (!v) return;
                 ctx.save();
-                ctx.fillStyle = TEXT;
+                ctx.fillStyle = teks();
                 ctx.font = '600 10px Sora, sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'bottom';
@@ -291,6 +294,7 @@ function KartuReject({ reject }) {
 }
 
 function KartuTrend({ data }) {
+    const tema = useTema();
     const hariIni = data[data.length - 1];
     const chart = {
         labels: data.map((d) => d.date),
@@ -324,6 +328,7 @@ function KartuTrend({ data }) {
     const options = {
         responsive: true,
         maintainAspectRatio: false,
+        animation: animasiGrafik() ? undefined : false,
         interaction: { mode: 'index', intersect: false },
         layout: { padding: { top: 18 } },
         plugins: {
@@ -344,8 +349,8 @@ function KartuTrend({ data }) {
             },
         },
         scales: {
-            x: { grid: { display: false }, ticks: { color: TEXT, font: { size: 10 } } },
-            y: { beginAtZero: true, grid: { color: GRID }, ticks: { color: TEXT, font: { size: 10 }, precision: 0, callback: (v) => v.toLocaleString('id-ID') } },
+            x: { grid: { display: false }, ticks: { color: teks(), font: { size: 10 } } },
+            y: { beginAtZero: true, grid: { color: garis() }, ticks: { color: teks(), font: { size: 10 }, precision: 0, callback: (v) => v.toLocaleString('id-ID') } },
         },
     };
 
@@ -362,7 +367,9 @@ function KartuTrend({ data }) {
                 }
             />
             <div className="au-db-trend">
-                <Chart type="bar" data={chart} options={options} plugins={[labelBar]} />
+                <Suspense fallback={null}>
+                    <GrafikChart key={tema} type="bar" data={chart} options={options} plugins={[labelBar]} />
+                </Suspense>
             </div>
             {hariIni && hariIni.top ? (
                 <div className="au-db-teratas">
@@ -382,6 +389,7 @@ function KartuTrend({ data }) {
 }
 
 function KartuDonut({ data, monthLabel }) {
+    const tema = useTema();
     const label = data.map((d) => d.name);
     const nilai = data.map((d) => d.total);
     const total = nilai.reduce((a, b) => a + b, 0);
@@ -428,10 +436,10 @@ function KartuDonut({ data, monthLabel }) {
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
                         ctx.font = '700 24px Sora, sans-serif';
-                        ctx.fillStyle = '#f1f5f9';
+                        ctx.fillStyle = tc('f1f5f9');
                         ctx.fillText(total.toLocaleString('id-ID'), cx, cy - 2);
                         ctx.font = '500 10px Sora, sans-serif';
-                        ctx.fillStyle = 'rgba(241,245,249,0.55)';
+                        ctx.fillStyle = teks();
                         ctx.fillText('total unit', cx, cy + 18);
                         ctx.restore();
                     },
@@ -453,11 +461,11 @@ function KartuDonut({ data, monthLabel }) {
                             const y = arc.y + Math.sin(ang) * r;
                             ctx.textBaseline = 'bottom';
                             ctx.font = '700 12px Sora, sans-serif';
-                            ctx.fillStyle = '#e2e8f0';
+                            ctx.fillStyle = tc('e2e8f0');
                             ctx.fillText((pct % 1 === 0 ? pct.toFixed(0) : pct.toFixed(1)) + '%', x, y);
                             ctx.textBaseline = 'top';
                             ctx.font = '600 9px Sora, sans-serif';
-                            ctx.fillStyle = TEXT;
+                            ctx.fillStyle = teks();
                             ctx.fillText(String(label[i] ?? '').toUpperCase(), x, y + 1);
                         });
                         ctx.restore();
@@ -475,6 +483,7 @@ function KartuDonut({ data, monthLabel }) {
     const options = {
         responsive: true,
         maintainAspectRatio: false,
+        animation: animasiGrafik() ? undefined : false,
         cutout: '68%',
         layout: { padding: 62 },
         plugins: {
@@ -491,7 +500,9 @@ function KartuDonut({ data, monthLabel }) {
         <div className="au-card au-db-kartu">
             <KepalaKartu judul="Produk per Tipe" sub={monthLabel} />
             <div className="au-db-donut">
-                <Chart type="doughnut" data={chart} options={options} plugins={plugins.list} />
+                <Suspense fallback={null}>
+                    <GrafikChart key={tema} type="doughnut" data={chart} options={options} plugins={plugins.list} />
+                </Suspense>
             </div>
             <div className="au-db-donut-legend">
                 {data.map((d, i) => {

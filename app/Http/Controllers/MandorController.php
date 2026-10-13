@@ -22,10 +22,12 @@ class MandorController extends Controller
                 'role'             => 'mandor',
                 'emailRequired'    => true,
                 'usernameOptional' => true,
-                'withDepartment'   => false,
+                'withDepartment'   => true,
                 'minPassword'      => 8,
                 'indexUrl'         => route('management.index', ['tab' => 'mandor']),
             ],
+            'departments' => \App\Models\Department::where('is_active', true)->orderBy('name')->pluck('name')
+                ->map(fn ($d) => ['value' => $d, 'label' => $d])->values(),
         ]);
     }
 
@@ -36,6 +38,7 @@ class MandorController extends Controller
             'email'    => ['required', 'email', 'max:150', 'unique:users,email'],
             'username' => ['nullable', 'string', 'max:50', 'alpha_dash', 'unique:users,username'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'department' => ['nullable', 'string', 'max:100', 'exists:departments,name'],
         ], [
             'name.required'       => 'Nama lengkap wajib diisi.',
             'email.required'      => 'Email wajib diisi.',
@@ -78,10 +81,12 @@ class MandorController extends Controller
                 'role'             => 'mandor',
                 'emailRequired'    => true,
                 'usernameOptional' => true,
-                'withDepartment'   => false,
+                'withDepartment'   => true,
                 'minPassword'      => 8,
                 'indexUrl'         => route('management.index', ['tab' => 'mandor']),
             ],
+            'departments' => \App\Models\Department::where('is_active', true)->orderBy('name')->pluck('name')
+                ->map(fn ($d) => ['value' => $d, 'label' => $d])->values(),
         ]);
     }
 
@@ -94,6 +99,7 @@ class MandorController extends Controller
             'email'    => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($mandor->id)],
             'username' => ['nullable', 'string', 'max:50', 'alpha_dash', Rule::unique('users', 'username')->ignore($mandor->id)],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'department' => ['nullable', 'string', 'max:100', 'exists:departments,name'],
         ], [
             'name.required'       => 'Nama lengkap wajib diisi.',
             'email.required'      => 'Email wajib diisi.',

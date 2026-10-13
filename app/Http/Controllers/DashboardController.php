@@ -37,49 +37,7 @@ class DashboardController extends Controller
         $user = auth()->user();
 
         $ringkas = $this->ringkasanHariIni();
-
-        // Data grafik 7 hari terakhir (bar total unit + garis rata-rata/input)
-        $weekStart = now()->subDays(6)->toDateString();
-        $rawChart = ProductionLog::select(
-                DB::raw('DATE(production_date) as date'),
-                DB::raw('SUM(total_qty) as total'),
-                DB::raw('COUNT(*) as entries')
-            )
-            ->where('production_date', '>=', $weekStart)
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get()
-            ->keyBy('date');
-
-        // Produk terbanyak per hari (tooltip: "seri yang paling banyak diinput")
-        $topPerDay = ProductionLog::select(
-                DB::raw('DATE(production_date) as date'),
-                'product_id',
-                DB::raw('SUM(total_qty) as total')
-            )
-            ->where('production_date', '>=', $weekStart)
-            ->groupBy('date', 'product_id')
-            ->with('product:id,name')
-            ->get()
-            ->groupBy('date')
-            ->map(fn ($rows) => $rows->sortByDesc('total')->first());
-
-        $chartData = collect();
-        for ($i = 6; $i >= 0; $i--) {
-            $d       = now()->subDays($i)->toDateString();
-            $row     = $rawChart->get($d);
-            $total   = $row ? (int) $row->total : 0;
-            $entries = $row ? (int) $row->entries : 0;
-            $topRow  = $topPerDay->get($d);
-            $chartData->push([
-                'date'    => Carbon::parse($d)->locale('id')->isoFormat('dddd, D/M'),
-                'total'   => $total,
-                'entries' => $entries,
-                'avg'     => $entries > 0 ? round($total / $entries, 1) : 0,
-                'top'     => $topRow && $topRow->product ? $topRow->product->name : null,
-                'top_qty' => $topRow ? (int) $topRow->total : 0,
-            ]);
-        }
+        $chartData = $this->grafikMingguan();
 
         // Produk bulan ini dikelompokkan per tipe (kata pertama nama produk)
         $productChart = ProductionLog::select('product_id', DB::raw('SUM(total_qty) as total'))
@@ -151,6 +109,54 @@ class DashboardController extends Controller
                 'targets'    => route('production.targets.index'),
             ],
         ]);
+    }
+
+    /** Grafik 7 hari terakhir: total unit, jumlah input, rata-rata, produk terbanyak. */
+    public function grafikMingguan()
+    {
+        $weekStart = now()->subDays(6)->toDateString();
+        $rawChart = ProductionLog::select(
+                DB::raw('DATE(production_date) as date'),
+                DB::raw('SUM(total_qty) as total'),
+                DB::raw('COUNT(*) as entries')
+            )
+            ->where('production_date', '>=', $weekStart)
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->keyBy('date');
+
+        // Produk terbanyak per hari (tooltip: "seri yang paling banyak diinput")
+        $topPerDay = ProductionLog::select(
+                DB::raw('DATE(production_date) as date'),
+                'product_id',
+                DB::raw('SUM(total_qty) as total')
+            )
+            ->where('production_date', '>=', $weekStart)
+            ->groupBy('date', 'product_id')
+            ->with('product:id,name')
+            ->get()
+            ->groupBy('date')
+            ->map(fn ($rows) => $rows->sortByDesc('total')->first());
+
+        $chartData = collect();
+        for ($i = 6; $i >= 0; $i--) {
+            $d       = now()->subDays($i)->toDateString();
+            $row     = $rawChart->get($d);
+            $total   = $row ? (int) $row->total : 0;
+            $entries = $row ? (int) $row->entries : 0;
+            $topRow  = $topPerDay->get($d);
+            $chartData->push([
+                'date'    => Carbon::parse($d)->locale('id')->isoFormat('dddd, D/M'),
+                'total'   => $total,
+                'entries' => $entries,
+                'avg'     => $entries > 0 ? round($total / $entries, 1) : 0,
+                'top'     => $topRow && $topRow->product ? $topRow->product->name : null,
+                'top_qty' => $topRow ? (int) $topRow->total : 0,
+            ]);
+        }
+
+        return $chartData->values();
     }
 
     public function liveStats()

@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react';
 import '../../../css/login-robot.css';
+import { useBlokirDevtools } from '../../blokirDevtools';
 
 /**
  * Kerangka dua panel untuk halaman auth selain login (lupa & reset password).
@@ -7,6 +8,7 @@ import '../../../css/login-robot.css';
  * konsisten tanpa menduplikasi CSS.
  */
 export default function AuthShell({ title, subtitle, children }) {
+    useBlokirDevtools();
     return (
         <>
             <Head title={title} />

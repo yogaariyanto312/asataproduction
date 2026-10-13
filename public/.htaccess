@@ -1,5 +1,22 @@
 <IfModule mod_headers.c>
     Header always set Permissions-Policy "publickey-credentials-get=(), identity-credentials-get=()"
+
+    # Aset Vite bernama hash (nama-AbCd1234.js/.css): isinya tak pernah berubah
+    # untuk nama yang sama, jadi boleh disimpan setahun tanpa ditanya ulang.
+    # Menghemat permintaan di HP & koneksi pabrik yang lambat.
+    <FilesMatch "-[A-Za-z0-9_-]{8}\.(js|css)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+
+    # PDF.js (berkas besar, jarang diganti): 30 hari.
+    <FilesMatch "^(pdf\.min|pdf\.worker\.min|qc-pdf-viewer)\.js$">
+        Header set Cache-Control "public, max-age=2592000"
+    </FilesMatch>
+
+    # Service worker & manifest jangan di-cache: perbaikan harus langsung sampai.
+    <FilesMatch "^(sw\.js|manifest\.json)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+    </FilesMatch>
 </IfModule>
 
 <IfModule mod_rewrite.c>

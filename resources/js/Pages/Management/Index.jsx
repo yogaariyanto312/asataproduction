@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { router } from '@inertiajs/react';
 import AppLayout from '../../Layouts/AppLayout';
 import { Btn, Check, DeleteButton, ICON, Icon, IconBtn, Input } from '../../Components/Ui';
@@ -24,9 +24,14 @@ export default function ManagementIndex({
     departemen,
 }) {
     const [q, setQ] = useState(search || '');
+    // Pindah tab halus: sorotan langsung pindah saat diklik (tidak menunggu server), isi lama meredup
+    // selama memuat, lalu isi tab baru muncul memudar sambil naik (kelas au-mgmt-isi).
+    const [pilih, setPilih] = useState(tab);
+    useEffect(() => setPilih(tab), [tab]);
+    const memuat = pilih !== tab;
 
     function buka(params) {
-        router.get(indexUrl, params, { preserveScroll: true });
+        router.get(indexUrl, params, { preserveScroll: true, preserveState: true });
     }
 
     function cari(e) {
@@ -61,16 +66,21 @@ export default function ManagementIndex({
                     <button
                         type="button"
                         key={t.key}
-                        className={'au-mgmt-tab au-warna-' + t.warna + (t.key === tab ? ' is-aktif' : '')}
-                        onClick={() => buka({ tab: t.key, ...(search ? { search } : {}) })}
+                        className={'au-mgmt-tab au-warna-' + t.warna + (t.key === pilih ? ' is-aktif' : '')}
+                        onClick={() => {
+                            if (t.key === pilih) return;
+                            setPilih(t.key);
+                            buka({ tab: t.key, ...(search ? { search } : {}) });
+                        }}
                     >
-                        {t.key !== tab ? <i /> : null}
+                        <i />
                         {t.label}
                         <span>{t.jumlah}</span>
                     </button>
                 ))}
             </div>
 
+            <div key={tab} className={'au-mgmt-isi' + (memuat ? ' is-memuat' : '')}>
             {tab === 'department' ? (
                 <Departemen data={departemen} />
             ) : (
@@ -96,7 +106,7 @@ export default function ManagementIndex({
                                     <tr>
                                         <th>Nama</th>
                                         <th className="au-sembunyi-hp">Email</th>
-                                        {tab === 'operator' ? <th className="au-sembunyi-hp">Departemen</th> : null}
+                                        {tab !== 'developer' ? <th className="au-sembunyi-hp">Departemen</th> : null}
                                         <th className="au-sembunyi-hp">Bergabung</th>
                                         <th>Status</th>
                                         {pengguna.some((u) => u.editUrl || u.deleteUrl) ? <th style={{ textAlign: 'right' }}>Aksi</th> : null}
@@ -109,7 +119,7 @@ export default function ManagementIndex({
                                                 <div className="au-mgmt-nama">
                                                     <span className={'au-mgmt-avatar au-warna-' + info.warna}>
                                                         {u.avatar_url ? (
-                                                            <img src={u.avatar_url} alt="" onError={(e) => e.currentTarget.remove()} />
+                                                            <img loading="lazy" src={u.avatar_url} alt="" onError={(e) => e.currentTarget.remove()} />
                                                         ) : null}
                                                         <b>{u.name.charAt(0).toUpperCase()}</b>
                                                     </span>
@@ -123,7 +133,7 @@ export default function ManagementIndex({
                                                 </div>
                                             </td>
                                             <td className="au-sembunyi-hp">{u.email}</td>
-                                            {tab === 'operator' ? <td className="au-sembunyi-hp">{u.department || '—'}</td> : null}
+                                            {tab !== 'developer' ? <td className="au-sembunyi-hp">{u.department || '—'}</td> : null}
                                             <td className="au-sembunyi-hp">{u.joined || '-'}</td>
                                             <td>
                                                 {u.toggleUrl ? (
@@ -172,6 +182,7 @@ export default function ManagementIndex({
                     )}
                 </div>
             )}
+            </div>
         </AppLayout>
     );
 }

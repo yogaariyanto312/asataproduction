@@ -37,3 +37,13 @@ __pycache__/
 
 /public/css/filament
 /public/fonts/filament
+
+# APK aplikasi Android (dipush ke server lewat android-update/push_update.py)
+/android-update/*.apk
+# Installer aplikasi Windows (dipush ke server lewat windows-update/push_update.py)
+/windows-update/*.msi
+
+# Alat update aplikasi (APK/MSI + skrip SSH yang membaca .env) & salinan statis halaman (bisa berisi data asli)
+/android-update/
+/windows-update/
+/asata-static/

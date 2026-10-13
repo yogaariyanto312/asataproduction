@@ -77,6 +77,8 @@ export default function ProductionIndex({
     rejectCategories,
     today,
 }) {
+    const [modalInput, setModalInput] = useState(false);
+
     // Dialog "Reject Unit": null = tutup, selain itu = baris produksi terpilih.
     const [rejectRow, setRejectRow] = useState(null);
     const [rj, setRj] = useState({ jumlah: 1, tanggal: today, reject_category: '', reject_notes: '' });
@@ -244,7 +246,7 @@ export default function ProductionIndex({
                             Reset
                         </Btn>
                         {canInput ? (
-                            <Btn as="a" href={createUrl} icon={ICON.plus} className="au-btn--green">
+                            <Btn icon={ICON.plus} className="au-btn--green" onClick={() => setModalInput(true)}>
                                 Input Produksi
                             </Btn>
                         ) : null}
@@ -399,7 +401,7 @@ export default function ProductionIndex({
                                                         {log.reject > 0 && (log.rejectLabel || log.rejectNotes) ? (
                                                             <p
                                                                 className="au-itemrow-note"
-                                                                style={{ color: '#f87171' }}
+                                                                style={{ color: 'var(--tc-f87171)' }}
                                                                 title={log.rejectNotes || ''}
                                                             >
                                                                 {log.rejectLabel ? <b>{log.rejectLabel}</b> : null}
@@ -576,6 +578,53 @@ export default function ProductionIndex({
                     </form>
                 </div>
             ) : null}
+            {modalInput ? <ModalInput url={createUrl} onClose={() => setModalInput(false)} /> : null}
         </AppLayout>
+    );
+}
+
+/**
+ * Modal "Input Produksi" seperti versi lama: form create dimuat di iframe
+ * (?modal=1) supaya daftar tidak ditinggalkan. Tiap data baru tersimpan, daftar
+ * di belakang modal langsung disegarkan.
+ */
+function ModalInput({ url, onClose }) {
+    const tutup = () => onClose();
+    const tutupRef = useRef(tutup);
+    tutupRef.current = tutup;
+
+    useEffect(() => {
+        const pesan = (e) => {
+            if (e.origin !== window.location.origin) return;
+            // Data baru tersimpan di iframe → daftar di belakang modal langsung diperbarui (modal tetap terbuka).
+            if (e.data?.type === 'prod-changed') router.reload({ preserveScroll: true });
+            if (e.data?.type === 'prod-modal-close') tutupRef.current();
+        };
+        const esc = (e) => e.key === 'Escape' && tutupRef.current();
+        window.addEventListener('message', pesan);
+        window.addEventListener('keydown', esc);
+        document.body.style.overflow = 'hidden';
+        return () => {
+            window.removeEventListener('message', pesan);
+            window.removeEventListener('keydown', esc);
+            document.body.style.overflow = '';
+        };
+    }, []);
+
+    return (
+        <div className="au-modal-backdrop" onClick={tutup}>
+            <div className="au-modal au-modal--wide au-prod-modal" role="dialog" aria-modal="true" aria-label="Input Produksi" onClick={(e) => e.stopPropagation()}>
+                <div className="au-modal-banner">
+                    <div>
+                        <h3>Form Input Produksi Harian</h3>
+                        <p>Isi data produksi dengan lengkap</p>
+                    </div>
+                    <button type="button" onClick={tutup} aria-label="Tutup">
+                        <Icon path={ICON.close} />
+                    </button>
+                </div>
+                <iframe src={url + (url.includes('?') ? '&' : '?') + 'modal=1'} title="Input Produksi" className="au-prod-modal-frame" />
+            </div>
+        </div>
     );
 }

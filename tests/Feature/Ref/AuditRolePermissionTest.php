@@ -66,6 +66,10 @@ class AuditRolePermissionTest extends TestCase
         foreach ($roles as $role) $pengguna[$role] = $this->user($role);
 
         foreach ($this->menuDikelola() as $item) {
+            // Saklar izin tanpa halaman (mis. Bot Telegram) tidak punya URL untuk dibuka.
+            if (! isset($item['route'])) {
+                continue;
+            }
             $baris = ['menu' => $item['label']];
 
             foreach ($roles as $role) {

@@ -98,7 +98,7 @@ class ProductController extends Controller
             'mode'       => 'create',
             'action'     => route('products.store'),
             'indexUrl'   => route('products.index'),
-            'categories' => $categories->map(fn ($c) => ['value' => $c->id, 'label' => $c->name])->values(),
+            'categories' => $categories->map(fn ($c) => ['value' => $c->id, 'label' => $c->name, 'manual' => (bool) $c->has_manual_serial])->values(),
             'maxYear'    => now()->year + 5,
             'units'      => $this->daftarSatuan(),
             'names'      => Product::distinct()->orderBy('name')->pluck('name'),
@@ -113,6 +113,14 @@ class ProductController extends Controller
         return collect(['unit', 'pcs', 'lembar', 'set', 'meter', 'roll', 'kg', 'liter'])
             ->merge(Product::whereNotNull('unit')->distinct()->pluck('unit')->map(fn ($u) => strtolower(trim($u))))
             ->filter()->unique()->values()->all();
+    }
+
+    /** Centang "seri manual" di form produk berlaku untuk kategorinya. */
+    private function aturSeriManual(Request $request, Product $product): void
+    {
+        if ($request->has('manual')) {
+            $product->category?->update(['has_manual_serial' => $request->boolean('manual')]);
+        }
     }
 
     /** Urutan & warna kartu disimpan sama di semua varian satu nama produk. */
@@ -132,6 +140,7 @@ class ProductController extends Controller
         $data['warna_teks'] ??= $grup?->warna_teks;
         $product = Product::create($data + ['is_active' => $request->boolean('is_active', true)]);
         $this->samakanUrutan($product);
+        $this->aturSeriManual($request, $product);
         ActivityLog::record('create', "Menambah produk: {$product->name}", $product);
         return redirect()->route('products.index')->with('success', "Produk '{$product->name}' berhasil ditambahkan.");
     }
@@ -182,7 +191,7 @@ class ProductController extends Controller
             'mode'       => 'edit',
             'action'     => route('products.update', $product->id),
             'indexUrl'   => route('products.index'),
-            'categories' => $categories->map(fn ($c) => ['value' => $c->id, 'label' => $c->name])->values(),
+            'categories' => $categories->map(fn ($c) => ['value' => $c->id, 'label' => $c->name, 'manual' => (bool) $c->has_manual_serial])->values(),
             'maxYear'    => now()->year + 5,
             'units'      => $this->daftarSatuan(),
             'names'      => Product::distinct()->orderBy('name')->pluck('name'),
@@ -210,6 +219,7 @@ class ProductController extends Controller
     {
         $product->update($request->validated() + ['is_active' => $request->boolean('is_active', true)]);
         $this->samakanUrutan($product);
+        $this->aturSeriManual($request, $product);
         ActivityLog::record('update', "Mengubah produk: {$product->name}", $product);
         return redirect()->route('products.index')->with('success', "Produk '{$product->name}' berhasil diperbarui.");
     }

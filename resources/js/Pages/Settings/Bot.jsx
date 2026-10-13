@@ -17,6 +17,7 @@ const P = {
     kirim: 'M12 19l9 2-9-18-9 18 9-2zm0 0v-8',
     gambar: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z',
     chev: 'M19 9l-7 7-7-7',
+    gedung: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
 };
 
 /**
@@ -73,7 +74,7 @@ function Rahasia({ id, nama, nilai, placeholder, label }) {
  * Bot (webhook), contoh format pesan, dan profil di halaman Tentang.
  */
 export default function SettingsBot(props) {
-    const { setting, action, testUrl, webhookRegisterUrl, webhookInfoUrl, dailyReportUrl, webhookUrl, perintah, profil, aboutInfoUrl, aboutAvatarUrl, maintenanceUntilLabel } = props;
+    const { setting, action, testUrl, webhookRegisterUrl, webhookInfoUrl, dailyReportUrl, webhookUrl, perintah, profil, aboutInfoUrl, aboutAvatarUrl, maintenanceUntilLabel, pesanPengingatBawaan } = props;
     const { errors, flash } = usePage().props;
     const form = useRef(null);
     const awal = useRef('');
@@ -240,6 +241,46 @@ export default function SettingsBot(props) {
                         <div className="au-st-isi">
                             <p className="au-st-teks">Saat aktif, semua role kecuali Developer tidak bisa membuka F12, Ctrl+Shift+I/J/C, Ctrl+U, dan klik kanan.</p>
                             <p className="au-st-awas">Ini pencegahan dasar, bukan perlindungan mutlak — kode sisi peramban tetap bisa dibaca lewat cara lain. Jangan pernah menaruh rahasia di sana.</p>
+                        </div>
+                    </section>
+
+                    <section className="au-st-kartu">
+                        <Kepala ikon={P.gambar} warna="amber" judul="Pengingat Gambar Kerja" sub="Popup saat menu Gambar Kerja dibuka">
+                            <Saklar nama="gk_popup_enabled" aktif={setting.gk_popup_enabled} judul="Aktifkan pengingat gambar kerja" />
+                        </Kepala>
+                        <div className="au-st-isi">
+                            <p className="au-st-teks">
+                                Mengingatkan pengguna di web dan aplikasi Android bahwa gambar kerja di sini bukan patokan — cari gambar kerja aslinya dulu.
+                            </p>
+                            <div>
+                                <label className="au-st-label" htmlFor="gk_popup_detik">
+                                    Lama tampil <span>(detik, 1–30)</span>
+                                </label>
+                                <input id="gk_popup_detik" type="number" min="1" max="30" name="gk_popup_detik" className="au-input" defaultValue={setting.gk_popup_detik} />
+                                {errors.gk_popup_detik ? <p className="au-st-galat">{errors.gk_popup_detik}</p> : null}
+                            </div>
+                            <div>
+                                <label className="au-st-label" htmlFor="gk_popup_pesan">
+                                    Pesan <span>(opsional)</span>
+                                </label>
+                                <textarea id="gk_popup_pesan" name="gk_popup_pesan" rows={3} maxLength={300} className="au-input" defaultValue={setting.gk_popup_pesan || ''} placeholder={pesanPengingatBawaan} />
+                                <p className="au-st-bantu">Kosongkan untuk memakai pesan bawaan.</p>
+                                {errors.gk_popup_pesan ? <p className="au-st-galat">{errors.gk_popup_pesan}</p> : null}
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="au-st-kartu">
+                        <Kepala ikon={P.gedung} warna="emerald" judul="Fitur Departemen" sub="Input & Riwayat Produksi (khusus Developer)">
+                            <Saklar nama="fitur_departemen" aktif={setting.fitur_departemen} judul="Aktifkan fitur departemen" />
+                        </Kepala>
+                        <div className="au-st-isi">
+                            <p className="au-st-teks">
+                                Saat aktif, Developer memilih <b>Departemen tujuan</b> di Input Produksi dan bisa menyaring Riwayat Produksi per departemen — di web dan aplikasi Android.
+                            </p>
+                            <p className="au-st-bantu">
+                                Saat nonaktif, pilihan dan saringan itu disembunyikan: data baru tercatat dengan departemen akun yang menginput, dan Riwayat menampilkan semua departemen. Role lain tidak terpengaruh — mereka selalu otomatis ikut departemennya.
+                            </p>
                         </div>
                     </section>
 

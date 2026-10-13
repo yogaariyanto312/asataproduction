@@ -39,6 +39,29 @@ class ProfileAvatarUploadTest extends TestCase
         Storage::disk('public')->assertExists($baru);
     }
 
+    public function test_simpan_data_akun_tidak_menghapus_foto_yang_diupload(): void
+    {
+        Storage::fake('public');
+        $u = $this->operator();
+        $this->actingAs($u)->post('/profile/avatar', ['photo' => UploadedFile::fake()->image('a.png', 200, 200)]);
+        $foto = $u->fresh()->avatar;
+
+        $this->put('/profile', ['name' => 'Op Baru', 'email' => 'op@uji.test'])->assertSessionHasNoErrors();
+
+        $this->assertSame($foto, $u->fresh()->avatar);
+        Storage::disk('public')->assertExists($foto);
+    }
+
+    public function test_upload_gagal_memberi_pesan_dan_foto_lama_tetap(): void
+    {
+        $u = $this->operator();
+        $u->forceFill(['avatar' => 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix'])->save();
+        $gagal = new UploadedFile(__FILE__, 'besar.jpg', 'image/jpeg', UPLOAD_ERR_INI_SIZE, true);
+
+        $this->actingAs($u)->post('/profile/avatar', ['photo' => $gagal])->assertSessionHasErrors('photo');
+        $this->assertStringContainsString('seed=Felix', $u->fresh()->avatar);
+    }
+
     public function test_berkas_bukan_gambar_ditolak_dengan_pesan_jelas(): void
     {
         Storage::fake('public');

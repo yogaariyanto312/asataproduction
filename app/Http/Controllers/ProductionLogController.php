@@ -16,11 +16,20 @@ class ProductionLogController extends Controller
 {
     public function index(Request $request)
     {
+        return Inertia::render('Production/Index', $this->riwayatData($request));
+    }
+
+    /**
+     * Data Riwayat Produksi (per tanggal → kategori). Dipakai halaman web dan
+     * API aplikasi Android, supaya filter, urutan, & hitungannya tidak bisa berbeda.
+     */
+    public function riwayatData(Request $request): array
+    {
         $dateFrom = $request->date_from ?: null;
         $dateTo   = $request->date_to   ?: null;
 
         // Developer bisa menyaring per departemen (role lain sudah di-scope otomatis).
-        $deptFilter = auth()->user()?->role === 'developer'
+        $deptFilter = \App\Models\BotSetting::departemenUntuk(auth()->user())
             ? (trim((string) $request->input('department')) ?: null)
             : null;
 
@@ -35,7 +44,7 @@ class ProductionLogController extends Controller
 ;
         };
 
-        $departments = auth()->user()?->role === 'developer'
+        $departments = \App\Models\BotSetting::departemenUntuk(auth()->user())
             ? \App\Models\Department::where('is_active', true)->orderBy('name')->pluck('name')
             : collect();
 
@@ -171,7 +180,7 @@ class ProductionLogController extends Controller
             })
             ->values();
 
-        return Inertia::render('Production/Index', [
+        return [
             'filters'   => $request->only(['search', 'product_name', 'date_from', 'date_to', 'month', 'year', 'department']),
             'indexUrl'  => route('production.index'),
             'createUrl' => route('production.create'),
@@ -198,18 +207,20 @@ class ProductionLogController extends Controller
             'products'    => $products->map(fn ($n) => ['value' => $n, 'label' => $n])->values(),
             'years'       => $years->map(fn ($y) => ['value' => $y, 'label' => (string) $y])->values(),
             'departments' => $departments->map(fn ($d) => ['value' => $d, 'label' => $d])->values(),
-        ]);
+        ];
     }
 
     public function create()
     {
         $products    = $this->dropdownProducts();
         // Developer memilih departemen tujuan; role lain otomatis ikut departemennya.
-        $departments = auth()->user()?->role === 'developer'
+        $departments = \App\Models\BotSetting::departemenUntuk(auth()->user())
             ? \App\Models\Department::where('is_active', true)->orderBy('name')->pluck('name')
             : collect();
         return Inertia::render('Production/Form', [
             'mode'         => 'create',
+            // ?modal=1: dimuat di iframe modal Riwayat Produksi (tanpa sidebar).
+            'modal'        => request()->boolean('modal'),
             'action'       => route('production.store'),
             'indexUrl'     => route('production.index'),
             'lastSerialUrl'=> route('api.production.last-serial'),
@@ -232,7 +243,7 @@ class ProductionLogController extends Controller
         // Departemen data: developer memilih di form; role lain otomatis ikut
         // departemennya. Ditetapkan eksplisit di sini agar lookup merge & auto-fill
         // trait konsisten (lihat App\Models\Concerns\BelongsToDepartment).
-        if (auth()->user()->role === 'developer' && \App\Models\Department::where('is_active', true)->exists()) {
+        if (\App\Models\BotSetting::departemenUntuk(auth()->user()) && \App\Models\Department::where('is_active', true)->exists()) {
             $request->validate([
                 'department' => ['required', 'string', 'exists:departments,name'],
             ], [], ['department' => 'departemen tujuan']);
@@ -429,6 +440,12 @@ class ProductionLogController extends Controller
         ]);
     }
 
+    /** Opsi produk untuk form input (web & API Android). */
+    public function opsiProduk(): array
+    {
+        return $this->productOptions($this->dropdownProducts())->all();
+    }
+
     /**
      * Opsi dropdown produk, sama dengan Production-QC-Logging-System:
      * "seri · kva KVA", atau "Seri & KVA Manual CH → PLN" untuk produk
@@ -599,6 +616,15 @@ class ProductionLogController extends Controller
 
     public function update(ProductionLogRequest $request, ProductionLog $productionLog)
     {
+        $this->perbaruiLog($request, $productionLog);
+
+        return redirect()->route('production.index')
+            ->with('success', 'Data produksi berhasil diperbarui.');
+    }
+
+    /** Inti edit produksi (tanpa sesi) — dipakai web & API Android. */
+    public function perbaruiLog(ProductionLogRequest $request, ProductionLog $productionLog): void
+    {
         $data = $request->validated();
         $data['reject_qty'] = (int) ($data['reject_qty'] ?? 0);
         $product = Product::find($data['product_id']);
@@ -619,8 +645,6 @@ class ProductionLogController extends Controller
         $productionLog->update($data);
         ActivityLog::record('update', "Edit produksi: {$productionLog->product->name} ({$productionLog->total_qty} unit)", $productionLog);
         $this->notifyAfterResponse($product, $data['production_date'], $data['product_id']);
-        return redirect()->route('production.index')
-            ->with('success', 'Data produksi berhasil diperbarui.');
     }
 
     /**
@@ -676,6 +700,12 @@ class ProductionLogController extends Controller
      * aturan merge Input Produksi.
      */
     public function rejectUnit(Request $request, ProductionLog $productionLog)
+    {
+        return redirect()->route('production.index')->with('success', $this->prosesReject($request, $productionLog));
+    }
+
+    /** Inti reject unit (tanpa sesi) — dipakai web & API Android. Mengembalikan pesan sukses. */
+    public function prosesReject(Request $request, ProductionLog $productionLog): string
     {
         abort_unless(\App\Support\MenuAccess::can(auth()->user(), 'riwayat-produksi.reject'), 403);
 
@@ -757,8 +787,7 @@ class ProductionLogController extends Controller
             . " dari {$productionLog->production_date->format('d/m/Y')}, dicatat {$hasil['tujuan']->production_date->format('d/m/Y')}",
             $hasil['tujuan']);
 
-        return redirect()->route('production.index')->with('success',
-            "{$n} unit {$nama} ditandai reject." . ($hasil['dilepas'] ? " Nomor {$hasil['dilepas']} dilepas." : ''));
+        return "{$n} unit {$nama} ditandai reject." . ($hasil['dilepas'] ? " Nomor {$hasil['dilepas']} dilepas." : '');
     }
 
     /** Tambahkan reject ke sebuah entri, menggabung catatan yang sudah ada. */

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\AccessoryExport;
 use App\Models\Accessory;
+use App\Models\AccessoryCategory;
 use App\Models\ActivityLog;
 use App\Models\Product;
 use App\Support\MenuAccess;
@@ -66,7 +67,7 @@ class AccessoryController extends Controller
         $user = auth()->user();
 
         return Inertia::render('Accessories/Index', [
-            'filters'     => $request->only(['search', 'month', 'year', 'department']),
+            'filters'     => $request->only(['search', 'month', 'year', 'category', 'department']),
             'indexUrl'    => route('accessories.index'),
             'storeUrl'    => route('accessories.store'),
             'exportUrl'   => route('accessories.export', $request->query()),
@@ -82,7 +83,9 @@ class AccessoryController extends Controller
             'productGroups'  => $productGroups->values(),
             // Peta id produk → seri, untuk menyusun kunci lastSerials.
             'productSeries'  => $allProducts->mapWithKeys(fn ($p) => [$p->id => (string) $p->series]),
-            'accessoryNames' => Accessory::query()->select('name')->distinct()->orderBy('name')->pluck('name'),
+            'accessoryNames' => AccessoryCategory::orderBy('name')->pluck('name'),
+            // Kategori + jumlah data yang memakainya (untuk filter & kelola kategori).
+            'categories'     => $this->daftarKategori(),
             'lastSerials'    => $this->nomorUrutTerakhir(),
             'rows'           => $accessories->through(fn ($a) => [
                 'id'         => $a->id,
@@ -110,6 +113,7 @@ class AccessoryController extends Controller
         $data['user_id']       = auth()->id();
         $data['operator_name'] = auth()->user()->name;
 
+        $data['name'] = AccessoryCategory::pastikan($data['name']);
         $accessory = Accessory::create($data);
 
         ActivityLog::record('create', "Input aksesoris keluar: {$accessory->name} ({$accessory->qty} {$accessory->unit})", $accessory);
@@ -122,7 +126,9 @@ class AccessoryController extends Controller
     {
         abort_unless(MenuAccess::can(auth()->user(), 'aksesoris.edit'), 403);
 
-        $accessory->update($this->validated($request));
+        $data = $this->validated($request);
+        $data['name'] = AccessoryCategory::pastikan($data['name']);
+        $accessory->update($data);
 
         ActivityLog::record('update', "Ubah aksesoris keluar: {$accessory->name} ({$accessory->qty} {$accessory->unit})", $accessory);
 
@@ -140,6 +146,60 @@ class AccessoryController extends Controller
 
         return redirect()->route('accessories.index')
             ->with('success', 'Data aksesoris berhasil dihapus.');
+    }
+
+    /**
+     * Ganti nama kategori: semua data aksesoris yang memakai nama lama ikut diganti (semua departemen,
+     * karena kategori dipakai bersama). Bila nama baru sudah ada, kedua kategori digabung.
+     */
+    public function updateCategory(Request $request, AccessoryCategory $category)
+    {
+        abort_unless(MenuAccess::can(auth()->user(), 'aksesoris.edit'), 403);
+        $baru = trim((string) $request->validate(['name' => ['required', 'string', 'max:150']])['name']);
+        $lama = $category->name;
+
+        DB::transaction(function () use ($category, $baru, $lama) {
+            $sama = AccessoryCategory::whereRaw('LOWER(name) = ?', [mb_strtolower($baru)])->whereKeyNot($category->id)->first();
+            $tujuan = $sama?->name ?? $baru;
+            Accessory::withoutGlobalScopes()->where('name', $lama)->update(['name' => $tujuan]);
+            $sama ? $category->delete() : $category->update(['name' => $baru]);
+        });
+
+        ActivityLog::record('update', "Ubah kategori aksesoris: {$lama} → {$baru}");
+
+        return redirect()->route('accessories.index')->with('success', "Kategori '{$lama}' diubah menjadi '{$baru}'.");
+    }
+
+    /** Hapus kategori yang tidak dipakai data apa pun (data aksesoris tidak ikut terhapus). */
+    public function destroyCategory(AccessoryCategory $category)
+    {
+        abort_unless(MenuAccess::can(auth()->user(), 'aksesoris.delete'), 403);
+
+        $dipakai = Accessory::withoutGlobalScopes()->where('name', $category->name)->count();
+        if ($dipakai > 0) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'name' => "Kategori '{$category->name}' masih dipakai {$dipakai} data aksesoris. Ubah namanya atau hapus datanya dulu.",
+            ]);
+        }
+
+        $category->delete();
+        ActivityLog::record('delete', "Hapus kategori aksesoris: {$category->name}");
+
+        return redirect()->route('accessories.index')->with('success', "Kategori '{$category->name}' dihapus.");
+    }
+
+    /** [{id, name, count, updateUrl, deleteUrl}] — count = data aksesoris yang terlihat pengguna ini. */
+    private function daftarKategori(): \Illuminate\Support\Collection
+    {
+        $jumlah = Accessory::query()->selectRaw('name, COUNT(*) as n')->groupBy('name')->pluck('n', 'name');
+
+        return AccessoryCategory::orderBy('name')->get()->map(fn ($k) => [
+            'id'        => $k->id,
+            'name'      => $k->name,
+            'count'     => (int) ($jumlah[$k->name] ?? 0),
+            'updateUrl' => route('accessories.categories.update', $k->id),
+            'deleteUrl' => route('accessories.categories.destroy', $k->id),
+        ])->values();
     }
 
     public function exportExcel(Request $request)
@@ -249,6 +309,9 @@ class AccessoryController extends Controller
         }
         if ($year = $request->input('year')) {
             $query->whereYear('accessory_date', (int) $year);
+        }
+        if ($category = trim((string) $request->input('category'))) {
+            $query->where('name', $category);
         }
 
         return $query;

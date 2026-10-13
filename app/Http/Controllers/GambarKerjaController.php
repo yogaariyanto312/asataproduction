@@ -20,6 +20,7 @@ class GambarKerjaController extends Controller
                  MIN(created_at) as first_created,
                  COUNT(*) as total,
                  MIN(id) as first_id,
+                 MAX(id) as last_id,
                  MAX(thumbnail_path) as group_thumbnail,
                  MAX(kategori_seri) as kategori_seri,
                  MAX(keterangan) as keterangan'
@@ -35,6 +36,8 @@ class GambarKerjaController extends Controller
 
         $allGroups  = $query->get();
         $firstFiles = GambarKerja::whereIn('id', $allGroups->pluck('first_id'))->get()->keyBy('id');
+        // Berkas terakhir tiap kelompok → info "diupload oleh … · … yg lalu" di kartu.
+        $lastFiles  = GambarKerja::with('uploader:id,name')->whereIn('id', $allGroups->pluck('last_id'))->get(['id', 'uploaded_by', 'created_at'])->keyBy('id');
 
         // Kelompokkan berdasar tahun (fallback ke tahun upload), urut sesuai pilihan (bawaan: seri terkecil)
         $sort = in_array($request->input('sort'), ['seri', 'seri_desc', 'kva', 'kva_desc', 'judul'], true)
@@ -54,6 +57,8 @@ class GambarKerjaController extends Controller
             ->map(fn($items) => $items->sort(fn($a, $b) => $desc ? $key($b) <=> $key($a) : $key($a) <=> $key($b))->values());
 
         return Inertia::render('GambarKerja/Index', [
+            // Popup "jangan jadikan patokan" tiap kali menu dibuka; diatur di Settings.
+            'pengingat' => \App\Models\BotSetting::instance()->pengingatGambarKerja(),
             'search'    => $request->search,
             'sort'      => $sort,
             'indexUrl'  => route('gambar-kerja.index'),
@@ -68,8 +73,9 @@ class GambarKerjaController extends Controller
             ],
             'years'     => $yearGroups->map(fn ($items, $year) => [
                 'year'   => (string) $year,
-                'groups' => $items->map(function ($g) use ($firstFiles) {
+                'groups' => $items->map(function ($g) use ($firstFiles, $lastFiles) {
                     $first = $firstFiles->get($g->first_id);
+                    $last  = $lastFiles->get($g->last_id);
                     $thumb = $g->group_thumbnail
                         ?: (($first && $first->file_type !== 'pdf') ? $first->file_path : null);
 
@@ -84,6 +90,9 @@ class GambarKerjaController extends Controller
                         'kategori'   => $g->kategori_seri,
                         'keterangan' => $g->keterangan,
                         'total'      => (int) $g->total,
+                        // Upload terakhir di kelompok ini; teks "… yg lalu" dihitung di peramban/HP supaya selalu terkini.
+                        'pengunggah' => $last?->uploader?->name,
+                        'diunggah'   => $last?->created_at?->toIso8601String(),
                         // Kartu memakai turunan kecil (storage.thumb), bukan gambar
                         // penuh — jauh lebih hemat bandwidth di HP & koneksi lambat.
                         'thumbnail'  => $thumb ? route('storage.thumb', ['path' => $thumb]) : null,
@@ -185,6 +194,8 @@ class GambarKerjaController extends Controller
                 'isPdf'    => $f->file_type === 'pdf',
                 'urutan'   => (int) $f->urutan,
                 'keterangan' => $f->keterangan,
+                'catatan'  => $f->catatan_file,
+                'catatanUrl' => route('gambar-kerja.update-catatan', $f->id),
                 'uploader' => $f->uploader->name ?? null,
                 'at'       => $f->created_at?->locale('id')->isoFormat('D MMM YYYY'),
                 'deleteUrl'=> route('gambar-kerja.destroy', $f->id),
@@ -197,6 +208,8 @@ class GambarKerjaController extends Controller
         $request->validate([
             'judul_baru'  => ['required', 'string', 'max:150'],
             'keterangan'  => ['nullable', 'string', 'max:300'],
+            // Seperti versi lama: kategori seri ikut tombol "Simpan Perubahan".
+            'kategori_seri' => ['nullable', 'in:pln,swasta,typetest'],
         ]);
 
         $judul = $request->judul;
@@ -211,7 +224,7 @@ class GambarKerjaController extends Controller
             ->update([
                 'judul'      => $request->judul_baru,
                 'keterangan' => $request->keterangan,
-            ]);
+            ] + ($request->filled('kategori_seri') ? ['kategori_seri' => $request->kategori_seri] : []));
 
         ActivityLog::record('update', "Edit info gambar kerja: {$judul} → {$request->judul_baru}");
 
@@ -220,7 +233,7 @@ class GambarKerjaController extends Controller
             'seri'  => $seri,
             'kva'   => $kva,
             'tahun' => $tahun,
-        ])->with('success', 'Judul dan keterangan berhasil diperbarui.');
+        ])->with('success', 'Perubahan gambar kerja berhasil disimpan.');
     }
 
     public function updateKategori(Request $request)
@@ -545,6 +558,20 @@ class GambarKerjaController extends Controller
             ->update(['thumbnail_path' => $path]);
 
         return back()->with('success', 'Thumbnail berhasil diperbarui.');
+    }
+
+    /** Keterangan satu file saja (mis. "Revisi ke-2"); kosong = hapus keterangan. */
+    public function updateCatatan(Request $request, GambarKerja $gambarKerja)
+    {
+        $data = $request->validate(['catatan' => ['nullable', 'string', 'max:200']]);
+
+        $gambarKerja->update(['catatan_file' => trim((string) ($data['catatan'] ?? '')) ?: null]);
+
+        ActivityLog::record('update', "Edit keterangan file {$gambarKerja->urutan} gambar kerja: {$gambarKerja->judul}");
+
+        return redirect()->route('gambar-kerja.by-group', [
+            'judul' => $gambarKerja->judul, 'seri' => $gambarKerja->seri, 'kva' => $gambarKerja->kva, 'tahun' => $gambarKerja->tahun,
+        ])->with('success', 'Keterangan file berhasil disimpan.');
     }
 
     public function destroy(GambarKerja $gambarKerja)

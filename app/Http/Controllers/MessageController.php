@@ -237,47 +237,25 @@ class MessageController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->role === 'developer') {
-            $users = \App\Models\User::where('id', '!=', $user->id)
-                ->where('is_active', true)
-                ->whereIn('role', ['admin', 'supervisor', 'mandor', 'operator', 'visitor'])
-                ->orderByRaw("FIELD(role, 'admin', 'supervisor', 'mandor', 'operator', 'visitor')")
-                ->orderBy('name')
-                ->get(['id', 'name', 'role', 'department', 'avatar', 'last_seen_at']);
-        } elseif ($user->role === 'admin') {
-            $users = \App\Models\User::whereIn('role', ['developer', 'supervisor', 'mandor', 'operator', 'visitor'])
-                ->where('is_active', true)
-                ->orderByRaw("FIELD(role, 'developer', 'supervisor', 'mandor', 'operator', 'visitor')")
-                ->orderBy('name')
-                ->get(['id', 'name', 'role', 'department', 'avatar', 'last_seen_at']);
-        } elseif ($user->role === 'supervisor') {
-            $users = \App\Models\User::whereIn('role', ['developer', 'admin', 'supervisor', 'mandor', 'operator'])
-                ->where('id', '!=', $user->id)
-                ->where('is_active', true)
-                ->orderByRaw("FIELD(role, 'developer', 'admin', 'supervisor', 'mandor', 'operator')")
-                ->orderBy('name')
-                ->get(['id', 'name', 'role', 'department', 'avatar', 'last_seen_at']);
-        } elseif ($user->role === 'mandor') {
-            $users = \App\Models\User::whereIn('role', ['developer', 'admin', 'supervisor', 'mandor', 'operator'])
-                ->where('id', '!=', $user->id)
-                ->where('is_active', true)
-                ->orderByRaw("FIELD(role, 'developer', 'admin', 'supervisor', 'mandor', 'operator')")
-                ->orderBy('name')
-                ->get(['id', 'name', 'role', 'department', 'avatar', 'last_seen_at']);
-        } elseif ($user->role === 'visitor') {
-            $users = \App\Models\User::whereIn('role', ['developer', 'admin'])
-                ->where('is_active', true)
-                ->orderByRaw("FIELD(role, 'developer', 'admin')")
-                ->orderBy('name')
-                ->get(['id', 'name', 'role', 'department', 'avatar', 'last_seen_at']);
-        } else {
-            // Operator
-            $users = \App\Models\User::whereIn('role', ['developer', 'admin', 'supervisor', 'mandor'])
-                ->where('is_active', true)
-                ->orderByRaw("FIELD(role, 'developer', 'admin', 'supervisor', 'mandor')")
-                ->orderBy('name')
-                ->get(['id', 'name', 'role', 'department', 'avatar', 'last_seen_at']);
-        }
+        // Peran yang boleh dihubungi, urut sesuai tampilan. Diurutkan di PHP,
+        // bukan FIELD() yang hanya ada di MySQL.
+        $peran = match ($user->role) {
+            // Sesama developer / sesama admin juga bisa saling chat (dulu tidak muncul di daftar).
+            'developer'           => ['developer', 'admin', 'supervisor', 'mandor', 'operator', 'visitor'],
+            'admin'               => ['developer', 'admin', 'supervisor', 'mandor', 'operator', 'visitor'],
+            'supervisor', 'mandor' => ['developer', 'admin', 'supervisor', 'mandor', 'operator'],
+            'visitor'             => ['developer', 'admin'],
+            default               => ['developer', 'admin', 'supervisor', 'mandor'], // operator
+        };
+        $urut = array_flip($peran);
+
+        $users = \App\Models\User::whereIn('role', $peran)
+            ->where('id', '!=', $user->id)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'role', 'department', 'avatar', 'last_seen_at'])
+            ->sortBy(fn ($u) => $urut[$u->role])
+            ->values();
 
         $typingIds = \App\Models\User::where('typing_to', $user->id)
             ->where('typing_at', '>=', now()->subSeconds(8))

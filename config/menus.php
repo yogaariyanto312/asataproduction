@@ -13,6 +13,8 @@
  *  - manageable    : true bila muncul di UI "Hak Akses Menu".
  *  - locked        : true bila muncul di UI tapi TIDAK bisa diubah (lihat di bawah).
  *  - group         : opsional penanda grup dropdown sidebar.
+ *  - nav           : false = hanya saklar izin (tampil di Hak Akses), tidak muncul di sidebar.
+ *  - view_label    : label saklar utama di Hak Akses (bawaan "Lihat").
  *  - actions       : opsional daftar aksi granular. Tiap aksi:
  *        key, label, default_roles, match (pola route aksi tsb).
  *
@@ -113,7 +115,7 @@ return [
                 ['key' => 'gambar-kerja.upload', 'label' => 'Upload', 'default_roles' => ['developer', 'admin'],
                  'match' => ['gambar-kerja.create', 'gambar-kerja.store']],
                 ['key' => 'gambar-kerja.edit', 'label' => 'Edit', 'default_roles' => ['developer', 'admin'],
-                 'match' => ['gambar-kerja.update-kategori', 'gambar-kerja.update-info', 'gambar-kerja.upload-thumbnail', 'gambar-kerja.delete-thumbnail']],
+                 'match' => ['gambar-kerja.update-kategori', 'gambar-kerja.update-info', 'gambar-kerja.update-catatan', 'gambar-kerja.upload-thumbnail', 'gambar-kerja.delete-thumbnail']],
                 ['key' => 'gambar-kerja.delete', 'label' => 'Hapus', 'default_roles' => ['developer', 'admin'],
                  'match' => ['gambar-kerja.destroy', 'gambar-kerja.destroy-by-group']],
             ],
@@ -168,9 +170,9 @@ return [
                 ['key' => 'aksesoris.create', 'label' => 'Tambah', 'default_roles' => ['developer', 'admin', 'operator'],
                  'match' => ['accessories.store']],
                 ['key' => 'aksesoris.edit', 'label' => 'Edit', 'default_roles' => ['developer', 'admin', 'operator'],
-                 'match' => ['accessories.update']],
+                 'match' => ['accessories.update', 'accessories.categories.update']],
                 ['key' => 'aksesoris.delete', 'label' => 'Hapus', 'default_roles' => ['developer', 'admin', 'operator'],
-                 'match' => ['accessories.destroy']],
+                 'match' => ['accessories.destroy', 'accessories.categories.destroy']],
                 ['key' => 'aksesoris.export', 'label' => 'Export', 'default_roles' => ['developer', 'admin', 'operator'],
                  'match' => ['accessories.export']],
             ],
@@ -270,6 +272,15 @@ return [
                 ['key' => 'about.edit', 'label' => 'Kelola Riwayat Update', 'default_roles' => ['developer'],
                  'match' => ['about.changelog.store', 'about.changelog.destroy']],
             ],
+        ],
+
+        [
+            // Bukan halaman: saklar "boleh menautkan & memakai bot Telegram pribadi" (kartu Telegram
+            // di Profil web & aplikasi). 'nav' => false = tidak muncul di sidebar. Tanpa 'match' karena
+            // route-nya (buat kode / putuskan) dijaga di controller — memutus tautan harus tetap bisa.
+            'key' => 'telegram', 'label' => 'Bot Telegram', 'nav' => false, 'view_label' => 'Tautkan & pakai bot',
+            'icon' => 'M12 19l9 2-9-18-9 18 9-2zm0 0v-8',
+            'default_roles' => ['developer', 'admin', 'supervisor'], 'match' => [], 'manageable' => true,
         ],
 
         /* ── Menu di bawah ini ditampilkan di matriks tapi DIKUNCI ──
