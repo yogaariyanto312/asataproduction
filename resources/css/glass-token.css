@@ -1,0 +1,195 @@
+/*
+ * Token tema kaca dan latar (scene): dipakai bersama aplikasi (glass.css) dan halaman masuk (glass-login.css).
+ * Tema: html[data-tema=terang][data-warna=coral|violet|ocean] atau html[data-tema=gelap]. Lihat glass.css.
+ */
+
+/* ───────────────────────── 1. Token ───────────────────────── */
+
+:root {
+    --blur: 26px;
+    --g-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+    --g-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+
+/* Terang: coral (bawaan) */
+:root[data-tema="terang"] {
+    --g-accent: #c93d28; --g-accent-2: #f07a5f; --g-accent-soft: #e4543d; --g-link: #8c2a17;
+    --g-hero: linear-gradient(128deg, #cf4029 0%, #c43822 45%, #a82d1a 100%);
+    --g-side-a: rgba(146, 76, 58, 0.78); --g-side-b: rgba(100, 46, 34, 0.64);
+    --g-panel: rgba(246, 222, 204, 0.74);
+    --g-card: rgba(255, 240, 231, 0.58); --g-card-2: rgba(255, 233, 221, 0.34);
+    --g-pop: rgba(255, 246, 240, 0.94);
+    --g-scene-a: #2a1a14; --g-scene-b: #7a4a38; --g-scene-c: #e6c5a8; --g-scene-d: #b98467;
+    --g-ink: #1d1512; --g-ink-2: rgba(29, 21, 18, 0.74); --g-ink-3: rgba(29, 21, 18, 0.66);
+    --g-edge: rgba(255, 255, 255, 0.55); --g-edge-hi: rgba(255, 255, 255, 0.75);
+    --g-shadow: rgba(70, 28, 14, 0.55);
+    --g-on-side: #fff7f3; --g-on-side-2: rgba(255, 247, 243, 0.9);
+    --g-field: rgba(255, 255, 255, 0.62);
+    --g-dark: #17100d;
+    --g-blue: #e4543d; --g-blue-rgb: 228, 84, 61;
+}
+:root[data-tema="terang"][data-warna="violet"] {
+    --g-accent: #6240de; --g-accent-2: #9a82ff; --g-accent-soft: #7a5cf5; --g-link: #43289e;
+    --g-hero: linear-gradient(128deg, #6a47e6 0%, #5a38d4 45%, #4a2bb8 100%);
+    --g-side-a: rgba(88, 68, 150, 0.78); --g-side-b: rgba(54, 38, 104, 0.64);
+    --g-panel: rgba(232, 226, 250, 0.74);
+    --g-card: rgba(244, 240, 255, 0.58); --g-card-2: rgba(236, 229, 255, 0.34);
+    --g-pop: rgba(247, 244, 255, 0.94);
+    --g-scene-a: #17122b; --g-scene-b: #4b3b86; --g-scene-c: #d9cdfa; --g-scene-d: #8d79cf;
+    --g-ink: #17122b; --g-ink-2: rgba(23, 18, 43, 0.74); --g-ink-3: rgba(23, 18, 43, 0.66);
+    --g-shadow: rgba(40, 24, 90, 0.55);
+    --g-on-side: #f7f3ff; --g-on-side-2: rgba(247, 243, 255, 0.9);
+    --g-dark: #120d26;
+    --g-blue: #7a5cf5; --g-blue-rgb: 122, 92, 245;
+}
+:root[data-tema="terang"][data-warna="ocean"] {
+    --g-accent: #0c7d77; --g-accent-2: #2cbfb5; --g-accent-soft: #129a92; --g-link: #075a54;
+    --g-hero: linear-gradient(128deg, #0e857f 0%, #0b7771 45%, #086660 100%);
+    --g-side-a: rgba(32, 104, 112, 0.78); --g-side-b: rgba(16, 66, 76, 0.64);
+    --g-panel: rgba(214, 238, 236, 0.74);
+    --g-card: rgba(234, 249, 247, 0.58); --g-card-2: rgba(222, 244, 241, 0.34);
+    --g-pop: rgba(240, 251, 249, 0.94);
+    --g-scene-a: #0d1a1d; --g-scene-b: #2f6068; --g-scene-c: #cfeae4; --g-scene-d: #6aa7a6;
+    --g-ink: #0d1a1d; --g-ink-2: rgba(13, 26, 29, 0.74); --g-ink-3: rgba(13, 26, 29, 0.66);
+    --g-shadow: rgba(8, 50, 56, 0.55);
+    --g-on-side: #f1fffd; --g-on-side-2: rgba(241, 255, 253, 0.9);
+    --g-dark: #0a1416;
+    --g-blue: #129a92; --g-blue-rgb: 18, 154, 146;
+}
+/* Gelap: kaca gelap, aksen biru */
+:root[data-tema="gelap"] {
+    --g-accent: #2563eb; --g-accent-2: #60a5fa; --g-accent-soft: #3b82f6; --g-link: #7cb0ff;
+    --g-hero: linear-gradient(128deg, #2f5fe0 0%, #2750c8 45%, #1f40a8 100%);
+    --g-side-a: rgba(26, 36, 66, 0.74); --g-side-b: rgba(14, 20, 40, 0.66);
+    --g-panel: rgba(12, 18, 38, 0.62);
+    --g-card: rgba(20, 30, 58, 0.74); --g-card-2: rgba(20, 30, 58, 0.46);
+    --g-pop: rgba(22, 31, 56, 0.95);
+    --g-scene-a: #060a16; --g-scene-b: #14224a; --g-scene-c: #223a76; --g-scene-d: #0d1632;
+    --g-ink: #eef2fb; --g-ink-2: rgba(238, 242, 251, 0.82); --g-ink-3: rgba(238, 242, 251, 0.68);
+    --g-edge: rgba(255, 255, 255, 0.14); --g-edge-hi: rgba(255, 255, 255, 0.22);
+    --g-shadow: rgba(0, 0, 0, 0.6);
+    --g-on-side: #eef2fb; --g-on-side-2: rgba(238, 242, 251, 0.72);
+    --g-field: rgba(255, 255, 255, 0.07);
+    --g-dark: #05080f;
+    --g-blue: #3b82f6; --g-blue-rgb: 59, 130, 246;
+}
+
+/* Warna status (teks) di tiga tema terang: cukup gelap untuk 4,5:1 di atas kaca. */
+:root[data-tema="terang"] {
+    --tc-4ade80: #0b5a2c; --tc-86efac: #0b5a2c; --tc-6ee7b7: #064e3b; --tc-34d399: #065f46;
+    --tc-fbbf24: #7a4004; --tc-fcd34d: #7a4004; --tc-fde68a: #7a4004; --tc-fdba74: #7c2d12; --tc-fb923c: #7c2d12; --tc-facc15: #6b4300;
+    --tc-f87171: #9b1020; --tc-fca5a5: #9b1020; --tc-fda4af: #9b1020; --tc-fb7185: #9b1020;
+    --tc-c084fc: #4c1d95; --tc-c4b5fd: #4c1d95; --tc-d8b4fe: #4c1d95;
+    --tc-64748b: rgba(29, 21, 18, 0.7);
+    --tc-22d3ee: #0b5568;
+}
+
+/* Token lama (asata-ui.css) diarahkan ke kaca, jadi 4000 baris gaya lama ikut berubah. */
+:root[data-tema="terang"] .au-app,
+:root[data-tema="gelap"] .au-app {
+    --au-paper: transparent;
+    --au-ink: var(--g-edge);
+    --au-text: var(--g-ink);
+    --au-muted: var(--g-ink-2);
+    --au-accent: var(--g-accent);
+    --au-accent-deep: var(--g-accent);
+    --au-link: var(--g-link);
+    --au-shell: var(--g-card);
+    --au-surface: var(--g-card-2);
+    --au-line: 1px solid var(--g-edge);
+    --au-shadow: 0 18px 40px -22px var(--g-shadow);
+    --au-shadow-sm: 0 8px 18px -10px var(--g-shadow);
+    color: var(--g-ink);
+    background: transparent;
+}
+:root[data-tema="terang"] .au-app { color-scheme: light; }
+:root[data-tema="terang"] .au-app { --au-danger: #a61a1a; --g-t-bad: #a61a1a; --g-t-warn: #7a4004; --g-t-ok: #0b5a2c; --g-t-vio: #4c1d95; }
+:root[data-tema="terang"] { --g-t-bad: #a61a1a; --g-t-warn: #7a4004; --g-t-ok: #0b5a2c; --g-t-vio: #4c1d95; }
+:root[data-tema="gelap"] .au-app { color-scheme: dark; }
+:root[data-tema="terang"] body,
+:root[data-tema="gelap"] body { background: var(--g-scene-a); color: var(--g-ink); }
+
+/* Variabel --tc-* (warna tertanam) untuk tiga tema terang: bawaan "terang" lama sudah teruji,
+   hanya garis dan latar polos yang dibuat tembus pandang. */
+:root[data-tema="terang"] {
+    --tc-334155: rgba(255, 255, 255, 0.62);
+    --tc-020617: rgba(255, 255, 255, 0.4);
+    --tc-0b1220: rgba(255, 255, 255, 0.4);
+    --tc-0f172a: rgba(255, 255, 255, 0.55);
+    --tc-1e293b: var(--g-pop);
+    --tc-475569: rgba(29, 21, 18, 0.66);
+    --tc-64748b: rgba(29, 21, 18, 0.74);
+    --tc-94a3b8: rgba(29, 21, 18, 0.72);
+    --tc-fff: var(--g-ink);
+    --tc-e2e8f0: var(--g-ink);
+    --tc-f1f5f9: var(--g-ink);
+    --tc-cbd5e1: var(--g-ink-2);
+}
+:root[data-tema="terang"][data-warna="violet"] { --tc-475569: rgba(23, 18, 43, 0.66); --tc-64748b: rgba(23, 18, 43, 0.74); --tc-94a3b8: rgba(23, 18, 43, 0.72); }
+:root[data-tema="terang"][data-warna="ocean"] { --tc-475569: rgba(13, 26, 29, 0.66); --tc-64748b: rgba(13, 26, 29, 0.74); --tc-94a3b8: rgba(13, 26, 29, 0.72); }
+:root[data-tema="gelap"] {
+    --tc-64748b: #a3b0c6; --tc-475569: #8e9cb5; --tc-94a3b8: #bcc6d8;
+    --tc-60a5fa: #93c5fd; --tc-fb7185: #fda4af; --tc-f87171: #fca5a5;
+    --tc-334155: rgba(255, 255, 255, 0.14);
+    --tc-0f172a: rgba(10, 16, 32, 0.55);
+    --tc-1e293b: var(--g-pop);
+    --tc-020617: rgba(6, 10, 22, 0.6);
+    --tc-0b1220: rgba(6, 10, 22, 0.6);
+}
+
+/* ───────────────────────── 2. Latar (scene) ───────────────────────── */
+
+.gl-scene { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: var(--g-scene-a); }
+.gl-scene > i { position: absolute; display: block; }
+.gl-wall {
+    inset: -8%;
+    background:
+        radial-gradient(60% 70% at 78% 28%, color-mix(in srgb, var(--g-scene-c) 78%, transparent), transparent 70%),
+        radial-gradient(50% 60% at 14% 72%, color-mix(in srgb, var(--g-scene-b) 85%, transparent), transparent 72%),
+        linear-gradient(100deg, var(--g-scene-a) 0%, color-mix(in srgb, var(--g-scene-b) 60%, var(--g-scene-a)) 46%, var(--g-scene-d) 100%);
+}
+.gl-window {
+    right: 6%; top: 8%; width: 26%; height: 62%; border-radius: 40px; opacity: 0.55;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--g-scene-c) 90%, #fff), transparent);
+    animation: gl-drift 18s ease-in-out infinite alternate;
+}
+.gl-lamp {
+    left: 30%; top: 2%; width: 16%; height: 32%; opacity: 0.6;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--g-scene-c) 80%, #ffd6a0), transparent);
+    animation: gl-drift 22s ease-in-out infinite alternate-reverse;
+}
+.gl-floor { left: 0; right: 0; bottom: 0; height: 30%; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--g-scene-a) 38%, transparent)); }
+.gl-vignette { inset: 0; background: radial-gradient(120% 100% at 50% 40%, transparent 55%, rgba(8, 4, 2, 0.32)); }
+:root[data-tema="gelap"] .gl-floor { background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--g-scene-a) 75%, transparent)); }
+:root[data-tema="gelap"] .gl-vignette { background: radial-gradient(120% 100% at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.5)); }
+@keyframes gl-drift { from { transform: translate3d(-2%, 0, 0) scale(1); } to { transform: translate3d(3%, 2%, 0) scale(1.06); } }
+
+.au-app { position: relative; z-index: 1; }
+
+
+/* ───────────── Mode ringan: sesedikit mungkin kerja GPU/CPU (komputer lama, HP lama) ─────────────
+   Dipasang di glass-token.css karena dimuat oleh semua halaman (aplikasi, login, panel admin).
+   - Tanpa animasi dan transisi apa pun (keadaan akhir langsung tampil; elemen yang butuh keadaan akhir
+     eksplisit sudah dipasangi aturan sendiri di glass.css).
+   - Tanpa blur latar (backdrop-filter), tanpa filter/drop-shadow, tanpa bayangan kotak/teks
+     (bayangan besar berblur pada puluhan kartu adalah biaya gambar terbesar). Cincin fokus tetap ada.
+   - Latar jadi satu warna datar: lapisan gradien dan animasi pada .gl-scene dimatikan. */
+html.g-ringan *, html.g-ringan *::before, html.g-ringan *::after {
+    animation: none !important;
+    transition: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    scroll-behavior: auto !important;
+}
+html.g-ringan *:not(:focus):not(:focus-visible):not(:focus-within):not(.au-saklar *) {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+}
+html.g-ringan .gl-scene > i { display: none; }
+html.g-ringan .gl-scene { background: color-mix(in srgb, var(--g-scene-b) 72%, var(--g-scene-a)); }
+html.g-ringan .lgi { background: color-mix(in srgb, var(--g-scene-a) 94%, transparent); }
+html.g-ringan .lg-scene::before, html.g-ringan .lg-scene::after { display: none; }
+/* garis grafik yang biasanya "digambar" oleh animasi harus langsung tampil penuh */
+html.g-ringan .gl-chart-ln, html.g-ringan .gl-spark-ln { stroke-dashoffset: 0 !important; }
+html.g-ringan .gl-chart-area, html.g-ringan .gl-spark-ar, html.g-ringan .gl-spark-dot { opacity: 1 !important; }

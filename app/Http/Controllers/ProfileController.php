@@ -20,6 +20,7 @@ class ProfileController extends Controller
         return Inertia::render('Profile/Edit', [
             'action'         => route('profile.update'),
             'avatarUrl'      => route('profile.avatar'),
+            'avatarDasarUrl' => asset('avatars-dasar'),
             'logoutOthersUrl'=> route('profile.logout-others'),
             'aboutAvatarUrl' => route('profile.about-avatar'),
             'aboutInfoUrl'   => route('profile.about-info'),
@@ -242,7 +243,7 @@ class ProfileController extends Controller
         ]);
 
         $file      = $request->file('about_avatar');
-        $ext       = $file->getClientOriginalExtension() ?: 'jpg';
+        $ext       = $file->guessExtension() ?: 'jpg'; // dari isi berkas, bukan nama dari klien
         $filename  = 'about_' . $user->id . '.' . $ext;
         $path      = 'avatars/about/' . $filename;
 

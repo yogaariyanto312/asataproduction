@@ -16,20 +16,20 @@ export default function ForgotPassword({ action, loginUrl }) {
             subtitle="Masukkan username atau email akun Anda"
         >
             {errors.identifier ? (
-                <div className="lr-alert" role="alert">
+                <div className="lg-alert" role="alert">
                     <span>{errors.identifier}</span>
                 </div>
             ) : null}
 
             {flash && flash.success ? (
-                <div className="lr-alert lr-alert--ok">
+                <div className="lg-alert lg-alert--ok">
                     <span>{flash.success}</span>
                 </div>
             ) : null}
 
             <form onSubmit={submit}>
-                <label className={'lr-field' + (errors.identifier ? ' has-error' : '')}>
-                    <svg className="lr-field-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <label className={'lg-field' + (errors.identifier ? ' has-error' : '')}>
+                    <svg className="lg-field-ikon" viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Zm0 2c-3.9 0-8 2-8 5v1.5h16V19c0-3-4.1-5-8-5Z" />
                     </svg>
                     <input
@@ -42,13 +42,13 @@ export default function ForgotPassword({ action, loginUrl }) {
                     />
                 </label>
 
-                <button className="lr-btn" type="submit" disabled={processing}>
+                <button className="lg-tombol" type="submit" disabled={processing}>
                     <span>{processing ? 'MENGIRIM...' : 'KIRIM LINK RESET'}</span>
                 </button>
             </form>
 
-            <p className="lr-footnote">
-                <a className="lr-link" href={loginUrl}>
+            <p className="lg-catatan">
+                <a className="lg-link" href={loginUrl}>
                     Kembali ke halaman login
                 </a>
             </p>

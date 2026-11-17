@@ -4,9 +4,9 @@ Sistem pencatatan produksi dan quality control untuk pabrik trafo. Operator menc
 
 Tersedia dalam tiga bentuk yang memakai data & hak akses yang sama:
 
-- **Web** — Laravel + Inertia/React (repo ini).
-- **Aplikasi Android** — aplikasi native (Kotlin + Jetpack Compose), bukan WebView.
-- **Aplikasi Windows** — aplikasi native (Kotlin + Compose Multiplatform Desktop), dipasang lewat installer MSI.
+- **Web**: Laravel + Inertia/React (repo ini).
+- **Aplikasi Android**: aplikasi native (Kotlin + Jetpack Compose), bukan WebView.
+- **Aplikasi Windows**: aplikasi native (Kotlin + Compose Multiplatform Desktop), dipasang lewat installer MSI.
 
 Ditambah bot Telegram untuk lapor produksi dan cek jadwal dari HP.
 
@@ -14,13 +14,37 @@ Ditambah bot Telegram untuk lapor produksi dan cek jadwal dari HP.
 
 ---
 
+## Tampilan aplikasi
+
+Screenshot berikut memakai database demo terpisah. Nama operator, seri produk, angka produksi, dan catatan adalah contoh, bukan data pabrik atau konfigurasi server.
+
+### Dashboard
+
+![Dashboard dengan tema Ocean, ringkasan produksi, foto avatar operator, dan grafik](docs/screenshots/dashboard.png)
+
+### Papan Catatan
+
+![Catatan dikelompokkan menjadi Aktif, Terlambat, dan Selesai](docs/screenshots/catatan.png)
+
+<details>
+<summary>Lihat halaman login dan tampilan HP</summary>
+
+![Halaman login Asata Production](docs/screenshots/login.png)
+
+<img src="docs/screenshots/dashboard-mobile.png" alt="Dashboard responsif dengan dock navigasi pada HP" width="320">
+
+</details>
+
+---
+
 ## Fitur Utama
 
 | Menu | Isi |
 |---|---|
+| **Tampilan kaca** | Empat tema: Coral, Violet, Ocean, dan Gelap; mode ringan, palet Ctrl+K, sidebar ringkas, serta dock navigasi HP |
 | **Dashboard** | Ringkasan hari ini & bulan ini, kalender (hari libur nasional & fase bulan), tren produksi, target aktif, reject, catatan & input terbaru, log aktivitas |
-| **Catatan** | Catatan berwarna dengan editor teks, foto/kamera, tenggat, dan penerima (read-only bagi penerima) |
-| **Target Produksi** | Foto jadwal mingguan (gambar/PDF), set target per produk (jumlah unit atau sampai no. urut), progres live, hapus otomatis setelah tercapai |
+| **Catatan** | Papan Aktif, Terlambat, dan Selesai; editor teks, foto/kamera, tenggat, dan penerima |
+| **Target Produksi** | Foto jadwal gambar/PDF, target jumlah atau nomor urut, deret UP/BT terpisah untuk channel, serta progres yang diperbarui otomatis |
 | **Chatting** | Pesan antar pengguna (termasuk sesama developer/admin), status mengetik & dibaca |
 | **Gambar Kerja** | Upload banyak file (JPG/PNG/PDF) per judul-seri-kVA, pratinjau PDF, cache offline, **keterangan per file** (mis. "Revisi ke-2") |
 | **Input & Riwayat Produksi** | Input per produk dengan nomor urut UP/BT, seri & kVA manual, reject unit; riwayat per tanggal & kategori, input cepat lewat modal |
@@ -31,6 +55,8 @@ Ditambah bot Telegram untuk lapor produksi dan cek jadwal dari HP.
 | **Profil** | 80 pilihan avatar kartun atau foto sendiri, ganti password, logout perangkat lain, tautkan Telegram |
 | **Tutorial** | Panduan bergambar tiap menu dengan penanda bernomor & garis penunjuk |
 | **Bot Telegram** | Lapor produksi, cek jadwal, dan notifikasi lewat Telegram (akun ditautkan dari halaman Profil) |
+| **Sinkron Gambar dari qc** | Khusus Developer di Settings web, Windows, dan Android. Server memeriksa sumber tiap menit, menambah gambar kerja/foto jadwal baru, serta menampilkan hasil dan konflik tanpa menimpa data yang sudah ada |
+| **Pembaruan data** | Pemeriksaan versi ringan dari server, berhenti saat tab tersembunyi, dengan pengambilan data saat ada perubahan dan polling cadangan |
 | **Mode Maintenance** | Saklar dari Settings dengan hitung mundur; developer tetap bisa masuk |
 | **Panel `/admin`** | Panel Filament untuk dashboard ringkas |
 
@@ -38,36 +64,32 @@ Ditambah bot Telegram untuk lapor produksi dan cek jadwal dari HP.
 
 ## Teknologi
 
-- **Backend** — Laravel 13, PHP 8.4, Filament 5
-- **Frontend** — Inertia.js 3 + React 19, Vite 8, CSS kustom (tema gelap)
-- **Database** — MySQL 8 / MariaDB 11 (SQLite untuk pengujian)
-- **Ekspor** — barryvdh/laravel-dompdf (PDF), maatwebsite/excel (Excel)
-- **PDF viewer** — pdf.js (di `public/vendor/pdfjs`)
-- **API aplikasi** — REST JSON `/api/v1` dengan Laravel Sanctum (token per perangkat)
-- **Aplikasi** — Kotlin 2.1, Jetpack Compose (Android), Compose Multiplatform 1.8 + JDK 21 (Windows)
+- **Backend**: Laravel 13, PHP 8.4, Filament 5
+- **Frontend**: Inertia.js 3 + React 19, Vite 8, CSS kustom (empat tema kaca dan mode ringan)
+- **Database**: MySQL 8 / MariaDB 11 (SQLite untuk pengujian)
+- **Ekspor**: barryvdh/laravel-dompdf (PDF), maatwebsite/excel (Excel)
+- **PDF viewer**: pdf.js (di `public/vendor/pdfjs`)
+- **API aplikasi**: REST JSON `/api/v1` dengan Laravel Sanctum (token per perangkat)
+- **Aplikasi**: Kotlin 2.1, Jetpack Compose (Android), Compose Multiplatform 1.8 + JDK 21 (Windows)
 
 ---
 
 ## Aplikasi Android & Windows
 
-Kedua aplikasi native memakai API `/api/v1` (lihat `routes/api.php`) — hak akses, departemen, dan saklar fitur sama persis dengan web, jadi fitur baru di server langsung berlaku di ketiganya.
+Kedua aplikasi native memakai API `/api/v1` (lihat `routes/api.php`): aturan data, hak akses, dan departemen ditangani server yang sama. Perubahan tampilan atau kontrol baru pada aplikasi native tetap membutuhkan pembaruan APK/MSI.
 
-| | Unduh | Cek versi |
+| Platform | Rilis | Unduh |
 |---|---|---|
-| Android | `/unduh/aplikasi` (juga lewat QR di menu **Tentang Aplikasi**) | `GET /api/v1/aplikasi/versi?platform=android` |
-| Windows | `/unduh/aplikasi-windows` (installer MSI) | `GET /api/v1/aplikasi/versi?platform=windows` |
+| Android | **1.4.1** (kode 15) | [APK Android](https://asataproduction.yogaariyanto.com/unduh/aplikasi) |
+| Windows | **1.1.1** (kode 4) | [Installer MSI](https://asataproduction.yogaariyanto.com/unduh/aplikasi-windows) |
+
+Versi rilis di atas diperiksa pada 17 November 2026. Informasi versi terbaru tersedia melalui `GET /api/v1/aplikasi/versi?platform=android` atau `?platform=windows`.
 
 - Aplikasi mengecek versi saat dibuka dan menawarkan update otomatis bila versi di server lebih baru.
 - Gambar kerja & foto yang sudah diunduh disimpan di perangkat sehingga tidak diunduh ulang (penting untuk koneksi pabrik yang lambat).
 - Kode sumber aplikasi ada di proyek terpisah (Android Studio). Berkas APK/MSI dan script unggahnya (`android-update/`, `windows-update/`) **tidak** di-commit karena berukuran besar dan memakai kredensial SSH dari `.env`.
 
-Rilis update (dari folder proyek web, butuh Python 3 + `paramiko`):
-
-```bash
-# Naikkan dulu versionCode/versionName di proyek aplikasi, lalu:
-python android-update/push_update.py --build --catatan "Ringkasan perubahan"
-python windows-update/push_update.py --build --catatan "Ringkasan perubahan"
-```
+Pengunggahan rilis dikelola melalui alat operasional lokal. Skrip unggah, kredensial, keystore, APK, dan MSI tidak disertakan dalam repositori kode maupun payload deploy web.
 
 ---
 
@@ -98,11 +120,12 @@ Data produksi dipisah per **departemen**; selain developer, pengguna hanya melih
 
 ---
 
-## Instalasi Lokal (Laragon)
+## Instalasi Lokal
 
 ```bash
-# 1. Letakkan proyek di folder www Laragon, lalu masuk ke foldernya
-cd D:\laragon\www\asata-production
+# 1. Clone repositori dan masuk ke folder project
+git clone https://github.com/yogaariyanto312/asataproduction.git
+cd asataproduction
 
 # 2. Dependensi
 composer install
@@ -125,11 +148,11 @@ APP_FALLBACK_LOCALE=en
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=asataprdct
+DB_DATABASE=asata_lokal
 DB_USERNAME=root
 DB_PASSWORD=
 
-# Inertia DevTools menambah ±250 ms tiap request — nyalakan hanya saat debug
+# Inertia DevTools menambah ±250 ms tiap request: nyalakan hanya saat debug
 INERTIA_DEVTOOLS_ENABLED=false
 ```
 
@@ -144,7 +167,7 @@ php artisan storage:link
 npm run build      # atau: npm run dev (hot reload)
 ```
 
-**Akun pertama** — seeder bawaan berisi data contoh dan password lemah, jangan dipakai di server. Buat akun developer lewat tinker:
+**Akun pertama**: seeder bawaan berisi data contoh dan password lemah, jangan dipakai di server. Buat akun developer lewat tinker:
 
 ```bash
 php artisan tinker
@@ -165,44 +188,16 @@ Buka `http://localhost/asata-production/public` lalu login.
 
 ---
 
-## Deploy ke Shared Hosting (Hostinger)
+## Publikasi dan deploy
 
-Deploy memakai script `deployment/deploy.py` (folder `deployment/` tidak di-commit karena berisi kredensial). Kebutuhan: Python 3 + `paramiko`.
+Repositori ini berisi kode aplikasi, pengujian, aset web hasil build, serta dokumentasi. Alat deploy dan rilis disimpan lokal di luar publikasi kode. Untuk instalasi sendiri, siapkan konfigurasi hosting dan kredensial di lingkungan masing-masing.
 
-Isi blok berikut di `.env` lokal:
-
-```env
-DEPLOY_SSH_HOST=
-DEPLOY_SSH_PORT=65002
-DEPLOY_SSH_USER=
-DEPLOY_SSH_PASS=
-DEPLOY_REMOTE_ROOT=/home/USER/domains/DOMAIN/public_html
-DEPLOY_REMOTE_PHP=/opt/alt/php84/usr/bin/php
-DEPLOY_URL=https://DOMAIN
-DEPLOY_DB_DATABASE=
-DEPLOY_DB_USERNAME=
-DEPLOY_DB_PASSWORD=
-```
-
-```bash
-python deployment/deploy.py --check       # lihat file yang akan dikirim, server tidak diubah
-python deployment/deploy.py               # build → kirim file yang berubah → migrate → cache → uji /login
-python deployment/deploy.py --buat-akun   # (sekali) akun developer awal, password acak
-python deployment/deploy.py --push-env    # tulis ulang .env server (APP_KEY & rahasia webhook dipertahankan)
-```
-
-Yang dilakukan script: build aset lokal (server tanpa Node.js), mengirim hanya file yang berubah dalam satu arsip, mode perawatan selama deploy, `composer install --no-dev` bila perlu, `migrate --force`, `storage:link`, `filament:assets`, `optimize`, lalu uji asap. Script menolak berjalan bila folder tujuan bukan domain asataproduction.
-
-Catatan hosting:
-
-- `.htaccess` di akar memaksa PHP 8.4 untuk domain ini (`<IfModule LiteSpeed>`), karena PHP bawaan akun bisa lebih lama.
-- **Cron** (atur di hPanel → Cron Jobs, setiap menit) untuk jadwal otomatis — hapus foto jadwal tiap Senin 01.00 dan hapus catatan selesai:
-
-  ```
-  /opt/alt/php84/usr/bin/php /home/USER/domains/DOMAIN/public_html/artisan schedule:run
-  ```
-
-- Bot Telegram diatur dari menu **Settings** setelah deploy (butuh HTTPS).
+- Jangan commit `.env`, token bot, password server/database, kunci privat, keystore, dump database, arsip cadangan, atau data unggahan pengguna.
+- Folder `deployment/`, `android-update/`, `windows-update/`, `ai-context/`, serta instruksi AI lokal dikecualikan dari Git dan deploy web.
+- Skrip operasional, screenshot dokumentasi, serta paket APK/MSI tidak dikirim sebagai file aplikasi web.
+- Cadangkan database dan kode sebelum deploy. Hentikan publikasi bila pemeriksaan file atau cadangan gagal.
+- Sinkron gambar memerlukan scheduler server yang berjalan tiap menit. Proses berlangsung di server meskipun aplikasi ditutup; sumber hanya dibaca, konflik tidak ditimpa, dan kegagalan dicoba pada jadwal berikutnya.
+- Kredensial bot diisi lewat Settings khusus Developer. Nilai rahasia tidak boleh ditanam dalam kode frontend atau screenshot dokumentasi.
 
 ---
 
@@ -227,7 +222,7 @@ php artisan jadwal:clear    # hapus semua foto jadwal
 php artisan catatan:clear-done
 ```
 
-> `php artisan migrate:fresh` **menghapus semua data** — backup database dulu.
+> `php artisan migrate:fresh` **menghapus semua data**: backup database dulu.
 
 ---
 

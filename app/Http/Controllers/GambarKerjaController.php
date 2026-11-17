@@ -307,8 +307,9 @@ class GambarKerjaController extends Controller
             ->max('urutan') + 1;
 
         foreach ($request->file('files') as $index => $file) {
-            $ext      = $file->getClientOriginalExtension();
-            $fileType = in_array(strtolower($ext), ['jpg', 'jpeg', 'png']) ? 'image' : 'pdf';
+            // Ekstensi dari ISI berkas (bukan nama dari klien): berkas PDF bernama .php tidak boleh tersimpan sebagai .php.
+            $ext      = $file->guessExtension() === 'pdf' ? 'pdf' : ($file->guessExtension() === 'png' ? 'png' : 'jpg');
+            $fileType = $ext === 'pdf' ? 'pdf' : 'image';
             $filePath = $file->storeAs('gambar-kerja', Str::uuid() . '.' . $ext, 'public');
             $urutan   = $nextUrutan + $index;
 

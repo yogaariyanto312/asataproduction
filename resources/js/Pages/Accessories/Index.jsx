@@ -104,6 +104,9 @@ function SelectProduk({ value, onChange, groups, error }) {
  * "Nomor Awal" → pratinjau nomor urut dan saran lanjutan per jenis+seri, serta
  * modal Edit. Tambahan asata: filter departemen (developer).
  */
+// Keterangan dibatasi 80 karakter (server juga memeriksa).
+const BATAS_KET = 80;
+
 export default function AccessoriesIndex({
     rows,
     filters,
@@ -435,8 +438,8 @@ function ModalTambah({ onClose, storeUrl, units, productGroups, productSeries, l
                                 {errors.serial_number ? <span className="au-error">{errors.serial_number}</span> : null}
                             </div>
                         </div>
-                        <Field label="Keterangan (opsional)" error={errors.keterangan}>
-                            <Textarea rows={2} maxLength={1000} value={data.keterangan} error={errors.keterangan} onChange={(e) => setData('keterangan', e.target.value)} />
+                        <Field label={'Keterangan (opsional) · ' + data.keterangan.length + '/' + BATAS_KET + ' karakter'} error={errors.keterangan}>
+                            <Textarea rows={2} maxLength={BATAS_KET} value={data.keterangan} error={errors.keterangan} onChange={(e) => setData('keterangan', e.target.value)} />
                         </Field>
                     </div>
                 </div>
@@ -508,8 +511,8 @@ function ModalEdit({ row, onClose, units, productGroups, accessoryNames }) {
                                 <Input value={data.serial_number} maxLength={150} placeholder="Contoh: NO.015-017" error={errors.serial_number} onChange={(e) => setData('serial_number', e.target.value)} />
                             </Field>
                         </div>
-                        <Field label="Keterangan (opsional)" error={errors.keterangan}>
-                            <Textarea rows={2} maxLength={1000} value={data.keterangan} error={errors.keterangan} onChange={(e) => setData('keterangan', e.target.value)} />
+                        <Field label={'Keterangan (opsional) · ' + data.keterangan.length + '/' + BATAS_KET + ' karakter'} error={errors.keterangan}>
+                            <Textarea rows={2} maxLength={BATAS_KET} value={data.keterangan} error={errors.keterangan} onChange={(e) => setData('keterangan', e.target.value)} />
                         </Field>
                     </div>
                 </div>

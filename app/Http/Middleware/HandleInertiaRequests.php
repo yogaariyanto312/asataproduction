@@ -56,6 +56,14 @@ class HandleInertiaRequests extends Middleware
             // URL aksi global. Sengaja datang dari server: aplikasi ini dilayani
             // dari subpath (/asata-production/public), sehingga URL literal
             // seperti '/logout' di sisi React akan menembak root domain dan 404.
+            // Saklar departemen di menu akun (hanya developer).
+            'deptSaklar' => fn () => $user && $user->role === 'developer' ? [
+                'url'     => route('akun.departemen'),
+                'pilihan' => \App\Models\Department::where('is_active', true)->orderBy('name')->pluck('name')->values(),
+                'lihat'   => \App\Models\Scopes\DepartmentScope::departemenDilihat(),
+            ] : null,
+            // Realtime ringan: alamat rt.php + token bertanda tangan (diperbarui tiap navigasi).
+            'rt' => fn () => $user ? ['url' => asset('rt.php'), 'token' => \App\Support\Realtime::token($user)] : null,
             'logoutUrl' => fn () => route('logout'),
             'profileUrl' => fn () => route('profile.edit'),
             'appName'    => fn () => ucwords((string) config('app.name', 'Asata Production')),

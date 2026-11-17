@@ -85,3 +85,51 @@ Artisan::command('laporan:harian', function () {
 })->purpose('Kirim laporan harian produksi ke Telegram/Discord setiap jam 10 malam');
 
 Schedule::command('laporan:harian')->dailyAt('22:00')->timezone('Asia/Jakarta');
+
+// Sinkron Gambar Kerja dari qc.yogaariyanto.com (PRD 15): satu arah, hanya menambah, qc hanya dibaca.
+Artisan::command('gambar:sinkron-qc {--cek : Hanya hitung, tanpa menyalin atau menulis} {--otomatis : Hormati saklar otomatis}', function () {
+    $layanan = app(\App\Services\SinkronGambarQc::class);
+    if ($this->option('otomatis') && ! $layanan::otomatis()) {
+        return 0;
+    }
+    $cek = (bool) $this->option('cek');
+    $disk = \Illuminate\Support\Facades\Storage::disk('local');
+    $disk->makeDirectory('.');
+    $kunci = fopen($disk->path('sinkron-qc.lock'), 'c');
+    if (! $kunci || ! flock($kunci, LOCK_EX | LOCK_NB)) {
+        if ($kunci) { fclose($kunci); }
+        $this->error('Sinkron sedang berjalan. Tunggu hingga selesai.');
+        return 1;
+    }
+    try {
+        $akar = $layanan::akarQc();
+        if (! $akar) {
+            throw new \RuntimeException('Sumber qc belum tersedia.');
+        }
+        $hasil = $layanan->jalankan($layanan::sambunganQc($akar), $akar . '/storage/app/public', $cek);
+        $layanan::simpanHasil($hasil);
+        if (! $cek && ($hasil['baru'] > 0 || $hasil['berkas_disalin'] > 0)) {
+            \App\Support\Realtime::bump('gambar');
+        }
+        if (! $cek && ($hasil['jadwal_baru'] > 0 || $hasil['berkas_disalin'] > 0)) {
+            \App\Support\Realtime::bump('target');
+        }
+    } catch (\Throwable $e) {
+        $hasil = ['waktu' => now()->toDateTimeString(), 'galat' => 'Sinkron gagal. Periksa ketersediaan sumber dan izin berkas server.', 'cek' => $cek];
+        $layanan::simpanHasil($hasil);
+        $this->error($hasil['galat']);
+        return 1;
+    } finally {
+        flock($kunci, LOCK_UN);
+        fclose($kunci);
+    }
+    $this->info(sprintf('sumber %d, sudah ada %d, %s %d, berkas %s %d, konflik %d, berkas hilang %d, foto jadwal %s %d',
+        $hasil['sumber'], $hasil['sudah_ada'], $cek ? 'akan ditambah' : 'ditambah', $hasil['baru'], $cek ? 'akan disalin' : 'disalin', $hasil['berkas_disalin'], count($hasil['konflik']), count($hasil['berkas_hilang']), $cek ? 'akan ditambah' : 'ditambah', $hasil['jadwal_baru']));
+    foreach ($hasil['konflik'] as $k) {
+        $this->warn('  konflik: ' . $k);
+    }
+
+    return 0;
+})->purpose('Sinkron Gambar Kerja dari qc (satu arah, hanya menambah)');
+
+Schedule::command('gambar:sinkron-qc --otomatis')->everyMinute()->withoutOverlapping();

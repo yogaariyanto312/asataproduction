@@ -1,0 +1,206 @@
+/*
+ * Halaman masuk baru (PRD 12): latar polos, kartu bersih, trafo + petir sebagai maskot.
+ * Dipakai Login, Lupa Password, dan Reset Password lewat Pages/Auth/Shell.jsx.
+ * Tanpa gradien: foto pabrik lama yang diburamkan, dilapisi satu warna datar per tema; kartu dan kartu fitur polos.
+ */
+
+.lg-scene {
+    --lg-bg: color-mix(in srgb, var(--g-scene-c) 24%, #fff);
+    --lg-kartu: #fff;
+    --lg-ink: var(--g-ink);
+    --lg-ink-2: var(--g-ink-2);
+    --lg-ink-3: var(--g-ink-3);
+    --lg-garis: color-mix(in srgb, var(--g-ink) 13%, transparent);
+    --lg-field: color-mix(in srgb, var(--g-scene-c) 20%, #fff);
+    --lg-aksen: var(--g-accent);
+    --lg-link: var(--g-link);
+    --lg-bahaya-bg: #fdecea;
+    --lg-bahaya-garis: #f0a79d;
+    --lg-bahaya-teks: #8a1c10;
+    --lg-ok-bg: #e5f6ec;
+    --lg-ok-garis: #8fd3ad;
+    --lg-ok-teks: #0b5a2c;
+    --lg-bayangan: 0 28px 60px -34px rgba(40, 20, 10, 0.45);
+
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: hidden;
+    color: #fff;
+    background: var(--lg-bg);
+}
+/* Latar: foto pabrik lama, sudah diburamkan dan dikecilkan (4 KB, tanpa filter blur saat berjalan), dilapisi satu warna tema. */
+.lg-scene::before { content: ''; position: fixed; inset: 0; z-index: -2; background: var(--lg-foto) center / cover no-repeat; transform: scale(1.04); }
+.lg-scene::after { content: ''; position: fixed; inset: 0; z-index: -1; background: color-mix(in srgb, var(--g-scene-a) 66%, transparent); }
+.lg-judul, .lg-sub, .lg-merek, .lg-kaki { text-shadow: 0 2px 14px rgba(0, 0, 0, 0.4); }
+.lg-sub { color: rgba(255, 255, 255, 0.88); }
+.lg-kaki { color: rgba(255, 255, 255, 0.78); }
+.lg-kartu, .lg-fitur, .lg-tema { color: var(--lg-ink); text-shadow: none; }
+.lg-kartu .lg-catatan { color: var(--lg-ink-2); }
+:root[data-tema="gelap"] .lg-scene {
+    --lg-bg: #0b1220;
+    --lg-kartu: #131c31;
+    --lg-field: #1a2540;
+    --lg-garis: rgba(255, 255, 255, 0.14);
+    --lg-bahaya-bg: #3a1a1a;
+    --lg-bahaya-garis: #8f4a44;
+    --lg-bahaya-teks: #ffd2cc;
+    --lg-ok-bg: #12301f;
+    --lg-ok-garis: #2f7a52;
+    --lg-ok-teks: #c5f2d8;
+    --lg-bayangan: 0 28px 60px -34px rgba(0, 0, 0, 0.9);
+}
+
+/* ── Bilah atas ── */
+.lg-atas { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 28px; }
+.lg-merek { display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
+.lg-merek-ikon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: var(--lg-aksen); color: #fff; }
+.lg-merek-ikon svg { width: 20px; height: 20px; }
+
+.lg-tema { display: flex; align-items: center; gap: 9px; padding: 7px 11px; border: 1px solid var(--lg-garis); border-radius: 999px; background: var(--lg-kartu); }
+.lg-tema-titik { width: 18px; height: 18px; padding: 0; border: 2px solid var(--lg-kartu); border-radius: 50%; background: var(--b); cursor: pointer; transition: transform 0.15s; }
+.lg-tema-titik:hover { transform: scale(1.18); }
+.lg-tema-titik[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--lg-ink); }
+.lg-tema-titik:focus-visible { outline: 2px solid var(--lg-ink); outline-offset: 3px; }
+
+/* ── Isi ── */
+.lg-tengah { position: relative; z-index: 2; flex: 1; display: grid; place-items: center; padding: 8px 20px 28px; }
+.lg-kolom { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 440px) minmax(0, 1fr); align-items: center; gap: 32px; width: 100%; max-width: 1180px; }
+.lg-samping { display: flex; flex-direction: column; gap: 16px; }
+.lg-samping--kiri { align-items: flex-end; }
+.lg-samping--kanan { align-items: flex-start; }
+.lg-samping--kiri .lg-fitur:nth-child(2) { margin-right: 34px; }
+.lg-samping--kanan .lg-fitur:nth-child(2) { margin-left: 34px; }
+
+.lg-fitur {
+    display: flex; align-items: center; gap: 12px; padding: 12px 20px 12px 12px;
+    border: 1px solid var(--lg-garis); border-radius: 20px; background: var(--lg-kartu);
+    box-shadow: 0 16px 34px -24px rgba(40, 20, 10, 0.5);
+    font-size: 14px; font-weight: 700; white-space: nowrap;
+    animation: lg-melayang 7s ease-in-out infinite;
+}
+.lg-samping .lg-fitur:nth-child(2) { animation-delay: -3.5s; }
+.lg-samping--kanan .lg-fitur:nth-child(1) { animation-delay: -1.8s; }
+.lg-fitur-ikon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: var(--lg-aksen); color: #fff; }
+.lg-fitur-ikon svg { width: 18px; height: 18px; }
+
+.lg-inti { display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; }
+.lg-judul { margin: 6px 0 8px; font-size: clamp(28px, 4vw, 38px); font-weight: 800; letter-spacing: -0.025em; line-height: 1.1; }
+@media (min-width: 1101px) { .lg-judul { white-space: nowrap; margin-inline: -80px; } }
+.lg-judul--kecil { margin-top: 0; font-size: clamp(26px, 3.4vw, 34px); }
+.lg-sub { max-width: 400px; margin: 0 0 22px; font-size: 14.5px; line-height: 1.55; }
+
+/* ── Kartu ── */
+.lg-kartu {
+    position: relative; display: flex; flex-direction: column; gap: 14px; width: 100%; padding: 26px; text-align: left;
+    border: 1px solid var(--lg-garis); border-radius: 28px; background: var(--lg-kartu); box-shadow: var(--lg-bayangan);
+}
+.lg-kartu.is-bergetar { animation: lg-getar 0.5s; }
+
+.lg-alert { display: flex; align-items: flex-start; gap: 10px; padding: 11px 14px; border: 1px solid var(--lg-bahaya-garis); border-radius: 14px; background: var(--lg-bahaya-bg); color: var(--lg-bahaya-teks); font-size: 13px; font-weight: 600; line-height: 1.45; }
+.lg-alert svg { flex: none; width: 18px; height: 18px; margin-top: 1px; fill: currentColor; }
+.lg-alert--ok { border-color: var(--lg-ok-garis); background: var(--lg-ok-bg); color: var(--lg-ok-teks); }
+
+.lg-field {
+    display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 14px;
+    border: 1px solid var(--lg-garis); border-radius: 16px; background: var(--lg-field);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.lg-field:focus-within { border-color: var(--lg-aksen); box-shadow: 0 0 0 4px color-mix(in srgb, var(--lg-aksen) 22%, transparent); }
+.lg-field.has-error { border-color: #d6453a; }
+.lg-field-ikon { flex: none; width: 20px; height: 20px; fill: var(--lg-ink-3); }
+.lg-field input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; outline: 0; background: transparent; color: var(--lg-ink); font: inherit; font-size: 15px; }
+.lg-field input::placeholder { color: var(--lg-ink-3); }
+.lg-field input:disabled { opacity: 0.6; }
+.lg-field input:-webkit-autofill { -webkit-text-fill-color: var(--lg-ink); caret-color: var(--lg-ink); transition: background-color 99999s; }
+.lg-mata { display: grid; place-items: center; flex: none; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 10px; background: transparent; cursor: pointer; }
+.lg-mata svg { width: 20px; height: 20px; fill: var(--lg-ink-3); }
+.lg-mata:hover svg, .lg-mata[aria-pressed="true"] svg { fill: var(--lg-ink); }
+.lg-mata:focus-visible { outline: 2px solid var(--lg-aksen); }
+
+.lg-baris { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; font-weight: 600; }
+.lg-ingat { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.lg-ingat input { width: 16px; height: 16px; accent-color: var(--lg-aksen); }
+.lg-link { color: var(--lg-link); font-weight: 800; text-decoration: none; }
+.lg-link:hover { text-decoration: underline; }
+
+.lg-tombol {
+    display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 52px; padding: 0 18px;
+    border: 0; border-radius: 16px; background: var(--lg-aksen); color: #fff;
+    font: inherit; font-size: 14px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; cursor: pointer;
+    transition: transform 0.15s, filter 0.15s;
+}
+.lg-tombol:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.07); }
+.lg-tombol:active:not(:disabled) { transform: translateY(0); }
+.lg-tombol:focus-visible { outline: 3px solid var(--lg-ink); outline-offset: 3px; }
+.lg-tombol:disabled { opacity: 0.65; cursor: not-allowed; }
+.lg-catatan { margin: 0; text-align: center; font-size: 12px; line-height: 1.5; color: var(--lg-ink-2); }
+
+.lg-kaki { position: relative; z-index: 2; padding: 0 20px 20px; text-align: center; font-size: 12px; }
+
+/* ── Lupa & Reset Password: kolom tunggal selebar kartu login, isian bersusun dengan jarak ── */
+.lg-tengah > .lg-inti { width: min(440px, 100%); }
+.lg-kartu form { display: flex; flex-direction: column; gap: 14px; }
+
+/* ── Layar sempit ── */
+@media (max-width: 1100px) {
+    .lg-kolom { grid-template-columns: minmax(0, 440px); justify-content: center; gap: 20px; }
+    .lg-inti { order: 1; }
+    .lg-samping { order: 2; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; }
+    .lg-samping--kiri .lg-fitur:nth-child(2), .lg-samping--kanan .lg-fitur:nth-child(2) { margin: 0; }
+    .lg-fitur { padding: 9px 14px 9px 9px; font-size: 13px; animation: none; }
+    .lg-fitur-ikon { width: 30px; height: 30px; border-radius: 10px; }
+}
+@media (max-width: 520px) {
+    .lg-atas { padding: 16px 16px 8px; }
+    .lg-merek span:last-child { font-size: 13.5px; }
+    .lg-tengah { padding: 4px 14px 20px; }
+    .lg-kartu { padding: 20px 18px; border-radius: 24px; }
+    .lg-trafo { width: 112px; height: 98px; }
+    .lg-samping { display: none; }
+}
+
+/* ── Mode ringan dan gerak berkurang ── */
+html.g-ringan .lg-fitur, html.g-ringan .lg-trafo-petir, html.g-ringan .lg-trafo-busur { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+    .lg-fitur, .lg-trafo-petir, .lg-trafo-busur, .lg-trafo-percik circle, .lg-trafo-svg, .lg-kartu { animation: none !important; }
+}
+
+/* ── Intro sebelum formulir masuk (contoh qc-intro): lapisan kaca buram transparan di atas formulir ── */
+.lgi {
+    position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; cursor: pointer; color: #fff;
+    background: color-mix(in srgb, var(--g-scene-a) 58%, transparent);
+    -webkit-backdrop-filter: blur(18px) saturate(1.1); backdrop-filter: blur(18px) saturate(1.1);
+    transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), backdrop-filter 0.8s cubic-bezier(0.4, 0, 0.2, 1), -webkit-backdrop-filter 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.lgi.is-keluar { opacity: 0; -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); pointer-events: none; }
+.lgi-panggung { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; width: 100%; max-width: 420px; padding: 0 16px; text-align: center; }
+.lgi.is-keluar .lgi-panggung { opacity: 0; transform: translateY(-10px) scale(0.98); transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+
+.lgi-tanda { position: relative; width: 168px; height: 168px; animation: lgi-tenang 0.4s ease-out 1.95s forwards; }
+.lgi-tanda svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.lgi-titik circle { fill: var(--g-accent-2); animation: lgi-pudar 1.3s ease-out 0.1s forwards; opacity: 0; }
+.lgi-pemandu { fill: none; stroke: rgba(255, 255, 255, 0.5); stroke-width: 1; stroke-dasharray: 3 5; opacity: 0; animation: lgi-pudar 1.3s ease-out 0.1s forwards; }
+.lgi-cincin { fill: none; stroke: var(--g-accent-2); stroke-width: 7; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transform-origin: 50% 50%; animation: lgi-gambar 1s cubic-bezier(0.65, 0, 0.35, 1) 0.25s forwards; }
+.lgi-centang { fill: none; stroke: #fff; stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 100; stroke-dashoffset: 100; animation: lgi-centang 0.5s ease-out 1.15s forwards; }
+.lgi-cakram { fill: var(--g-accent); opacity: 0; transform: scale(0); transform-origin: 50% 50%; animation: lgi-cakram 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1.55s forwards; }
+/* cakram muncul DI BELAKANG centang: urutan gambar di SVG sudah cakram, cincin, centang */
+
+.lgi-kata, .lgi-tagline, .lgi-bar { opacity: 0; }
+.lgi-kata { font-size: clamp(22px, 6vw, 30px); font-weight: 800; letter-spacing: 0.01em; text-shadow: 0 2px 14px rgba(0, 0, 0, 0.35); animation: lgi-naik 0.5s ease-out 2.15s forwards; }
+.lgi-kata span { color: var(--g-accent-2); }
+.lgi-tagline { margin-top: 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; color: rgba(255, 255, 255, 0.78); animation: lgi-naik 0.5s ease-out 2.5s forwards; }
+.lgi-bar { width: 120px; height: 3px; border-radius: 3px; overflow: hidden; background: rgba(255, 255, 255, 0.2); animation: lgi-tampil 0.3s ease-out 2.5s forwards; }
+.lgi-bar::after { content: ''; display: block; height: 100%; width: 0; border-radius: 3px; background: var(--g-accent-2); animation: lgi-isi 0.9s ease-out 2.6s forwards; }
+
+@keyframes lgi-pudar { 0% { opacity: 0; } 20% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes lgi-gambar { 0% { stroke-dashoffset: 100; transform: rotate(-90deg); } 100% { stroke-dashoffset: 0; transform: rotate(-90deg); } }
+@keyframes lgi-centang { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+@keyframes lgi-cakram { 0% { opacity: 0; transform: scale(0); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes lgi-tenang { 0% { transform: scale(1); } 55% { transform: scale(1.08); } 100% { transform: scale(1); } }
+@keyframes lgi-naik { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes lgi-tampil { to { opacity: 1; } }
+@keyframes lgi-isi { to { width: 100%; } }

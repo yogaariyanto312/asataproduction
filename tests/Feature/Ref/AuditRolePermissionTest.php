@@ -101,6 +101,56 @@ class AuditRolePermissionTest extends TestCase
         $this->assertSame([], $salah, "Akses menu tidak sesuai:\n" . implode("\n", $salah));
     }
 
+    /**
+     * Saklar di halaman Hak Akses harus benar-benar mengubah akses: developer
+     * menyimpan "semua dicabut" lalu "semua diberi" untuk tiap role, dan setiap
+     * halaman menu (yang tidak khusus developer) mengikutinya lewat HTTP.
+     *
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('roleDikelola')]
+    public function test_simpan_hak_akses_mengubah_akses_nyata_untuk_setiap_role(string $role): void
+    {
+        $dev   = $this->user('developer');
+        $uji   = $this->user($role);
+        $kunci = [];
+        foreach ($this->menuDikelola() as $item) {
+            if (! isset($item['route']) || ($item['locked'] ?? false) || ($item['manageable'] ?? false) === 'actions') continue;
+            $kunci[$item['key']] = $item['route'];
+        }
+        $this->assertNotEmpty($kunci);
+
+        foreach ([false, true] as $beri) {
+            $allowed = [];
+            if ($beri) {
+                foreach (array_keys($kunci) as $k) $allowed[$role][$k] = 1;
+            }
+            $this->flushSession();
+            $this->actingAs($dev)->post(route('permissions.update'), ['allowed' => $allowed])->assertRedirect();
+            MenuAccess::flush();
+
+            foreach ($kunci as $key => $rute) {
+                $this->flushSession();
+                $status = $this->actingAs($uji)->get(route($rute))->status();
+                $this->assertSame(
+                    ! $beri,
+                    $status === 403,
+                    "{$role} / {$key}: setelah " . ($beri ? 'DIBERI' : 'DICABUT') . " nyatanya HTTP {$status}"
+                );
+            }
+        }
+    }
+
+    public static function roleDikelola(): array
+    {
+        // Data provider berjalan sebelum aplikasi menyala, jadi config() belum bisa dipakai.
+        return ['admin' => ['admin'], 'supervisor' => ['supervisor'], 'mandor' => ['mandor'], 'operator' => ['operator'], 'visitor' => ['visitor']];
+    }
+
+    public function test_daftar_role_uji_sama_dengan_config(): void
+    {
+        $this->assertSame(array_keys(self::roleDikelola()), config('menus.manageable_roles'));
+    }
+
     /* ─────────────────────────────────────────────────────────────
        2. Seluruh kombinasi role x aksi, lewat gate-nya langsung.
        ───────────────────────────────────────────────────────────── */

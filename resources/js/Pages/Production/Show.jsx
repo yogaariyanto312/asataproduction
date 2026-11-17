@@ -1,89 +1,90 @@
 import AppLayout from '../../Layouts/AppLayout';
-import { Badge, Btn, Card, ICON } from '../../Components/Ui';
+import { Btn, ICON } from '../../Components/Ui';
 
-function Row({ label, value, badge }) {
+function Baris({ label, value }) {
     return (
-        <div className="au-row">
-            <span className="au-row-main">
-                <span className="au-row-sub">{label}</span>
-                <span className="au-row-title">{value || '—'}</span>
-            </span>
-            {badge || null}
+        <div className="au-dp-baris">
+            <span>{label}</span>
+            <b>{value || '—'}</b>
         </div>
     );
 }
 
 export default function ProductionShow({ log, lastChannelSerials, indexUrl, editUrl }) {
+    const channel = log.type === 'channel';
+    const seriKva = [log.series, log.kva ? log.kva + ' kVA' : null].filter(Boolean).join(' · ');
+
     return (
         <AppLayout title="Detail Produksi" subtitle={log.dateLabel}>
-            <div className="au-grid au-grid-2">
-                <Card
-                    title={log.product}
-                    sub={log.category || 'Tanpa kategori'}
-                    action={
-                        <span className="au-actions">
-                            <Btn as="a" href={editUrl} icon={ICON.edit} sm>
-                                Edit
-                            </Btn>
-                            <Btn as="a" href={indexUrl} tone="ghost" sm icon={ICON.back}>
-                                Kembali
-                            </Btn>
-                        </span>
-                    }
-                >
-                    <div className="au-list">
-                        <Row label="Tanggal produksi" value={log.dateLabel} />
-                        <Row
-                            label="Seri / kVA"
-                            value={
-                                [log.series, log.kva ? log.kva + ' kVA' : null]
-                                    .filter(Boolean)
-                                    .join(' · ') || null
-                            }
-                        />
-                        <Row label="Operator" value={log.operator} />
-                        <Row label="Departemen" value={log.department} />
-                        <Row
-                            label="Tipe produk"
-                            value={log.type === 'channel' ? 'Channel' : 'Regular'}
-                            badge={log.type === 'channel' ? <Badge tone="yellow">CH</Badge> : null}
-                        />
-                        <Row label="Dicatat pada" value={log.createdAt} />
+            <article className="au-card au-dp">
+                <header className="au-dp-kepala">
+                    <div>
+                        <h2>{log.product}</h2>
+                        <p>{seriKva || 'Tanpa seri'}</p>
                     </div>
-                </Card>
-
-                <Card title="Hasil Produksi" sub={'Total ' + log.total + ' unit'}>
-                    <div className="au-list">
-                        <Row label="UP" value={String(log.up)} />
-                        <Row label="BT" value={String(log.bt)} />
-                        <Row
-                            label="Total"
-                            value={String(log.total)}
-                            badge={<Badge tone="teal">{log.total} unit</Badge>}
-                        />
-                        <Row
-                            label="Reject"
-                            value={String(log.reject)}
-                            badge={log.reject ? <Badge tone="accent">{log.reject}</Badge> : null}
-                        />
-                        {log.reject ? (
-                            <>
-                                <Row label="Kategori reject" value={log.rejectCategory} />
-                                <Row label="Catatan reject" value={log.rejectNotes} />
-                            </>
-                        ) : null}
-                        <Row label="Catatan" value={log.notes} />
-                        <Row label="Keterangan" value={log.keterangan} />
+                    <div className="au-dp-total">
+                        <b>{log.total}</b>
+                        <span>Total Unit</span>
                     </div>
+                </header>
 
-                    {log.type === 'channel' && lastChannelSerials ? (
-                        <p className="au-hint" style={{ marginTop: 12 }}>
-                            Nomor urut channel terakhir — UP: {lastChannelSerials.up ?? '—'} · BT:{' '}
-                            {lastChannelSerials.bt ?? '—'}
-                        </p>
+                <div className="au-dp-isi">
+                    {channel ? (
+                        <>
+                            <div className="au-dp-kotak">
+                                <div className="is-up">
+                                    <span>Channel UP</span>
+                                    <b>{log.up}</b>
+                                    <small>unit</small>
+                                </div>
+                                <div className="is-bt">
+                                    <span>Channel BT</span>
+                                    <b>{log.bt}</b>
+                                    <small>unit</small>
+                                </div>
+                            </div>
+                            <p className="au-dp-rumus">
+                                Total = (UP + BT) ÷ 2 = ({log.up} + {log.bt}) ÷ 2 = {log.total}
+                            </p>
+                        </>
                     ) : null}
-                </Card>
-            </div>
+
+                    <Baris label="Tanggal produksi" value={log.dateLabel} />
+                    <Baris label="Nama operator" value={log.operator} />
+                    <Baris label="Kategori" value={log.category} />
+                    <Baris label="Departemen" value={log.department} />
+                    <Baris label="Tipe produk" value={channel ? 'Channel' : 'Regular'} />
+                    <Baris label="Satuan" value="unit" />
+                    <Baris label="Reject" value={String(log.reject)} />
+                    {log.reject ? (
+                        <>
+                            <Baris label="Kategori reject" value={log.rejectCategory} />
+                            <Baris label="Catatan reject" value={log.rejectNotes} />
+                        </>
+                    ) : null}
+                    <Baris label="Keterangan" value={log.keterangan} />
+                    <Baris label="Waktu input" value={log.createdAt} />
+
+                    <div className="au-dp-nomor">
+                        <span>Nomor urut / catatan</span>
+                        <pre>{log.notes || '—'}</pre>
+                        {channel && lastChannelSerials ? (
+                            <small>
+                                Nomor urut channel terakhir: {lastChannelSerials.up ?? '—'} · {lastChannelSerials.bt ?? '—'}
+                            </small>
+                        ) : null}
+                    </div>
+
+                    <div className="au-dp-aksi">
+                        <Btn as="a" href={indexUrl} tone="ghost" icon={ICON.back}>
+                            Kembali
+                        </Btn>
+                        <Btn as="a" href={editUrl} icon={ICON.edit}>
+                            Edit Data
+                        </Btn>
+                    </div>
+                </div>
+            </article>
         </AppLayout>
     );
 }

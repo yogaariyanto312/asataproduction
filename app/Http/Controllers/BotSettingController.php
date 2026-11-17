@@ -43,11 +43,11 @@ class BotSettingController extends Controller
             'webhookInfoUrl'     => route('developer.bot-settings.webhook-info'),
             'dailyReportUrl'     => route('developer.bot-settings.send-daily-report'),
             'setting'     => [
-                'telegram_token'          => $setting->telegram_token,
+                'telegram_token'          => self::tutupi($setting->telegram_token),
                 'telegram_chat_id'        => $setting->telegram_chat_id,
                 'telegram_report_chat_id' => $setting->telegram_report_chat_id,
                 'telegram_enabled'        => (bool) $setting->telegram_enabled,
-                'discord_webhook'         => $setting->discord_webhook,
+                'discord_webhook'         => self::tutupi($setting->discord_webhook),
                 'discord_enabled'         => (bool) $setting->discord_enabled,
                 'reject_threshold'        => (float) $setting->reject_threshold,
                 'report_enabled'          => (bool) $setting->report_enabled,
@@ -65,6 +65,7 @@ class BotSettingController extends Controller
             'maintenanceUntilLabel' => $setting->maintenance_until
                 ? $setting->maintenance_until->timezone('Asia/Jakarta')->format('d M Y, H:i') . ' WIB'
                 : null,
+            'sinkronQc' => SinkronQcController::data(),
             'webhookUrl'  => url('/telegram/webhook'),
             // Daftar perintah diambil dari BotPerintah supaya tidak ada dua daftar
             // yang bisa berbeda diam-diam.
@@ -83,8 +84,25 @@ class BotSettingController extends Controller
         ]);
     }
 
+    /** Penanda isian rahasia yang disamarkan; dikirim balik apa adanya = "tidak diubah". */
+    private const SAMAR = '••••••••';
+
+    private static function tutupi(?string $nilai): ?string
+    {
+        return $nilai ? self::SAMAR . substr($nilai, -4) : null;
+    }
+
     public function update(Request $request)
     {
+        // Token dan webhook tidak pernah dikirim utuh ke peramban. Bila isiannya masih
+        // berupa samaran, berarti tidak diubah: dibuang dari permintaan agar tidak
+        // tertimpa dan tidak gagal validasi.
+        foreach (['telegram_token', 'discord_webhook'] as $kolom) {
+            if (str_starts_with((string) $request->input($kolom), self::SAMAR)) {
+                $request->request->remove($kolom);
+            }
+        }
+
         $request->validate([
             'telegram_token'          => ['nullable', 'string', 'max:255', 'regex:/^\d+:[A-Za-z0-9_-]{20,}$/'],
             'telegram_chat_id'        => ['nullable', 'string', 'max:100', 'regex:/^(-?\d+|@[A-Za-z0-9_]{4,})$/'],

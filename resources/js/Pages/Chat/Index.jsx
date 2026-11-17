@@ -3,6 +3,7 @@ import { usePage } from '@inertiajs/react';
 import AppLayout from '../../Layouts/AppLayout';
 import { Badge, Btn, Card, Empty, ICON, Input } from '../../Components/Ui';
 import { csrf } from '../../csrf';
+import { langgan } from '../../realtime';
 
 function initials(name) {
     return name
@@ -94,12 +95,6 @@ export default function ChatIndex({
             // baterai, dan status "online" memang tidak boleh menyala).
             if (document.hidden) return;
             try {
-                await fetch(pingUrl, {
-                    method: 'PATCH',
-                    credentials: 'same-origin',
-                    headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
-                });
-
                 const res = await fetch(sinceUrl + '?last_id=' + lastIdRef.current, {
                     credentials: 'same-origin',
                     headers: { Accept: 'application/json' },
@@ -121,11 +116,22 @@ export default function ChatIndex({
             if (alive) loadContacts();
         }
 
-        const timer = setInterval(tick, 5000);
+        // Ping status online tiap 30 detik (tidak lagi di tiap putaran); pesan/ketik/baca datang lewat realtime
+        // ringan (topik 'chat', ~3 detik), cadangan polling 20 detik untuk status online orang lain.
+        function ping() {
+            if (document.hidden) return;
+            fetch(pingUrl, { method: 'PATCH', credentials: 'same-origin', headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' } }).catch(() => {});
+        }
+        ping();
+        const tPing = setInterval(ping, 30000);
+        const tCadangan = setInterval(tick, 20000);
+        const lepas = langgan('chat', tick);
 
         return () => {
             alive = false;
-            clearInterval(timer);
+            clearInterval(tPing);
+            clearInterval(tCadangan);
+            lepas();
         };
     }, [pingUrl, sinceUrl, loadContacts]);
 
@@ -219,74 +225,20 @@ export default function ChatIndex({
             .length;
     }
 
+    const online = contacts.filter((c) => isOnline(c.last_seen_at)).length;
+    const status = (c) => (c.is_typing ? ['Mengetik...', 'mengetik'] : isOnline(c.last_seen_at) ? ['Online', 'online'] : ['Offline', 'offline']);
+
     return (
-        <AppLayout title="Chatting" subtitle={contacts.length + ' kontak'}>
-            <div className="au-chat">
-                <Card className="au-chat-side">
-                    <div className="au-toolbar" style={{ marginBottom: 10 }}>
-                        <Input
-                            value={query}
-                            placeholder="Cari kontak..."
-                            onChange={(e) => setQuery(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="au-chat-contacts">
-                        {shownContacts.length ? (
-                            shownContacts.map((c) => {
-                                const unread = unreadCount(c.id);
-                                return (
-                                    <button
-                                        type="button"
-                                        key={c.id}
-                                        className={
-                                            'au-chat-contact' +
-                                            (active && active.id === c.id ? ' is-active' : '')
-                                        }
-                                        onClick={() => openContact(c)}
-                                    >
-                                        <span className="au-chat-avatar">
-                                            {c.avatar ? (
-                                                <img
-                                                    loading="lazy"
-                                                    src={c.avatar}
-                                                    alt=""
-                                                    onError={(e) => {
-                                                        e.currentTarget.style.display = 'none';
-                                                    }}
-                                                />
-                                            ) : (
-                                                initials(c.name)
-                                            )}
-                                            {isOnline(c.last_seen_at) ? (
-                                                <i className="au-chat-online" />
-                                            ) : null}
-                                        </span>
-
-                                        <span className="au-chat-contact-main">
-                                            <span className="au-chat-contact-name">{c.name}</span>
-                                            <span className="au-chat-contact-sub">
-                                                {c.is_typing
-                                                    ? 'sedang mengetik...'
-                                                    : c.role +
-                                                      (c.department ? ' · ' + c.department : '')}
-                                            </span>
-                                        </span>
-
-                                        {unread ? <Badge tone="accent">{unread}</Badge> : null}
-                                    </button>
-                                );
-                            })
-                        ) : (
-                            <Empty>Tidak ada kontak.</Empty>
-                        )}
-                    </div>
-                </Card>
-
-                <Card className="au-chat-main">
+        <AppLayout title="Chatting" subtitle={contacts.length + ' kontak · ' + online + ' online sekarang'}>
+            {active ? (
+                <div className="au-chat au-chat--satu">
+                <Card className="au-chat-main au-chat-penuh">
                     {active ? (
                         <>
                             <div className="au-chat-head">
+                                <Btn tone="ghost" sm onClick={() => setActive(null)}>
+                                    ← Tim
+                                </Btn>
                                 <span className="au-chat-avatar">
                                     {active.avatar ? (
                                         <img
@@ -344,11 +296,44 @@ export default function ChatIndex({
                                 </Btn>
                             </form>
                         </>
-                    ) : (
-                        <Empty>Pilih kontak di sebelah kiri untuk mulai mengobrol.</Empty>
-                    )}
+                    ) : null}
                 </Card>
-            </div>
+                </div>
+            ) : (
+                <>
+                    <div className="au-member-bar">
+                        <Input value={query} placeholder="Cari orang..." onChange={(e) => setQuery(e.target.value)} />
+                    </div>
+                    {shownContacts.length ? (
+                        <section className="au-member-grid" aria-label="Daftar tim">
+                            {shownContacts.map((c, i) => {
+                                const unread = unreadCount(c.id);
+                                const [label, kunci] = status(c);
+                                return (
+                                    <article className="au-member" key={c.id} style={{ '--i': i }} data-status={kunci}>
+                                        <span className="au-member-avatar">
+                                            {c.avatar ? (
+                                                <img loading="lazy" src={c.avatar} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                                            ) : null}
+                                            <span className="au-member-inisial">{initials(c.name)}</span>
+                                            <i className="au-member-titik" />
+                                            {unread ? <b className="au-member-unread">{unread}</b> : null}
+                                        </span>
+                                        <strong>{c.name}</strong>
+                                        <span className="au-member-peran">{c.role + (c.department ? ' · ' + c.department : '')}</span>
+                                        <span className="au-member-st">{label}</span>
+                                        <button type="button" className="au-chat-pesan" onClick={() => openContact(c)}>
+                                            {unread ? 'Buka pesan (' + unread + ')' : 'Kirim pesan'}
+                                        </button>
+                                    </article>
+                                );
+                            })}
+                        </section>
+                    ) : (
+                        <Empty>Tidak ada kontak.</Empty>
+                    )}
+                </>
+            )}
         </AppLayout>
     );
 }

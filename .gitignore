@@ -47,3 +47,34 @@ __pycache__/
 /android-update/
 /windows-update/
 /asata-static/
+
+# Memory AI dan instruksi lokal tidak dipublikasikan.
+/ai-context/
+/AGENTS.md
+/CLAUDE.md
+/GEMINI.md
+/.claude/
+
+# Rahasia, cadangan dan paket operasional, termasuk file baru di subfolder.
+.env.*
+!.env.example
+*.rar
+*.7z
+*.zip
+*.tar
+*.tgz
+*.sql
+*.sql.gz
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.bak
+*.jks
+*.keystore
+*.pem
+*.key
+*.p12
+*.pfx
+*.apk
+*.msi
+*.user.ini

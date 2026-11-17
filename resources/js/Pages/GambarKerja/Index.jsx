@@ -1,3 +1,4 @@
+import { langgan } from '../../realtime';
 import { useEffect, useRef, useState } from 'react';
 import { router } from '@inertiajs/react';
 import AppLayout from '../../Layouts/AppLayout';
@@ -188,11 +189,13 @@ export default function GambarKerjaIndex({
                 /* abaikan — jaringan sementara */
             }
         }
-        const id = setInterval(poll, 20000);
+        const id = setInterval(poll, 60000);
         poll();
+        const lepas = langgan('gambar', poll);
         return () => {
             alive = false;
             clearInterval(id);
+            lepas();
         };
     }, [pollUrl]);
 

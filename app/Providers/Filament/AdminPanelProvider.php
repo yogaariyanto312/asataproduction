@@ -12,6 +12,9 @@ use App\Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
+use Illuminate\Support\Facades\Vite;
+use Illuminate\Support\HtmlString;
 use App\Http\Middleware\AuthenticateFilamentPanel;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -45,6 +48,28 @@ class AdminPanelProvider extends PanelProvider
             // Aplikasi memakai tema gelap; panel disamakan agar perpindahan
             // dari halaman lain tidak terasa berganti aplikasi.
             ->defaultThemeMode(ThemeMode::Dark)
+            // Tampilan kaca (PRD 11): tema aplikasi (au:tema, au:warna) dipasang ke <html> sebelum CSS
+            // dimuat, dan saklar tema Filament ikut menyetel pilihan aplikasi supaya keduanya selalu sama.
+            ->renderHook(PanelsRenderHook::HEAD_START, fn () => new HtmlString(<<<'HTML'
+<script>try {
+    var d = document.documentElement, S = localStorage;
+    var terapkan = function (gelap) {
+        if (gelap) { d.dataset.tema = 'gelap'; delete d.dataset.warna; }
+        else { var w = S.getItem('au:warna'); d.dataset.tema = 'terang'; d.dataset.warna = (w === 'violet' || w === 'ocean') ? w : 'coral'; }
+    };
+    var gelap = S.getItem('au:tema') === 'gelap';
+    // Filament 5.8 membaca 'theme', sejak 5.11 membaca 'filament:theme:mode'; keduanya diisi.
+    S.setItem('theme', gelap ? 'dark' : 'light');
+    S.setItem('filament:theme:mode', gelap ? 'dark' : 'light');
+    terapkan(gelap);
+    if (S.getItem('au:ringan') === '1') d.classList.add('g-ringan');
+    new MutationObserver(function () {
+        var g = d.classList.contains('dark');
+        if (g !== (d.dataset.tema === 'gelap')) { S.setItem('au:tema', g ? 'gelap' : 'terang'); terapkan(g); }
+    }).observe(d, { attributes: true, attributeFilter: ['class'] });
+} catch (_) {}</script>
+HTML))
+            ->renderHook(PanelsRenderHook::HEAD_END, fn () => Vite::withEntryPoints(['resources/css/filament-glass.css'])->toHtml())
             // Panel ini hanya berisi Dashboard. Menu lain tetap milik aplikasi,
             // jadi sidebarnya diisi tautan balik ke sana. Dibangun lewat closure
             // (bukan array) karena hak akses baru bisa dibaca saat ada request —

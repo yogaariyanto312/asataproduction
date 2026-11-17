@@ -582,19 +582,25 @@ class ProductionLogController extends Controller
     /**
      * Satu query untuk semua channel products — jauh lebih efisien dari N calls.
      */
+    /** Banyaknya catatan terbaru per produk yang dibaca untuk mencari nomor UP/BT terakhir. */
+    private const NOMOR_BATAS = 200;
+
     private function lastChannelSerialsForMany(array $productIds): array
     {
         $result = array_fill_keys($productIds, ['up' => null, 'bt' => null]);
 
-        ProductionLog::whereIn('product_id', $productIds)
-            ->whereNotNull('notes')->where('notes', '!=', '')
-            ->orderByDesc('production_date')->orderByDesc('created_at')
-            ->select(['product_id', 'notes'])
-            ->each(function ($log) use (&$result) {
-                $pid = $log->product_id;
-                if (!isset($result[$pid])) return;
-                if ($result[$pid]['up'] && $result[$pid]['bt']) return;
-                $lines = collect(explode("\n", $log->notes))->map(fn($l) => trim($l))->filter();
+        // Per produk: hanya NOMOR_BATAS catatan terbaru (indeks product_id), berhenti begitu UP dan BT
+        // sama-sama ketemu. Pendahulunya membaca seluruh riwayat berhalaman-halaman (offset):
+        // di 550 ribu baris itu 30+ query berulang dan ~5 detik untuk satu halaman Riwayat.
+        foreach (array_keys($result) as $pid) {
+            $logs = ProductionLog::where('product_id', $pid)
+                ->whereNotNull('notes')->where('notes', '!=', '')
+                ->orderByDesc('production_date')->orderByDesc('created_at')
+                ->limit(self::NOMOR_BATAS)
+                ->pluck('notes');
+
+            foreach ($logs as $notes) {
+                $lines = collect(explode("\n", $notes))->map(fn($l) => trim($l))->filter();
                 if (!$result[$pid]['up']) {
                     $ul = $lines->first(fn($l) => preg_match('/\bUP\b/i', $l));
                     if ($ul) $result[$pid]['up'] = $ul;
@@ -603,7 +609,9 @@ class ProductionLogController extends Controller
                     $bl = $lines->first(fn($l) => preg_match('/\bBT\b/i', $l));
                     if ($bl) $result[$pid]['bt'] = $bl;
                 }
-            });
+                if ($result[$pid]['up'] && $result[$pid]['bt']) break;
+            }
+        }
 
         return $result;
     }
@@ -914,9 +922,11 @@ class ProductionLogController extends Controller
 
     public function poll()
     {
-        return response()->json([
+        // Dibagi ke semua pengguna selama 2 detik: puluhan klien yang polling tidak lagi
+        // masing-masing menghitung ulang seluruh tabel (COUNT(*) ~80 ms di 550 ribu baris).
+        return response()->json(\Illuminate\Support\Facades\Cache::remember('production.poll', 2, fn () => [
             'ts'    => ProductionLog::max('updated_at'),
             'count' => ProductionLog::count(),
-        ]);
+        ]));
     }
 }

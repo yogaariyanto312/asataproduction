@@ -59,7 +59,15 @@ class User extends Authenticatable implements FilamentUser
     public function avatarUrl(): ?string
     {
         if (!$this->avatar) return null;
-        if (str_starts_with($this->avatar, 'http')) return $this->avatar;
+        if (str_starts_with($this->avatar, 'http')) {
+            // Avatar siap pakai DiceBear dilayani dari salinan lokal (public/avatars-dasar):
+            // 80 gambar sekaligus dari layanan luar sering gagal dimuat di jaringan pabrik.
+            if (preg_match('~^https://api\.dicebear\.com/9\.x/adventurer/svg\?(?:.*&)?seed=([A-Za-z0-9_-]+)$~', $this->avatar, $m)
+                && is_file(public_path("avatars-dasar/{$m[1]}.svg"))) {
+                return asset("avatars-dasar/{$m[1]}.svg");
+            }
+            return $this->avatar;
+        }
         return route('storage.file', ['path' => $this->avatar]);
     }
 

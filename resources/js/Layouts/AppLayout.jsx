@@ -1,7 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { aturRealtime, langgan } from '../realtime';
+import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import '../../css/asata-ui.css';
+import '../../css/asata-glass.css';
+import { PemilihTampilan, Scene, TombolCari, introAktif, ringanAktif } from '../Components/Glass';
 import { useBlokirDevtools } from '../blokirDevtools';
+
+// Palet Ctrl+K dan layar pembuka dimuat menyusul: tidak menambah bundel awal.
+const PaletKomando = lazy(() => import('../Components/PaletKomando'));
+const Intro = lazy(() => import('../Components/Intro'));
 
 /**
  * Kerangka aplikasi — mengikuti layouts/app.blade.php Production-QC-Logging-System
@@ -196,7 +202,7 @@ function useNotifikasi({ notifUrl, chatUrl, notesUrl, routeName, tambahToast }) 
         const mulai = () => {
             if (timer) return;
             poll();
-            timer = setInterval(poll, 30000);
+            timer = setInterval(poll, 60000);
         };
         const henti = () => {
             clearInterval(timer);
@@ -205,9 +211,12 @@ function useNotifikasi({ notifUrl, chatUrl, notesUrl, routeName, tambahToast }) 
         const onVis = () => (document.hidden ? henti() : mulai());
         document.addEventListener('visibilitychange', onVis);
         mulai();
+        // Realtime ringan: pesan/catatan baru langsung memicu pengecekan (cadangan polling kini 60 detik).
+        const lepas = langgan(['notif', 'catatan'], () => !document.hidden && poll());
 
         return () => {
             henti();
+            lepas();
             document.removeEventListener('visibilitychange', onVis);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -286,12 +295,143 @@ function useAnimasiMasuk() {
     return animasi;
 }
 
+/*
+ * Sorotan putih yang bergeser di sidebar (gaya sampel). AppLayout dipasang ulang di tiap
+ * halaman, jadi posisi terakhir disimpan di variabel modul: sorotan mulai dari sana lalu bergeser.
+ */
+let hiTerakhir = null;
+function useSorotanNav(routeName, ukuranBerubah) {
+    const navRef = useRef(null);
+    const hiRef = useRef(null);
+
+    const letak = useCallback(() => {
+        const nav = navRef.current;
+        const hi = hiRef.current;
+        if (!nav || !hi) return;
+        const aktif = nav.querySelector('.au-nav-item.is-active');
+        if (!aktif) {
+            hi.classList.remove('is-siap');
+            nav.classList.remove('gl-nav-hi');
+            hiTerakhir = null;
+            return;
+        }
+        const n = nav.getBoundingClientRect();
+        const a = aktif.getBoundingClientRect();
+        const v = { x: a.left - n.left + nav.scrollLeft, y: a.top - n.top + nav.scrollTop, w: a.width, h: a.height };
+        hi.style.width = v.w + 'px';
+        hi.style.height = v.h + 'px';
+        hi.style.transform = 'translate(' + v.x + 'px,' + v.y + 'px)';
+        hi.classList.add('is-siap');
+        nav.classList.add('gl-nav-hi');
+        hiTerakhir = v;
+    }, []);
+
+    useLayoutEffect(() => {
+        const hi = hiRef.current;
+        if (hiTerakhir && hi) {
+            hi.style.transition = 'none';
+            hi.style.width = hiTerakhir.w + 'px';
+            hi.style.height = hiTerakhir.h + 'px';
+            hi.style.transform = 'translate(' + hiTerakhir.x + 'px,' + hiTerakhir.y + 'px)';
+            hi.classList.add('is-siap');
+            void hi.offsetWidth;
+            hi.style.transition = '';
+            const id = requestAnimationFrame(letak);
+            return () => cancelAnimationFrame(id);
+        }
+        letak();
+        return undefined;
+    }, [routeName, letak]);
+
+    // Lebar sidebar atau tinggi grup berubah dengan animasi: ukur ulang sesudahnya.
+    useEffect(() => {
+        const t = setTimeout(letak, 340);
+        return () => clearTimeout(t);
+    }, [ukuranBerubah, letak]);
+    useEffect(() => {
+        window.addEventListener('resize', letak);
+        return () => window.removeEventListener('resize', letak);
+    }, [letak]);
+
+    return { navRef, hiRef };
+}
+
+/*
+ * Menu cepat bentuk pil di bawah layar HP: ikon saja, item aktif melebar menampilkan labelnya (gaya 'Expanding label').
+ * AppLayout dibuat ulang di tiap halaman, jadi dock baru selalu lahir dengan item aktif yang sudah final dan tidak ada
+ * yang bisa dianimasikan. Agar perpindahan tetap halus: item aktif SEBELUMNYA dan posisi gulir disimpan di variabel modul;
+ * dock baru mulai dari keadaan lama lalu, dua frame kemudian, pindah ke item baru (transisi CSS berjalan).
+ */
+let dockAktifLama = null;
+let dockGulir = 0;
+function DockMenu({ menu, routeName }) {
+    const ref = useRef(null);
+    const daftar = menu.filter((m) => m.url && (m.icon || (m.paths && m.paths.length)));
+    const kunciAktif = daftar.find((m) => routeMatches(m.match, routeName))?.key ?? null;
+    const [tampil, setTampil] = useState(dockAktifLama ?? kunciAktif);
+
+    useLayoutEffect(() => {
+        if (ref.current) ref.current.scrollLeft = dockGulir;
+    }, []);
+
+    useEffect(() => {
+        if (tampil === kunciAktif) {
+            dockAktifLama = kunciAktif;
+            return undefined;
+        }
+        const id = requestAnimationFrame(() => requestAnimationFrame(() => {
+            dockAktifLama = kunciAktif;
+            setTampil(kunciAktif);
+        }));
+        return () => cancelAnimationFrame(id);
+    }, [kunciAktif, tampil]);
+
+    // Gulir mengikuti item aktif yang sedang melebar (bukan lompat), sampai lebarnya final.
+    useEffect(() => {
+        let raf = 0;
+        const t0 = performance.now();
+        const ikuti = (t) => {
+            const nav = ref.current;
+            const el = nav?.querySelector('.is-active');
+            if (nav && el) {
+                const tujuan = el.offsetLeft + el.offsetWidth / 2 - nav.clientWidth / 2;
+                nav.scrollLeft += (tujuan - nav.scrollLeft) * 0.2;
+                dockGulir = nav.scrollLeft;
+            }
+            if (t - t0 < 750) raf = requestAnimationFrame(ikuti);
+        };
+        raf = requestAnimationFrame(ikuti);
+        return () => cancelAnimationFrame(raf);
+    }, [tampil]);
+
+    return (
+        <nav className="gl-dock" aria-label="Menu cepat" ref={ref}>
+            {daftar.map((item) => {
+                const aktif = routeMatches(item.match, routeName);
+                const cls = 'gl-dock-item' + (item.key === tampil ? ' is-active' : '');
+                const isi = (
+                    <>
+                        <Icon path={item.icon} paths={item.paths} />
+                        <span className="gl-dock-label" aria-hidden="true"><span>{item.label}</span></span>
+                    </>
+                );
+                return item.spa ? (
+                    <Link key={item.key} href={item.url} className={cls} aria-label={item.label} aria-current={aktif ? 'page' : undefined}>{isi}</Link>
+                ) : (
+                    <a key={item.key} href={item.url} className={cls} aria-label={item.label} aria-current={aktif ? 'page' : undefined}>{isi}</a>
+                );
+            })}
+        </nav>
+    );
+}
+
 export default function AppLayout({ title, subtitle, children }) {
     pasangPantauPindah();
     const animasiMasuk = useAnimasiMasuk();
-    const { auth, menu, flash, routeName, logoutUrl, profileUrl, notifUrl, chatUrl, notesUrl, appName, maintenanceAktif } =
+    const { auth, menu, flash, routeName, logoutUrl, profileUrl, notifUrl, chatUrl, notesUrl, appName, maintenanceAktif, deptSaklar, rt } =
         usePage().props;
     const user = auth.user;
+    aturRealtime(rt); // token realtime diperbarui tiap navigasi (props Inertia)
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [userMenu, setUserMenu] = useState(false);
@@ -299,6 +439,15 @@ export default function AppLayout({ title, subtitle, children }) {
     const [atas, setAtas] = useState(false);
     const userRef = useRef(null);
     const sb = useSidebarKecil();
+    const [palet, setPalet] = useState(false);
+    const [intro, setIntro] = useState(() => {
+        try {
+            // Hanya tepat sesudah login berhasil: halaman masuk menandai 'au:intro-baru' sebelum mengirim form.
+            return sessionStorage.getItem('au:intro-baru') === '1' && introAktif() && !ringanAktif() && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        } catch (_) {
+            return false;
+        }
+    });
 
     function tambahToast(t) {
         const id = Date.now() + Math.random();
@@ -313,6 +462,28 @@ export default function AppLayout({ title, subtitle, children }) {
     const groupItems = isDeveloper ? menu.filter((m) => m.group === 'produksi') : [];
     const groupActive = groupItems.some((m) => routeMatches(m.match, routeName));
     const [groupOpen, setGroupOpen] = useState(groupActive);
+    const { navRef, hiRef } = useSorotanNav(routeName, `${sb.mini}-${groupOpen}`);
+
+    // Penanda sekali pakai: dihapus begitu dibaca (juga bila intro dimatikan), supaya muat ulang tidak mengulanginya.
+    useEffect(() => {
+        try {
+            sessionStorage.removeItem('au:intro-baru');
+        } catch (_) {
+            /* abaikan */
+        }
+    }, []);
+
+    // Ctrl/Cmd+K membuka palet perintah.
+    useEffect(() => {
+        const f = (e) => {
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                setPalet(true);
+            }
+        };
+        window.addEventListener('keydown', f);
+        return () => window.removeEventListener('keydown', f);
+    }, []);
 
     useEffect(() => {
         if (groupActive) setGroupOpen(true);
@@ -356,6 +527,7 @@ export default function AppLayout({ title, subtitle, children }) {
 
     return (
         <div className="au-app">
+            <Scene />
             <Head title={title} />
 
             <div className="au-shell">
@@ -385,7 +557,8 @@ export default function AppLayout({ title, subtitle, children }) {
                         </span>
                     </div>
 
-                    <nav className="au-nav" onScroll={sb.hideTip}>
+                    <nav className="au-nav" ref={navRef} onScroll={sb.hideTip}>
+                        <span className="gl-hi" ref={hiRef} aria-hidden="true" />
                         {menu.map((item) => {
                             const inGroup = renderedGroupKeys.has(item.key);
                             if (inGroup && item.key !== 'input-produksi') return null;
@@ -452,6 +625,35 @@ export default function AppLayout({ title, subtitle, children }) {
                             {userMenu ? (
                                 <div className="au-sb-menu sb-menu">
                                     <p className="au-sb-menu-email">{user.email || user.username}</p>
+                                    {deptSaklar ? (
+                                        <div className="au-sb-dept">
+                                            <label>
+                                                <span>Lihat data departemen</span>
+                                                <select
+                                                    value={deptSaklar.lihat || ''}
+                                                    onChange={(e) => router.post(deptSaklar.url, { lihat: e.target.value }, { preserveScroll: true })}
+                                                >
+                                                    <option value="">Semua departemen</option>
+                                                    {deptSaklar.pilihan.map((d) => (
+                                                        <option key={d} value={d}>{d}</option>
+                                                    ))}
+                                                </select>
+                                            </label>
+                                            <label>
+                                                <span>Departemen akun saya</span>
+                                                <select
+                                                    value={user.department || ''}
+                                                    onChange={(e) => router.post(deptSaklar.url, { akun: e.target.value }, { preserveScroll: true })}
+                                                >
+                                                    <option value="">(kosong)</option>
+                                                    {deptSaklar.pilihan.map((d) => (
+                                                        <option key={d} value={d}>{d}</option>
+                                                    ))}
+                                                </select>
+                                            </label>
+                                            {deptSaklar.lihat ? <p className="au-sb-dept-info">Tampilan dibatasi ke {deptSaklar.lihat}.</p> : null}
+                                        </div>
+                                    ) : null}
                                     <Link href={profileUrl} className="au-sb-menu-item">
                                         <Icon path={ICON.user} /> Profil Saya
                                     </Link>
@@ -476,7 +678,8 @@ export default function AppLayout({ title, subtitle, children }) {
                             {subtitle ? <p className="au-page-sub">{subtitle}</p> : null}
                         </div>
                         <Jam />
-                        <TombolTema />
+                        <TombolCari onBuka={() => setPalet(true)} />
+                        <PemilihTampilan />
                     </header>
 
                     <main className={'au-content' + (animasiMasuk ? ' au-masuk' : '')}>
@@ -493,6 +696,16 @@ export default function AppLayout({ title, subtitle, children }) {
                         &copy; {new Date().getFullYear()} {appName || 'Asata Production'}. All rights reserved.
                     </footer>
                 </div>
+                <DockMenu menu={menu} routeName={routeName} />
+                <button
+                    type="button"
+                    className={'au-ke-atas' + (atas ? ' is-tampil' : '')}
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    title="Kembali ke atas"
+                    aria-label="Kembali ke atas"
+                >
+                    <Icon path={ICON.chevronUp} />
+                </button>
             </div>
 
             {sb.tip ? (
@@ -501,15 +714,16 @@ export default function AppLayout({ title, subtitle, children }) {
                 </div>
             ) : null}
 
-            <button
-                type="button"
-                className={'au-ke-atas' + (atas ? ' is-tampil' : '')}
-                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                title="Kembali ke atas"
-                aria-label="Kembali ke atas"
-            >
-                <Icon path={ICON.chevronUp} />
-            </button>
+            {palet ? (
+                <Suspense fallback={null}>
+                    <PaletKomando menu={menu} profileUrl={profileUrl} logoutUrl={logoutUrl} onTutup={() => setPalet(false)} />
+                </Suspense>
+            ) : null}
+            {intro ? (
+                <Suspense fallback={null}>
+                    <Intro nama={appName || 'Asata Production'} pengguna={user && user.name} onSelesai={() => setIntro(false)} />
+                </Suspense>
+            ) : null}
 
             {toasts.length ? (
                 <div className="au-toasts">
@@ -537,35 +751,5 @@ export default function AppLayout({ title, subtitle, children }) {
                 </div>
             ) : null}
         </div>
-    );
-}
-
-/** Ganti tema terang/gelap; pilihan disimpan di localStorage (dibaca lagi di <head>). */
-function TombolTema() {
-    const [terang, setTerang] = useState(() => document.documentElement.dataset.tema === 'terang');
-
-    function ganti() {
-        const berikut = !terang;
-        const html = document.documentElement;
-        if (berikut) html.dataset.tema = 'terang';
-        else delete html.dataset.tema;
-        html.classList.toggle('dark', !berikut);
-        try {
-            localStorage.setItem('au:tema', berikut ? 'terang' : 'gelap');
-        } catch (_) {
-            /* mode privat: tema tetap berlaku sampai halaman ditutup */
-        }
-        window.dispatchEvent(new Event('au:tema'));
-        setTerang(berikut);
-    }
-
-    return (
-        <button type="button" className="au-tema-tombol" onClick={ganti} title={terang ? 'Ganti ke mode gelap' : 'Ganti ke mode terang'} aria-label={terang ? 'Ganti ke mode gelap' : 'Ganti ke mode terang'}>
-            {terang ? (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" /></svg>
-            ) : (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" /></svg>
-            )}
-        </button>
     );
 }

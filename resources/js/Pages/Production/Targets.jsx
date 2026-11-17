@@ -1,3 +1,4 @@
+import { useRealtime } from '../../realtime';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { router, useForm, usePage } from '@inertiajs/react';
 import AppLayout from '../../Layouts/AppLayout';
@@ -26,7 +27,6 @@ const nada = (pct, done) => (done || pct >= 100 ? 'is-hijau' : pct >= 70 ? 'is-a
 export default function ProductionTargets(props) {
     const { targets, totals, canEdit, canDelete, liveUrl } = props;
     const [live, setLive] = useState(null);
-    const [updatedAt, setUpdatedAt] = useState(null);
 
     const fetchLive = useCallback(async () => {
         try {
@@ -34,11 +34,13 @@ export default function ProductionTargets(props) {
             if (!r.ok) return;
             const d = await r.json();
             setLive(d);
-            setUpdatedAt(d.updated_at);
         } catch (_) {
             /* diamkan */
         }
     }, [liveUrl]);
+
+    // Progres diperbarui diam-diam saat ada produksi/target baru (cadangan tiap 60 detik); tanpa tombol Live.
+    useRealtime(['produksi', 'target'], fetchLive);
 
     // Data dari server berganti (simpan/hapus target) → buang data live lama.
     useEffect(() => setLive(null), [targets]);
@@ -51,78 +53,98 @@ export default function ProductionTargets(props) {
             <div className="au-tg">
                 <FotoJadwal {...props} />
 
-                <div className={'au-tg-grid' + (canEdit ? ' is-dua' : '')}>
+                <section className="au-tg2">
+                    <header className="au-tg2-kepala">
+                        <div>
+                            <h3>Target Produksi</h3>
+                            <p>Set target per produk, tanpa batas waktu</p>
+                        </div>
+                        <div className="au-tg2-ringkas">
+                            <span>
+                                <b>{fmt(totals.target)}</b> target
+                            </span>
+                            <span>
+                                <b className="is-biru">{fmt(totalActual)}</b> aktual
+                            </span>
+                            <span className={totals.target > 0 && totalActual >= totals.target ? 'is-capai' : 'is-belum'}>
+                                <b>{pctAll}%</b> tercapai
+                            </span>
+                        </div>
+                    </header>
+
                     {canEdit ? <FormTarget {...props} /> : null}
 
-                    <div className="au-tg-kanan">
-                        <div className="au-tg-ringkas">
-                            <div className="au-tg-stat">
-                                <b>{fmt(totals.target)}</b>
-                                <small>Total Target</small>
-                            </div>
-                            <div className="au-tg-stat">
-                                <b className="is-biru">{fmt(totalActual)}</b>
-                                <small>Total Aktual</small>
-                            </div>
-                            <div className={'au-tg-stat ' + (totals.target > 0 && totalActual >= totals.target ? 'is-capai' : 'is-belum')}>
-                                <b>{pctAll}%</b>
-                                <small>Pencapaian</small>
-                            </div>
-                        </div>
-
-                        {targets.length ? (
-                            <div className="au-tg-daftar">
-                                {targets.map((t) => {
-                                    const info = live?.actuals?.[t.productId];
-                                    const actual = info ? info.actual : t.actual;
-                                    const pct = info ? info.pct : t.target > 0 ? Math.min(Math.round((actual / t.target) * 100), 100) : 0;
-                                    const done = info ? info.done : actual >= t.target;
-                                    const kurang = info ? info.remaining : Math.max(0, t.target - actual);
-                                    return (
-                                        <div className="au-tg-baris" key={t.id}>
-                                            <div className="au-tg-baris-atas">
-                                                <div style={{ minWidth: 0 }}>
-                                                    <p className="au-tg-nama">{t.product}</p>
-                                                    {t.seriesKva ? <p className="au-tg-seri">{t.seriesKva}</p> : null}
-                                                    {t.notes ? <p className="au-tg-catatan">{t.notes}</p> : null}
+                    {targets.length ? (
+                        <div className="au-tg2-daftar">
+                            {targets.map((t) => {
+                                const info = live?.actuals?.[t.productId];
+                                const sp = info && info.split ? info.split : t.split;
+                                const actual = info ? info.actual : t.actual;
+                                const pct = sp ? sp.pct : info ? info.pct : t.target > 0 ? Math.min(Math.round((actual / t.target) * 100), 100) : 0;
+                                const done = sp ? sp.done : info ? info.done : actual >= t.target;
+                                const kurang = info ? info.remaining : Math.max(0, t.target - actual);
+                                return (
+                                    <div className="au-tg2-baris" key={t.id}>
+                                        <div className="au-tg2-nama">
+                                            <p className="au-tg-nama">{t.product}</p>
+                                            {t.seriesKva ? <p className="au-tg-seri">{t.seriesKva}</p> : null}
+                                            {t.notes ? <p className="au-tg-catatan">{t.notes}</p> : null}
+                                        </div>
+                                        <div className="au-tg2-prog">
+                                            {sp ? (
+                                                <div className="au-tg2-pisah">
+                                                    {['up', 'bt'].map((k) => (
+                                                        <div className="au-tg2-seri" key={k}>
+                                                            <span className={'is-' + k}>{k.toUpperCase()}</span>
+                                                            <div className="au-tg-bar">
+                                                                <div className={nada(sp[k].pct, sp[k].done)} style={{ width: sp[k].pct + '%' }} />
+                                                            </div>
+                                                            <small>
+                                                                {fmt(sp[k].actual)} / {fmt(sp[k].target)}
+                                                            </small>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                                <div className="au-tg-angka">
-                                                    <div>
-                                                        <b className={done ? 'is-hijau' : ''}>
-                                                            {fmt(actual)} / {fmt(t.target)}
-                                                        </b>
-                                                        <small>aktual / target</small>
-                                                    </div>
-                                                    <span className={'au-tg-pct ' + nada(pct, done)}>{pct}%</span>
-                                                    {canDelete ? <HapusTarget t={t} /> : null}
+                                            ) : (
+                                                <div className="au-tg-bar">
+                                                    <div className={nada(pct, done)} style={{ width: pct + '%' }} />
                                                 </div>
-                                            </div>
-                                            <div className="au-tg-bar">
-                                                <div className={nada(pct, done)} style={{ width: pct + '%' }} />
-                                            </div>
+                                            )}
                                             {done ? (
-                                                <p className="au-tg-label is-capai">
+                                                <small className="is-capai">
                                                     ✓ Target tercapai!
                                                     {t.hapusOtomatis ? <span> · terhapus otomatis {t.hapusOtomatis}</span> : null}
-                                                </p>
+                                                </small>
                                             ) : (
-                                                <p className="au-tg-label">Kurang {fmt(kurang)} unit lagi</p>
+                                                <small>
+                                                    {sp
+                                                        ? 'Kurang ' + [sp.up.done ? null : 'UP ' + fmt(sp.up.target - sp.up.actual), sp.bt.done ? null : 'BT ' + fmt(sp.bt.target - sp.bt.actual)].filter(Boolean).join(' dan ')
+                                                        : 'Kurang ' + fmt(kurang) + ' unit lagi'}
+                                                </small>
                                             )}
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        ) : (
-                            <div className="au-tg-kosong">
-                                <p>Belum ada target aktif.</p>
-                                {canEdit ? <small>Set target menggunakan form di sebelah kiri.</small> : null}
-                            </div>
-                        )}
-                    </div>
-                </div>
+                                        <div className="au-tg2-angka">
+                                            {sp ? null : (
+                                                <b className={done ? 'is-hijau' : ''}>
+                                                    {fmt(actual)} / {fmt(t.target)}
+                                                </b>
+                                            )}
+                                            <span className={'au-tg-pct ' + nada(pct, done)}>{pct}%</span>
+                                            {canDelete ? <HapusTarget t={t} /> : null}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="au-tg2-kosong">
+                            <p>Belum ada target aktif.</p>
+                            {canEdit ? <small>Pilih produk lalu isi target pada form di atas.</small> : null}
+                        </div>
+                    )}
+                </section>
             </div>
 
-            <TombolLive onTick={fetchLive} updatedAt={updatedAt} />
         </AppLayout>
     );
 }
@@ -301,14 +323,12 @@ function FormTarget({ productGroups, storeUrl, actualQtyUrl }) {
     const [qty, setQty] = useState('');
     const [ch, setCh] = useState({ up: '', bt: '' });
     const [serial, setSerial] = useState({ dari: '', sampai: '', otomatis: false });
+    // Produk channel: dua deret no. urut (UP dan BT), target = (selisih UP + selisih BT) / 2.
+    const [serialCh, setSerialCh] = useState({ upDari: '', upSampai: '', btDari: '', btSampai: '', otomatis: false });
 
     const pilihan = useMemo(() => productGroups.flatMap((g) => g.options), [productGroups]);
     const terpilih = pilihan.find((o) => String(o.value) === String(data.product_id)) || null;
     const isChannel = terpilih?.type === 'channel';
-
-    useEffect(() => {
-        if (isChannel && mode === 'serial') setMode('qty');
-    }, [isChannel, mode]);
 
     // Mode "Sampai No. Urut": Dari = total produksi kumulatif produk (no. urut terakhir).
     useEffect(() => {
@@ -318,6 +338,10 @@ function FormTarget({ productGroups, storeUrl, actualQtyUrl }) {
             .then((r) => (r.ok ? r.json() : null))
             .then((d) => {
                 if (!hidup || !d) return;
+                if (isChannel) {
+                    setSerialCh((s) => ({ ...s, upDari: String(d.up ?? 0), btDari: String(d.bt ?? 0), otomatis: true }));
+                    return;
+                }
                 const dari = d.actual ?? 0;
                 setSerial((s) => ({ dari: String(dari), sampai: s.sampai || (d.target_qty ? String(dari + d.target_qty) : ''), otomatis: true }));
             })
@@ -325,7 +349,7 @@ function FormTarget({ productGroups, storeUrl, actualQtyUrl }) {
         return () => {
             hidup = false;
         };
-    }, [mode, data.product_id, actualQtyUrl]);
+    }, [mode, data.product_id, actualQtyUrl, isChannel]);
 
     const upN = parseFloat(ch.up) || 0;
     const btN = parseFloat(ch.bt) || 0;
@@ -334,12 +358,19 @@ function FormTarget({ productGroups, storeUrl, actualQtyUrl }) {
     const sampaiN = parseInt(serial.sampai, 10) || 0;
     const qtySerial = sampaiN > 0 && sampaiN > dariN ? sampaiN - dariN : 0;
 
-    const targetQty = mode === 'serial' ? (qtySerial || '') : isChannel ? (upN > 0 || btN > 0 ? totalChannel : '') : qty;
+    const selUp = Math.max(0, (parseInt(serialCh.upSampai, 10) || 0) - (parseInt(serialCh.upDari, 10) || 0));
+    const selBt = Math.max(0, (parseInt(serialCh.btSampai, 10) || 0) - (parseInt(serialCh.btDari, 10) || 0));
+    const qtySerialCh = serialCh.upSampai !== '' || serialCh.btSampai !== '' ? Math.round((selUp + selBt) / 2) : 0;
+
+    const targetQty = mode === 'serial' ? ((isChannel ? qtySerialCh : qtySerial) || '') : isChannel ? (upN > 0 || btN > 0 ? totalChannel : '') : qty;
 
     function simpan(e) {
         e.preventDefault();
         // Nilai target dihitung dari mode yang dipilih (jumlah / channel / no. urut).
-        transform((d) => ({ ...d, target_qty: targetQty }));
+        // Channel: UP dan BT dikirim terpisah (server menyimpan targetnya per deret, dan menghitung gabungan untuk bot/aplikasi).
+        const upKirim = mode === 'serial' ? selUp : upN;
+        const btKirim = mode === 'serial' ? selBt : btN;
+        transform((d) => (isChannel ? { ...d, target_qty: '', target_up: Math.round(upKirim), target_bt: Math.round(btKirim) } : { ...d, target_qty: targetQty }));
         post(storeUrl, {
             preserveScroll: true,
             onSuccess: () => {
@@ -347,173 +378,149 @@ function FormTarget({ productGroups, storeUrl, actualQtyUrl }) {
                 setQty('');
                 setCh({ up: '', bt: '' });
                 setSerial({ dari: '', sampai: '', otomatis: false });
+                setSerialCh({ upDari: '', upSampai: '', btDari: '', btSampai: '', otomatis: false });
             },
         });
     }
 
     return (
-        <div className="au-tg-kiri">
-            <div className="au-tg-form">
-                <div className="au-tg-form-kepala">
-                    <h3>Set Target</h3>
-                    <p>Target produksi per produk · tanpa batas waktu</p>
-                </div>
-                <form onSubmit={simpan} className="au-tg-form-isi">
-                    <div>
-                        <label className="au-tg-lbl">Produk</label>
-                        <PilihProduk groups={productGroups} value={data.product_id} error={errors.product_id} onChange={(v) => setData('product_id', v)} />
-                        {errors.product_id ? <p className="au-tg-galat">{errors.product_id}</p> : null}
+        <form onSubmit={simpan} className="au-tg2-form">
+            <div className="au-tg2-sel">
+                <label className="au-tg-lbl">Produk</label>
+                <PilihProduk groups={productGroups} value={data.product_id} error={errors.product_id} onChange={(v) => setData('product_id', v)} />
+                {errors.product_id ? <p className="au-tg-galat">{errors.product_id}</p> : null}
+            </div>
 
-                        {terpilih?.manual ? (
-                            <div className="au-tg-manual">
-                                <p>
-                                    Identitas Produk <span>(wajib diisi)</span>
-                                </p>
-                                <div className="au-form-grid au-form-grid-2">
-                                    <div>
-                                        <label>Nomor Seri</label>
-                                        <input className="au-input au-mono" required maxLength={100} placeholder="Contoh: A-1234" value={data.manual_series} onChange={(e) => setData('manual_series', e.target.value)} />
-                                    </div>
-                                    <div>
-                                        <label>KVA</label>
-                                        <input className="au-input au-mono" required maxLength={50} placeholder="Contoh: 100" value={data.manual_kva} onChange={(e) => setData('manual_kva', e.target.value)} />
-                                    </div>
-                                </div>
-                            </div>
-                        ) : null}
+            <div className={'au-tg2-unit' + (mode === 'serial' || isChannel ? ' is-lebar' : '')}>
+                <label className="au-tg-lbl">Target Unit</label>
+                    <div className="au-tg-mode">
+                        <button type="button" className={mode === 'qty' ? 'is-aktif' : ''} onClick={() => setMode('qty')}>
+                            Jumlah Unit
+                        </button>
+                        <button type="button" className={mode === 'serial' ? 'is-aktif' : ''} onClick={() => setMode('serial')}>
+                            Sampai No. Urut
+                        </button>
                     </div>
 
-                    <div>
-                        <label className="au-tg-lbl">Target Unit</label>
-                        <div className="au-tg-mode">
-                            <button type="button" className={mode === 'qty' ? 'is-aktif' : ''} onClick={() => setMode('qty')}>
-                                Jumlah Unit
-                            </button>
-                            {!isChannel ? (
-                                <button type="button" className={mode === 'serial' ? 'is-aktif' : ''} onClick={() => setMode('serial')}>
-                                    Sampai No. Urut
-                                </button>
+                    {mode === 'qty' && !isChannel ? (
+                        <div>
+                            <input type="number" min={1} max={999999} className="au-input au-tg-besar" placeholder="Contoh: 500" value={qty} onChange={(e) => setQty(e.target.value)} />
+                            <p className="au-tg-bantu">Total unit yang harus diproduksi</p>
+                        </div>
+                    ) : null}
+
+                    {mode === 'qty' && isChannel ? (
+                        <div className="au-tg-channel">
+                            <div className="au-form-grid au-form-grid-2">
+                                <div>
+                                    <label className="is-up">Channel UP</label>
+                                    <input type="number" min={0} max={9999} className="au-input au-tg-besar" placeholder="Contoh: 100" value={ch.up} onChange={(e) => setCh({ ...ch, up: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="is-bt">Channel BT</label>
+                                    <input type="number" min={0} max={9999} className="au-input au-tg-besar" placeholder="Contoh: 100" value={ch.bt} onChange={(e) => setCh({ ...ch, bt: e.target.value })} />
+                                </div>
+                            </div>
+                            {upN > 0 || btN > 0 ? (
+                                <div className="au-tg-pratinjau is-biru au-tg-pisah">
+                                    <p>Target dipisah per deret</p>
+                                    <div>
+                                        <span><i className="is-up">UP</i><b>{upN.toLocaleString('id-ID')} unit</b></span>
+                                        <span><i className="is-bt">BT</i><b>{btN.toLocaleString('id-ID')} unit</b></span>
+                                    </div>
+                                </div>
                             ) : null}
                         </div>
+                    ) : null}
 
-                        {mode === 'qty' && !isChannel ? (
-                            <div>
-                                <input type="number" min={1} max={999999} className="au-input au-tg-besar" placeholder="Contoh: 500" value={qty} onChange={(e) => setQty(e.target.value)} />
-                                <p className="au-tg-bantu">Total unit yang harus diproduksi</p>
+                    {mode === 'serial' && isChannel ? (
+                        <div className="au-tg-serial">
+                            <div className="au-form-grid au-form-grid-2">
+                                <div>
+                                    <label className="is-up">Dari No. Urut UP {serialCh.otomatis ? <span>(otomatis)</span> : null}</label>
+                                    <input type="number" min={0} max={999999} className="au-input au-tg-sedang" placeholder="Auto dari riwayat" value={serialCh.upDari} onChange={(e) => setSerialCh({ ...serialCh, upDari: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="is-up">Sampai No. Urut UP</label>
+                                    <input type="number" min={0} max={999999} className="au-input au-tg-sedang" placeholder="Contoh: 500" value={serialCh.upSampai} onChange={(e) => setSerialCh({ ...serialCh, upSampai: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="is-bt">Dari No. Urut BT {serialCh.otomatis ? <span>(otomatis)</span> : null}</label>
+                                    <input type="number" min={0} max={999999} className="au-input au-tg-sedang" placeholder="Auto dari riwayat" value={serialCh.btDari} onChange={(e) => setSerialCh({ ...serialCh, btDari: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="is-bt">Sampai No. Urut BT</label>
+                                    <input type="number" min={0} max={999999} className="au-input au-tg-sedang" placeholder="Contoh: 500" value={serialCh.btSampai} onChange={(e) => setSerialCh({ ...serialCh, btSampai: e.target.value })} />
+                                </div>
                             </div>
-                        ) : null}
-
-                        {mode === 'qty' && isChannel ? (
-                            <div className="au-tg-channel">
-                                <div className="au-form-grid au-form-grid-2">
+                            {selUp > 0 || selBt > 0 ? (
+                                <div className="au-tg-pratinjau is-hijau au-tg-pisah">
+                                    <p>Target dipisah per deret</p>
                                     <div>
-                                        <label className="is-up">Channel UP</label>
-                                        <input type="number" min={0} max={9999} className="au-input au-tg-besar" placeholder="Contoh: 100" value={ch.up} onChange={(e) => setCh({ ...ch, up: e.target.value })} />
-                                    </div>
-                                    <div>
-                                        <label className="is-bt">Channel BT</label>
-                                        <input type="number" min={0} max={9999} className="au-input au-tg-besar" placeholder="Contoh: 100" value={ch.bt} onChange={(e) => setCh({ ...ch, bt: e.target.value })} />
+                                        <span><i className="is-up">UP</i><b>{selUp.toLocaleString('id-ID')} unit</b></span>
+                                        <span><i className="is-bt">BT</i><b>{selBt.toLocaleString('id-ID')} unit</b></span>
                                     </div>
                                 </div>
-                                {upN > 0 || btN > 0 ? (
-                                    <div className="au-tg-pratinjau is-biru">
-                                        <p>
-                                            Total target <small>(UP + BT) ÷ 2</small>
-                                        </p>
-                                        <b>{(totalChannel % 1 === 0 ? totalChannel.toLocaleString('id-ID') : totalChannel.toFixed(1)) + ' unit'}</b>
-                                    </div>
-                                ) : null}
-                            </div>
-                        ) : null}
+                            ) : null}
+                        </div>
+                    ) : null}
 
-                        {mode === 'serial' ? (
-                            <div className="au-tg-serial">
-                                <div className="au-form-grid au-form-grid-2">
-                                    <div>
-                                        <label>
-                                            Dari No. Urut {serial.otomatis ? <span>(otomatis)</span> : null}
-                                        </label>
-                                        <input type="number" min={1} max={999999} className="au-input au-tg-sedang" placeholder="Auto dari riwayat" value={serial.dari} onChange={(e) => setSerial({ ...serial, dari: e.target.value })} />
-                                    </div>
-                                    <div>
-                                        <label>Sampai No. Urut</label>
-                                        <input type="number" min={1} max={999999} className="au-input au-tg-sedang" placeholder="Contoh: 500" value={serial.sampai} onChange={(e) => setSerial({ ...serial, sampai: e.target.value })} />
-                                    </div>
+                    {mode === 'serial' && !isChannel ? (
+                        <div className="au-tg-serial">
+                            <div className="au-form-grid au-form-grid-2">
+                                <div>
+                                    <label>
+                                        Dari No. Urut {serial.otomatis ? <span>(otomatis)</span> : null}
+                                    </label>
+                                    <input type="number" min={1} max={999999} className="au-input au-tg-sedang" placeholder="Auto dari riwayat" value={serial.dari} onChange={(e) => setSerial({ ...serial, dari: e.target.value })} />
                                 </div>
-                                {qtySerial > 0 ? (
-                                    <div className="au-tg-pratinjau is-hijau">
-                                        <p>Total target</p>
-                                        <b>{qtySerial.toLocaleString('id-ID')} unit</b>
-                                        <small>
-                                            No. Urut {dariN} → {sampaiN}
-                                        </small>
-                                    </div>
-                                ) : null}
+                                <div>
+                                    <label>Sampai No. Urut</label>
+                                    <input type="number" min={1} max={999999} className="au-input au-tg-sedang" placeholder="Contoh: 500" value={serial.sampai} onChange={(e) => setSerial({ ...serial, sampai: e.target.value })} />
+                                </div>
                             </div>
-                        ) : null}
-                        {errors.target_qty ? <p className="au-tg-galat">{errors.target_qty}</p> : null}
-                    </div>
-
-                    <div>
-                        <label className="au-tg-lbl">
-                            Catatan <span>(opsional)</span>
-                        </label>
-                        <input className="au-input" maxLength={200} placeholder="Misal: Target khusus akhir bulan" value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
-                    </div>
-
-                    <button type="submit" className="au-tg-simpan" disabled={processing}>
-                        {processing ? 'Menyimpan...' : 'Simpan Target'}
-                    </button>
-                </form>
+                            {qtySerial > 0 ? (
+                                <div className="au-tg-pratinjau is-hijau">
+                                    <p>Total target</p>
+                                    <b>{qtySerial.toLocaleString('id-ID')} unit</b>
+                                    <small>
+                                        No. Urut {dariN} → {sampaiN}
+                                    </small>
+                                </div>
+                            ) : null}
+                        </div>
+                    ) : null}
+                {errors.target_qty ? <p className="au-tg-galat">{errors.target_qty}</p> : null}
             </div>
-        </div>
-    );
-}
 
-/* Tombol Live/Paused — progres disegarkan tiap 60 detik (localStorage tgtAutoRefresh). */
-const INTERVAL = 60;
-function TombolLive({ onTick, updatedAt }) {
-    const [on, setOn] = useState(() => {
-        try {
-            return localStorage.getItem('tgtAutoRefresh') !== 'false';
-        } catch (_) {
-            return true;
-        }
-    });
-    const [cd, setCd] = useState(INTERVAL);
+            <div className="au-tg2-cat">
+                <label className="au-tg-lbl">
+                    Catatan <span>(opsional)</span>
+                </label>
+                <input className="au-input" maxLength={200} placeholder="Misal: Target khusus akhir bulan" value={data.notes} onChange={(e) => setData('notes', e.target.value)} />
+            </div>
 
-    useEffect(() => {
-        if (!on) return undefined;
-        onTick();
-        let c = INTERVAL;
-        setCd(c);
-        const t = setInterval(() => {
-            c -= 1;
-            if (c <= 0) {
-                c = INTERVAL;
-                if (!document.hidden) onTick();
-            }
-            setCd(c);
-        }, 1000);
-        return () => clearInterval(t);
-    }, [on, onTick]);
+            <button type="submit" className="au-tg-simpan au-tg2-simpan" disabled={processing}>
+                {processing ? 'Menyimpan...' : 'Simpan Target'}
+            </button>
 
-    function ubah() {
-        const v = !on;
-        setOn(v);
-        try {
-            localStorage.setItem('tgtAutoRefresh', String(v));
-        } catch (_) {
-            /* abaikan */
-        }
-    }
-
-    return (
-        <button type="button" className="au-tg-live au-db-live-tombol" onClick={ubah} title="Toggle auto-refresh">
-            <i className={on ? 'is-on' : ''} />
-            <b>{on ? 'Live' : 'Paused'}</b>
-            {on ? <span>{cd}s</span> : null}
-            {updatedAt ? <small> · {updatedAt}</small> : null}
-        </button>
+                    {terpilih?.manual ? (
+                        <div className="au-tg-manual">
+                            <p>
+                                Identitas Produk <span>(wajib diisi)</span>
+                            </p>
+                            <div className="au-form-grid au-form-grid-2">
+                                <div>
+                                    <label>Nomor Seri</label>
+                                    <input className="au-input au-mono" required maxLength={100} placeholder="Contoh: A-1234" value={data.manual_series} onChange={(e) => setData('manual_series', e.target.value)} />
+                                </div>
+                                <div>
+                                    <label>KVA</label>
+                                    <input className="au-input au-mono" required maxLength={50} placeholder="Contoh: 100" value={data.manual_kva} onChange={(e) => setData('manual_kva', e.target.value)} />
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
+        </form>
     );
 }

@@ -59,6 +59,49 @@ class DashboardHitunganTest extends TestCase
         ]);
     }
 
+    public function test_avatar_operator_bulanan_mengikuti_pemilik_log_dan_batas_departemen(): void
+    {
+        $op = $this->user('operator', 'QC-WELDING');
+        $op->update(['avatar' => 'avatars/operator.png']);
+        $lain = $this->user('operator', 'ASSEMBLY');
+        $lain->update(['avatar' => 'avatars/lain.png']);
+        foreach ([$op, $lain] as $u) {
+            ProductionLog::withoutGlobalScopes()->create([
+                'product_id' => $this->produk->id, 'user_id' => $u->id, 'department' => $u->department,
+                'operator_name' => $u->name, 'production_date' => today()->toDateString(),
+                'up_qty' => 10, 'bt_qty' => 0, 'total_qty' => 10, 'reject_qty' => 0,
+            ]);
+        }
+
+        $this->actingAs($op)->get('/dashboard')->assertOk()
+            ->assertInertia(fn (AssertableInertia $p) => $p
+                ->has('topOperatorsMonthly', 1)
+                ->where('topOperatorsMonthly.0.name', $op->name)
+                ->where('topOperatorsMonthly.0.avatar_url', $op->avatarUrl())
+                ->etc());
+    }
+
+    public function test_avatar_tidak_ditebak_dari_nama_operator_yang_sama(): void
+    {
+        $dev = $this->user('developer');
+        $op = $this->user('operator', 'QC-WELDING');
+        $op->update(['avatar' => 'avatars/operator.png']);
+        foreach ([$dev, $op] as $u) {
+            ProductionLog::withoutGlobalScopes()->create([
+                'product_id' => $this->produk->id, 'user_id' => $u->id, 'department' => $u->department,
+                'operator_name' => 'Nama sama', 'production_date' => today()->toDateString(),
+                'up_qty' => 10, 'bt_qty' => 0, 'total_qty' => 10, 'reject_qty' => 0,
+            ]);
+        }
+
+        $this->actingAs($dev)->get('/dashboard')->assertOk()
+            ->assertInertia(fn (AssertableInertia $p) => $p
+                ->has('topOperatorsMonthly', 1)
+                ->where('topOperatorsMonthly.0.avatar_url', null)
+                ->where('topOperatorsMonthly.0.total', 20)
+                ->etc());
+    }
+
     public function test_progres_target_dihitung_lintas_departemen_untuk_semua_role(): void
     {
         $dev = $this->user('developer');

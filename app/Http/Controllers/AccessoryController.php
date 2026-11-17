@@ -293,7 +293,7 @@ class AccessoryController extends Controller
             'serial_number'  => ['nullable', 'string', 'max:150'],
             'qty'            => ['required', 'integer', 'min:1'],
             'unit'           => ['nullable', Rule::in(Accessory::UNITS)],
-            'keterangan'     => ['nullable', 'string', 'max:1000'],
+            'keterangan'     => ['nullable', 'string', 'max:80'],
         ]);
     }
 

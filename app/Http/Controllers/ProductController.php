@@ -28,16 +28,21 @@ class ProductController extends Controller
         $categories = Category::where('is_active', true)->orderBy('name')->get();
         $years      = Product::whereNotNull('tahun')->distinct()->orderByDesc('tahun')->pluck('tahun');
 
+        // Produk "Input Seri & KVA Manual" (kategori manual, tanpa seri) adalah cetakan permanen: seri dan kVA
+        // diisi saat Input Produksi, jadi tidak ikut kelompok tahun. Tampil paling atas sebagai kelompok "Permanen".
+        $permanen = fn ($p) => (bool) ($p->category->has_manual_serial ?? false) && blank($p->series);
         $yearGroups = $products
-            ->groupBy(fn($p) => $p->tahun ?? 0)
-            ->sortKeysDesc();
+            ->groupBy(fn($p) => $permanen($p) ? 'permanen' : ($p->tahun ?? 0))
+            ->sortBy(fn ($items, $kunci) => $kunci === 'permanen' ? PHP_INT_MAX : (int) $kunci)
+            ->reverse();
 
         // Bentuk data mengikuti tata letak lama: dikelompokkan per TAHUN, lalu
         // per NAMA produk, dengan tiap varian (seri/kVA) sebagai baris di dalam
         // kartu produk.
         $yearSections = $yearGroups->map(function ($items, $tahun) {
             return [
-                'year'     => $tahun ? (string) $tahun : null,
+                'year'     => $tahun && $tahun !== 'permanen' ? (string) $tahun : null,
+                'permanen' => $tahun === 'permanen',
                 'count'    => $items->count(),
                 'products' => $items->groupBy('name')
                     // Urutan 1 = kartu paling kiri; tanpa urutan menyusul, abjad.

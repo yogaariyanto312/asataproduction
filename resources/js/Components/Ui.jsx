@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { router } from '@inertiajs/react';
 
 /* ── ikon ───────────────────────────────────────────────────────────────── */
@@ -251,7 +252,7 @@ export function DeleteButton({ url, title = 'Hapus data?', text, label, onDone }
                 <IconBtn danger icon={ICON.trash} title="Hapus" onClick={() => setOpen(true)} />
             )}
 
-            {open ? (
+            {open ? createPortal(
                 <div className="au-modal-backdrop" onClick={() => !busy && setOpen(false)}>
                     <div className="au-modal" onClick={(e) => e.stopPropagation()}>
                         <h3 className="au-modal-title">{title}</h3>
@@ -267,7 +268,8 @@ export function DeleteButton({ url, title = 'Hapus data?', text, label, onDone }
                             </Btn>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body,
             ) : null}
         </>
     );

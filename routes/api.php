@@ -182,6 +182,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::post('hak-akses', [PermissionController::class, 'update'])->middleware('izin:permissions')->name('hak-akses.update');
 
                 Route::get('settings', [BotSettingController::class, 'index'])->middleware('izin:settings')->name('settings.index');
+                Route::get('settings/sinkron-qc', [\App\Http\Controllers\SinkronQcController::class, 'status'])->middleware('izin:settings');
+                Route::post('settings/sinkron-qc', [\App\Http\Controllers\SinkronQcController::class, 'jalankan'])->middleware('izin:settings');
+                Route::post('settings/sinkron-qc/aturan', [\App\Http\Controllers\SinkronQcController::class, 'aturan'])->middleware('izin:settings');
                 Route::post('settings', [BotSettingController::class, 'update'])->middleware('izin:settings')->name('settings.update');
                 Route::post('settings/test', [BotSettingController::class, 'test'])->middleware('izin:settings')->name('settings.test');
                 Route::post('settings/laporan-harian', [BotSettingController::class, 'sendDailyReport'])->middleware('izin:settings')->name('settings.laporan');

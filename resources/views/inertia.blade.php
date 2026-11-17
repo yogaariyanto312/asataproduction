@@ -5,8 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {{-- Pilihan sidebar kecil harus berlaku sebelum CSS dimuat, kalau tidak sidebar berkedip. --}}
     <script>try { if (localStorage.getItem('qc:sidebar-mini') === '1') document.documentElement.classList.add('sb-mini'); } catch (_) {}</script>
-    {{-- Tema terang/gelap dipasang sebelum CSS dimuat supaya tidak berkedip. --}}
-    <script>try { if (localStorage.getItem('au:tema') === 'terang') { document.documentElement.dataset.tema = 'terang'; document.documentElement.classList.remove('dark'); } } catch (_) {}</script>
+    {{-- Tema kaca dipasang sebelum CSS dimuat supaya tidak berkedip:
+         au:tema 'gelap' atau 'terang' (bawaan terang), au:warna coral|violet|ocean, au:ringan '1' = mode ringan.
+         Nilai lama 'terang' dibaca sebagai Coral. --}}
+    <script>try {
+        var d = document.documentElement, t = localStorage.getItem('au:tema'), w = localStorage.getItem('au:warna');
+        if (t === 'gelap') { d.dataset.tema = 'gelap'; }
+        else { d.dataset.tema = 'terang'; d.dataset.warna = (w === 'violet' || w === 'ocean') ? w : 'coral'; d.classList.remove('dark'); }
+        if (localStorage.getItem('au:ringan') === '1') d.classList.add('g-ringan');
+    } catch (_) { document.documentElement.dataset.tema = 'terang'; document.documentElement.dataset.warna = 'coral'; document.documentElement.classList.remove('dark'); }</script>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="csrf-refresh" content="{{ route('csrf.token') }}">
 

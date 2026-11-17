@@ -42,7 +42,7 @@ Aturan yang wajib diikuti:
   target produksi, laporan bulanan/harian (layar, PDF, Excel), gambar kerja
   (dokumen teknik), aksesoris keluar, barang pengganti, catatan/tugas, chat
   internal, kalender agenda, dan bot Telegram/Discord.
-- **Aplikasi acuan**: `G:\laragon\www\Production-QC-Logging-System` (Laravel + Blade +
+- **Aplikasi acuan**: `D:\CodingTime\Launcher\www\Production-QC-Logging-System` (Laravel + Blade +
   Alpine). Asata adalah versi baru (React/Inertia) yang **perilaku & tata letaknya
   disamakan dengan acuan**, tetapi **memakai tema gelap asata**. Tes acuan diport ke
   `tests/Feature/Ref/` dan `tests/Unit/Ref/`.
@@ -68,7 +68,7 @@ dari server). Dev: `phpunit/phpunit ^12.5`, `laravel/pint`, `mockery`.
 **Database**: MySQL (produksi: `asataprdct`, uji MySQL: `asataprdct_verify`),
 SQLite in-memory untuk `phpunit.xml`.
 
-**PHP CLI**: `G:/laragon/bin/php/php-8.4.12-nts-Win32-vs17-x64/php.exe` (php di PATH
+**PHP CLI**: `D:/CodingTime/Launcher/bin/php/php-8.4.12-nts-Win32-vs17-x64/php.exe` (php di PATH
 masih 8.3 dan ditolak composer).
 
 **Penting soal build**: `vite.config.js` memakai `base: './'` saat build karena

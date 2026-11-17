@@ -1,6 +1,7 @@
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { router } from '@inertiajs/react';
 import AppLayout from '../../Layouts/AppLayout';
+import { konfirmasi } from '../../dialog';
 import { Btn, ICON, Icon, Select } from '../../Components/Ui';
 
 const LOCK =
@@ -50,6 +51,8 @@ export default function PermissionsIndex({
     const [cari, setCari] = useState('');
     const [roleHp, setRoleHp] = useState(kolom[0]);
     const [busy, setBusy] = useState(false);
+    // Kelompok menu yang dilipat (hanya tampilan; saat mencari semuanya terbuka).
+    const [tutup, setTutup] = useState(() => new Set());
 
     // Hitung perubahan dibanding keadaan tersimpan.
     const jumlahUbah = useMemo(
@@ -74,6 +77,14 @@ export default function PermissionsIndex({
                 .filter(Boolean),
         [rows, q],
     );
+
+    function lipat(key) {
+        setTutup((t) => {
+            const b = new Set(t);
+            b.has(key) ? b.delete(key) : b.add(key);
+            return b;
+        });
+    }
 
     function set(keys, v) {
         setNilai((n) => {
@@ -129,7 +140,16 @@ export default function PermissionsIndex({
         );
     }
 
-    function gantiMode(value) {
+    // Perubahan yang belum disimpan tidak boleh hilang diam-diam (ganti mode role/departemen, tutup tab).
+    useEffect(() => {
+        if (!jumlahUbah) return undefined;
+        const jaga = (e) => { e.preventDefault(); e.returnValue = ''; };
+        window.addEventListener('beforeunload', jaga);
+        return () => window.removeEventListener('beforeunload', jaga);
+    }, [jumlahUbah]);
+
+    async function gantiMode(value) {
+        if (jumlahUbah > 0 && !(await konfirmasi(jumlahUbah + ' perubahan belum disimpan dan akan hilang bila mode diganti. Lanjutkan?', { title: 'Perubahan belum disimpan', okText: 'Ganti mode' }))) return;
         router.get(indexUrl, value ? { department: value } : {}, { preserveScroll: true });
     }
 
@@ -187,6 +207,13 @@ export default function PermissionsIndex({
                             onChange={(e) => setCari(e.target.value)}
                         />
                     </div>
+                    <button
+                        type="button"
+                        className="au-hak-lipat"
+                        onClick={() => setTutup(tutup.size ? new Set() : new Set(rows.map((r) => r.key)))}
+                    >
+                        {tutup.size ? 'Buka semua kelompok' : 'Ciutkan semua kelompok'}
+                    </button>
                     {departments && departments.length ? (
                         <div className="au-hak-mode">
                             <Select
@@ -247,11 +274,19 @@ export default function PermissionsIndex({
                         </thead>
                         <tbody>
                             {barisTampil.length ? (
-                                barisTampil.map((row) => (
+                                barisTampil.map((row) => {
+                                    const lipatan = !q && tutup.has(row.key);
+                                    return (
                                     <Fragment key={row.key}>
-                                        <tr className="au-hak-grup">
+                                        <tr className={'au-hak-grup' + (lipatan ? ' is-tutup' : '')}>
                                             <th scope="row">
-                                                <span>
+                                                <button
+                                                    type="button"
+                                                    className="au-hak-judul"
+                                                    aria-expanded={!lipatan}
+                                                    onClick={() => lipat(row.key)}
+                                                >
+                                                    <svg className="au-hak-panah" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
                                                     {row.paths.length ? <Paths paths={row.paths} /> : null}
                                                     {row.label}
                                                     {row.locked ? (
@@ -260,19 +295,24 @@ export default function PermissionsIndex({
                                                         </span>
                                                     ) : null}
                                                     {row.shared && isDept ? <em>dipakai bersama</em> : null}
-                                                </span>
+                                                </button>
                                             </th>
                                             {kolom.map((r) => (
                                                 <td key={r} className={'au-hak-col' + (r === roleHp || isDept ? ' is-hp' : '')}>
                                                     {!row.locked ? (
-                                                        <button type="button" className="au-hak-semua" onClick={() => massal(kunciRow(row, r))}>
-                                                            semua
-                                                        </button>
+                                                        <>
+                                                            <span className="au-hak-hitung">
+                                                                {kunciRow(row, r).filter((k) => nilai[k]).length}/{row.perms.length}
+                                                            </span>
+                                                            <button type="button" className="au-hak-semua" onClick={() => massal(kunciRow(row, r))}>
+                                                                semua
+                                                            </button>
+                                                        </>
                                                     ) : null}
                                                 </td>
                                             ))}
                                         </tr>
-                                        {row.perms.map((perm) => (
+                                        {(lipatan ? [] : row.perms).map((perm) => (
                                             <tr key={row.key + perm.key} className={perm.is_view ? 'au-hak-lihat' : 'au-hak-aksi'}>
                                                 <th scope="row">
                                                     <span>
@@ -312,7 +352,8 @@ export default function PermissionsIndex({
                                             </tr>
                                         ))}
                                     </Fragment>
-                                ))
+                                    );
+                                })
                             ) : (
                                 <tr>
                                     <td colSpan={kolom.length + 1} className="au-hak-kosong">

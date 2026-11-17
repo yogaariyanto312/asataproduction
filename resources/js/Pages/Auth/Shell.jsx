@@ -1,58 +1,82 @@
+import { useEffect, useState } from 'react';
 import { Head } from '@inertiajs/react';
-import '../../../css/login-robot.css';
+import '../../../css/glass-token.css';
+import '../../../css/login-baru.css';
+import { TAMPILAN, tampilanSekarang, terapkanTampilan } from '../../Components/Glass';
 import { useBlokirDevtools } from '../../blokirDevtools';
+import latarBuram from '../../../images/login-latar-blur.webp';
 
-/**
- * Kerangka dua panel untuk halaman auth selain login (lupa & reset password).
- * Sengaja memakai kelas .lr-* yang sama dengan halaman login supaya tampilannya
- * konsisten tanpa menduplikasi CSS.
- */
-export default function AuthShell({ title, subtitle, children }) {
+const MEREK =
+    'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2';
+
+/** Titik warna kecil untuk mengganti tema langsung dari halaman masuk. */
+export function TemaTitik() {
+    const [pilih, setPilih] = useState('coral');
+
+    useEffect(() => {
+        setPilih(tampilanSekarang());
+        const sinkron = () => setPilih(tampilanSekarang());
+        window.addEventListener('au:tema', sinkron);
+        return () => window.removeEventListener('au:tema', sinkron);
+    }, []);
+
+    return (
+        <div className="lg-tema" role="group" aria-label="Pilih tema warna">
+            {TAMPILAN.map((t) => (
+                <button
+                    type="button"
+                    key={t.k}
+                    className="lg-tema-titik"
+                    aria-pressed={pilih === t.k}
+                    aria-label={'Tema ' + t.nama}
+                    title={t.nama}
+                    style={{ '--a': t.a, '--b': t.b }}
+                    onClick={() => {
+                        terapkanTampilan(t.k);
+                        setPilih(t.k);
+                    }}
+                />
+            ))}
+        </div>
+    );
+}
+
+/** Kerangka bersama: foto pabrik lama yang diburamkan sebagai latar, bilah merek, pemilih tema, dan kaki halaman. */
+export function Bingkai({ title, children }) {
     useBlokirDevtools();
     return (
         <>
             <Head title={title} />
-
-            <div className="lr-scene">
-                <aside className="lr-brand-panel">
-                    <div className="lr-brand-head">
-                        <span className="lr-brand-mark">
+            <div className="lg-scene" style={{ '--lg-foto': `url(${latarBuram})` }}>
+                <header className="lg-atas">
+                    <div className="lg-merek">
+                        <span className="lg-merek-ikon">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                                />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={MEREK} />
                             </svg>
                         </span>
-                        <span className="lr-brand-name">Asata Production System</span>
+                        <span>Asata Production System</span>
                     </div>
+                    <TemaTitik />
+                </header>
 
-                    <div className="lr-brand-body">
-                        <h2 className="lr-brand-title">
-                            Sistem Pencatatan
-                            <br />
-                            Produksi Digital
-                        </h2>
-                        <p className="lr-brand-text">
-                            Hubungi administrator bila Anda kesulitan mengakses akun.
-                        </p>
-                    </div>
+                <main className="lg-tengah">{children}</main>
 
-                    <p className="lr-brand-foot">&copy; {new Date().getFullYear()} Asata Production System</p>
-                </aside>
-
-                <div className="lr-form-panel">
-                    <main className="lr-stage">
-                        <div className="lr-card">
-                            <h1 className="lr-title">{title}</h1>
-                            <p className="lr-subtitle">{subtitle}</p>
-                            {children}
-                        </div>
-                    </main>
-                </div>
+                <footer className="lg-kaki">&copy; {new Date().getFullYear()} Asata Production System</footer>
             </div>
         </>
+    );
+}
+
+/** Halaman auth selain masuk (lupa & reset password): judul + kartu kaca. */
+export default function AuthShell({ title, subtitle, children }) {
+    return (
+        <Bingkai title={title}>
+            <div className="lg-inti">
+                <h1 className="lg-judul lg-judul--kecil">{title}</h1>
+                <p className="lg-sub">{subtitle}</p>
+                <div className="lg-kartu">{children}</div>
+            </div>
+        </Bingkai>
     );
 }

@@ -1,3 +1,4 @@
+import { useRealtime } from '../../realtime';
 import { useEffect, useRef, useState } from 'react';
 import { router } from '@inertiajs/react';
 import AppLayout from '../../Layouts/AppLayout';
@@ -78,6 +79,8 @@ export default function ProductionIndex({
     today,
 }) {
     const [modalInput, setModalInput] = useState(false);
+    // Realtime ringan: input baru/ubah/hapus dari siapa pun menyegarkan daftar (hanya data daftar, posisi gulir tetap).
+    useRealtime('produksi', () => router.reload({ only: ['days', 'pagination', 'summary'], preserveScroll: true, preserveState: true }));
 
     // Dialog "Reject Unit": null = tutup, selain itu = baris produksi terpilih.
     const [rejectRow, setRejectRow] = useState(null);
@@ -306,7 +309,7 @@ export default function ProductionIndex({
                             <span className="au-section-pill">
                                 <Icon path={CAL} />
                                 {day.dayName}
-                                <span style={{ opacity: 0.8, fontWeight: 600 }}>{day.dateLabel}</span>
+                                <span style={{ fontWeight: 600 }}>{day.dateLabel}</span>
                             </span>
                             <span className="au-section-rule" />
                             <span className="au-section-count">

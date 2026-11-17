@@ -73,13 +73,57 @@ function Rahasia({ id, nama, nilai, placeholder, label }) {
  * bilah simpan melayang yang menandai perubahan belum tersimpan; lalu Perintah
  * Bot (webhook), contoh format pesan, dan profil di halaman Tentang.
  */
+/* Daftar konflik sinkron qc: satu baris per gambar, alasan dipisah dari nama supaya mudah dibaca. */
+function KonflikDaftar({ daftar }) {
+    if (!daftar || !daftar.length) return null;
+    return (
+        <ul className="au-sk-daftar">
+            {daftar.map((k, i) => {
+                const [nama, ...alasan] = String(k).split(': ');
+                return (
+                    <li key={i}>
+                        <b>{nama}</b>
+                        <span>{alasan.join(': ')}</span>
+                    </li>
+                );
+            })}
+        </ul>
+    );
+}
+
+/* Ringkasan satu hasil (cek atau sinkron) dalam bentuk angka kecil. */
+function AngkaSinkron({ h }) {
+    const n = h.konflik ? h.konflik.length : 0;
+    return (
+        <div className="au-sk-angka">
+            <span><b>{h.sumber}</b> di qc</span>
+            <span><b>{h.sudah_ada}</b> sudah ada</span>
+            <span><b>{h.baru}</b> gambar {h.cek ? 'akan ditambah' : 'ditambah'}</span>
+            <span><b>{h.jadwal_baru ?? 0}</b> foto jadwal {h.cek ? 'akan ditambah' : 'ditambah'}</span>
+            <span className={n ? 'is-awas' : ''}><b>{n}</b> konflik</span>
+        </div>
+    );
+}
+
 export default function SettingsBot(props) {
-    const { setting, action, testUrl, webhookRegisterUrl, webhookInfoUrl, dailyReportUrl, webhookUrl, perintah, profil, aboutInfoUrl, aboutAvatarUrl, maintenanceUntilLabel, pesanPengingatBawaan } = props;
+    const { setting, action, testUrl, webhookRegisterUrl, webhookInfoUrl, dailyReportUrl, webhookUrl, perintah, profil, aboutInfoUrl, aboutAvatarUrl, maintenanceUntilLabel, pesanPengingatBawaan, sinkronQc } = props;
     const { errors, flash } = usePage().props;
     const form = useRef(null);
     const awal = useRef('');
     const [ubah, setUbah] = useState(false);
     const [kirim, setKirim] = useState(false);
+    const [sinkronSibuk, setSinkronSibuk] = useState(false);
+    const aksiSinkron = (url, data = {}) => {
+        if (sinkronSibuk) return;
+        setSinkronSibuk(true);
+        router.post(url, data, { only: ['sinkronQc', 'flash'], preserveScroll: true, onFinish: () => setSinkronSibuk(false) });
+    };
+    useEffect(() => {
+        const timer = setInterval(() => {
+            if (!document.hidden && !sinkronSibuk) router.reload({ only: ['sinkronQc'], preserveScroll: true });
+        }, 30000);
+        return () => clearInterval(timer);
+    }, [sinkronSibuk]);
 
     // Seluruh isi form dirangkum jadi satu untaian (bukan FormData.get per
     // entri: tiap saklar punya DUA entri bernama sama).
@@ -231,6 +275,52 @@ export default function SettingsBot(props) {
                                 </p>
                                 {errors.maintenance_until ? <p className="au-st-galat">{errors.maintenance_until}</p> : null}
                             </div>
+                        </div>
+                    </section>
+
+                    <section className="au-st-kartu">
+                        <Kepala ikon={P.gambar} warna="indigo" judul="Sinkron Gambar dari qc" sub="Gambar Kerja dan foto jadwal baru, sumber diperiksa tiap menit di server" />
+                        <div className="au-st-isi">
+                            <button type="button" className="au-st-tombol" aria-pressed={sinkronQc.otomatis} disabled={sinkronSibuk} onClick={() => aksiSinkron(sinkronQc.aturanUrl, { otomatis: !sinkronQc.otomatis })}>
+                                Otomatis: {sinkronQc.otomatis ? 'Aktif' : 'Nonaktif'}
+                            </button>
+                            <p className="au-st-teks">Saat aktif, server memeriksa gambar baru tiap menit meskipun aplikasi ditutup. Jeda deteksi bergantung jadwal server dan waktu penyalinan. Jika gagal, status dicatat dan dicoba lagi pada jadwal berikutnya. Pengaturan ini berlaku bersama di semua aplikasi.</p>
+                            <p className="au-st-teks">Satu arah: qc ke asata. Hanya menambah gambar baru (seri + kVA + urutan belum ada) dan foto jadwal minggu ini atau sesudahnya yang belum ada; qc tidak pernah diubah, dan yang sudah ada di asata tidak ditimpa.</p>
+                            {!sinkronQc.aktif ? (
+                                <p className="au-st-awas">Folder qc tidak ditemukan di server ini, jadi sinkron tidak berjalan. (Di hosting otomatis; lokal atur QC_SYNC_PATH di .env.)</p>
+                            ) : sinkronQc.terakhir ? (
+                                sinkronQc.terakhir.galat ? (
+                                    <p className="au-st-awas">Terakhir gagal ({sinkronQc.terakhir.waktu}): {sinkronQc.terakhir.galat}</p>
+                                ) : (
+                                    <div className="au-sk-hasil">
+                                        <div className="au-sk-kepala"><b>Sinkron terakhir</b><span>{sinkronQc.terakhir.waktu}</span></div>
+                                        <AngkaSinkron h={sinkronQc.terakhir} />
+                                        <KonflikDaftar daftar={sinkronQc.terakhir.konflik} />
+                                        {sinkronQc.terakhir.berkas_hilang.length ? <p className="au-st-teks">Berkas tidak ditemukan di qc: {sinkronQc.terakhir.berkas_hilang.length}</p> : null}
+                                    </div>
+                                )
+                            ) : (
+                                <p className="au-st-teks">Belum pernah berjalan.</p>
+                            )}
+                            {sinkronQc.aktif && sinkronQc.cek && !sinkronQc.cek.galat ? (
+                                <div className="au-sk-hasil">
+                                    <div className="au-sk-kepala"><b>Hasil cek (belum menyalin apa pun)</b><span>{sinkronQc.cek.waktu}</span></div>
+                                    <AngkaSinkron h={sinkronQc.cek} />
+                                    <KonflikDaftar daftar={sinkronQc.cek.konflik} />
+                                </div>
+                            ) : null}
+                            {sinkronQc.cek?.galat ? <p className="au-st-awas">Cek gagal ({sinkronQc.cek.waktu}): {sinkronQc.cek.galat}</p> : null}
+                            {sinkronQc.aktif ? (
+                                <div className="au-st-baris-tombol">
+                                    <button type="button" className="au-st-tombol" disabled={sinkronSibuk} onClick={() => aksiSinkron(sinkronQc.url, { cek: 1 })}>
+                                        <Icon path={P.mata} />
+                                        Cek dulu
+                                    </button>
+                                    <button type="button" className="au-st-hijau" disabled={sinkronSibuk} onClick={async () => { if (await konfirmasi('Salin gambar baru dari qc ke asata sekarang?', { title: 'Sinkron Gambar', type: 'warning', okText: 'Sinkronkan' })) aksiSinkron(sinkronQc.url); }}>
+                                        Sinkronkan sekarang
+                                    </button>
+                                </div>
+                            ) : null}
                         </div>
                     </section>
 

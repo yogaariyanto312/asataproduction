@@ -1,3 +1,10 @@
+# Arsip, cadangan, dan berkas konfigurasi tidak boleh diunduh dari folder publik.
+<FilesMatch "\.(rar|zip|7z|tar|gz|tgz|sql|bak|old|orig|swp|log|env|ini)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</FilesMatch>
+
 <IfModule mod_headers.c>
     Header always set Permissions-Policy "publickey-credentials-get=(), identity-credentials-get=()"
 

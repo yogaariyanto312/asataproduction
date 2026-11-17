@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { langgan } from '../../realtime';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import AppLayout from '../../Layouts/AppLayout';
 import { Btn, ICON, Icon, Input } from '../../Components/Ui';
@@ -128,7 +129,11 @@ export default function NotesIndex({ listUrl, storeUrl, baseUrl, targets }) {
     useEffect(() => {
         load();
         const t = setInterval(() => document.visibilityState === 'visible' && load(true), 60000);
-        return () => clearInterval(t);
+        const lepas = langgan('catatan', () => document.visibilityState === 'visible' && load(true));
+        return () => {
+            clearInterval(t);
+            lepas();
+        };
     }, [load]);
 
     const isAssigned = (n) => n.user_id !== userId && (n.target_user_id === userId || n.is_broadcast);
@@ -157,6 +162,33 @@ export default function NotesIndex({ listUrl, storeUrl, baseUrl, targets }) {
         if (filter === 'overdue') list = list.filter((n) => n.due_date && daysLeft(n.due_date) < 0 && !n.is_done);
         return list;
     }, [notes, search, filter]);
+
+    const kolom = [
+        { label: 'Aktif', daftar: filtered.filter((n) => !n.is_done && (!n.due_date || daysLeft(n.due_date) >= 0)) },
+        { label: 'Terlambat', daftar: filtered.filter((n) => !n.is_done && n.due_date && daysLeft(n.due_date) < 0) },
+        { label: 'Selesai', daftar: filtered.filter((n) => n.is_done) },
+    ];
+
+    // Tiap kolom status hanya menampilkan 5 catatan; sisanya bergulir di dalam kolom (judul kolom diam, batang gulir disembunyikan).
+    // Tinggi kartu berbeda-beda, jadi batas tingginya diukur dari kartu ke-5 dan dihitung ulang saat lebar berubah.
+    const papanRef = useRef(null);
+    useLayoutEffect(() => {
+        const papan = papanRef.current;
+        if (!papan) return undefined;
+        const hitung = () =>
+            papan.querySelectorAll('.gl-catatan-isi').forEach((isi) => {
+                isi.style.maxHeight = '';
+                const kartu = isi.querySelectorAll(':scope > .au-nt-kartu');
+                if (kartu.length <= 5) return;
+                const atas = isi.getBoundingClientRect().top;
+                const bawah = kartu[4].getBoundingClientRect().bottom;
+                isi.style.maxHeight = Math.ceil(bawah - atas + 4) + 'px';
+            });
+        hitung();
+        const ro = new ResizeObserver(hitung);
+        ro.observe(papan);
+        return () => ro.disconnect();
+    }, [kolom.map((k) => k.daftar.length).join(','), filtered.length]);
 
     function simpanLokal(saved, hapus = false) {
         setNotes((list) => {
@@ -204,10 +236,15 @@ export default function NotesIndex({ listUrl, storeUrl, baseUrl, targets }) {
                     {!search && filter === 'all' ? <small>Klik "Baru" untuk mulai mencatat</small> : null}
                 </div>
             ) : (
-                <div className="au-nt-grid">
-                    {filtered.map((n) => (
-                        <button type="button" key={n.id} className={'au-nt-kartu' + (n.is_done ? ' is-done' : '')} onClick={() => setModal({ note: n })}>
-                            <div className="au-nt-pita" style={{ background: hex(n.color) }} />
+                <div className="gl-catatan-papan" ref={papanRef}>
+                    {kolom.map((k) => (
+                        <section className="gl-catatan-kolom" key={k.label} aria-label={k.label}>
+                            <header><h2>{k.label}</h2><b>{k.daftar.length}</b></header>
+                            {!k.daftar.length ? <p className="gl-catatan-kosong">Tidak ada catatan</p> : null}
+                    <div className="gl-catatan-isi">
+                    {k.daftar.map((n) => (
+                        <button type="button" key={n.id} style={{ '--catatan-warna': hex(n.color) }} className={'au-nt-kartu' + (n.is_done ? ' is-done' : '')} onClick={() => setModal({ note: n })}>
+                            <div className="au-nt-pita" />
                             {n.photo_url ? (
                                 <div className="au-nt-thumb">
                                     {/* Catatan lama bisa menunjuk berkas yang sudah hilang: sembunyikan, jangan ikon rusak. */}
@@ -258,6 +295,9 @@ export default function NotesIndex({ listUrl, storeUrl, baseUrl, targets }) {
                                 <p className="au-nt-waktu">{n.updated_at ? fmtTgl(n.updated_at) : ''}</p>
                             </div>
                         </button>
+                    ))}
+                    </div>
+                        </section>
                     ))}
                 </div>
             )}
@@ -405,31 +445,50 @@ function ModalCatatan({ note, readOnly, targets, storeUrl, baseUrl, onClose, onS
 
     async function bukaKamera() {
         try {
-            setCamera(await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }));
+            // Tanpa width/height peramban memakai bawaan (sering 640x480 = foto buram): minta resolusi setinggi kamera mampu.
+            setCamera(await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 4096 }, height: { ideal: 3072 } } }));
         } catch (_) {
             // Tanpa izin / tanpa https: pakai pemilih berkas kamera bawaan HP.
             camInputRef.current?.click();
         }
     }
 
-    function jepret() {
+    /* Resolusi asli dipertahankan. Hanya kualitas JPEG yang turun bertahap bila melewati batas 5 MB server. */
+    async function kodeJpeg(sumber, lebar, tinggi) {
+        const c = document.createElement('canvas');
+        c.width = lebar;
+        c.height = tinggi;
+        c.getContext('2d').drawImage(sumber, 0, 0, lebar, tinggi);
+        let blob = null;
+        for (const q of [0.97, 0.92, 0.87, 0.82]) {
+            blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', q));
+            if (blob && blob.size <= 4.9 * 1024 * 1024) break;
+        }
+        return blob;
+    }
+
+    async function jepret() {
         const v = videoRef.current;
         if (!v) return;
-        const c = document.createElement('canvas');
-        c.width = v.videoWidth;
-        c.height = v.videoHeight;
-        c.getContext('2d').drawImage(v, 0, 0);
-        c.toBlob(
-            (blob) => {
-                if (!blob) return;
-                setPhotoFile(new File([blob], 'kamera.jpg', { type: 'image/jpeg' }));
-                setPhotoPreview(URL.createObjectURL(blob));
-                setRemovePhoto(false);
-                setCamera(null);
-            },
-            'image/jpeg',
-            0.88,
-        );
+        let blob = null;
+        // Foto penuh dari sensor (Chrome Android dkk); bila tidak didukung, ambil bingkai video beresolusi tertinggi.
+        try {
+            const jalur = camera?.getVideoTracks?.()[0];
+            if (jalur && 'ImageCapture' in window) blob = await new window.ImageCapture(jalur).takePhoto();
+        } catch (_) {
+            blob = null;
+        }
+        if (blob && blob.size > 4.9 * 1024 * 1024) {
+            const bmp = await createImageBitmap(blob);
+            blob = await kodeJpeg(bmp, bmp.width, bmp.height);
+        } else if (!blob) {
+            blob = await kodeJpeg(v, v.videoWidth, v.videoHeight);
+        }
+        if (!blob) return;
+        setPhotoFile(new File([blob], 'kamera.jpg', { type: blob.type || 'image/jpeg' }));
+        setPhotoPreview(URL.createObjectURL(blob));
+        setRemovePhoto(false);
+        setCamera(null);
     }
 
     async function kirim(url, body) {

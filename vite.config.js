@@ -17,6 +17,7 @@ export default defineConfig(({ command }) => ({
             input: [
                 'resources/css/app.css',
                 'resources/css/inertia.css',
+                'resources/css/filament-glass.css',
                 'resources/js/app.js',
                 'resources/js/inertia.jsx',
             ],

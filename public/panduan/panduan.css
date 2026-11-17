@@ -40,6 +40,20 @@
     color-scheme: dark;
 }
 
+/* Warna aksen mengikuti tema aplikasi (PRD 11). Tema gelap tetap biru. */
+:root[data-warna="coral"]:not(.gelap) {
+    --bg: #f6eee9; --panel: #fffaf7; --panel-2: #fbf1eb; --line: #ead9ce;
+    --accent: #c93d28; --accent-2: #a82d1a; --accent-soft: #fbe0d9;
+}
+:root[data-warna="violet"]:not(.gelap) {
+    --bg: #f1eefa; --panel: #fbfaff; --panel-2: #f3f0fc; --line: #ddd6f1;
+    --accent: #6a47e6; --accent-2: #4a2bb8; --accent-soft: #e6dffb;
+}
+:root[data-warna="ocean"]:not(.gelap) {
+    --bg: #ebf5f4; --panel: #f9fefd; --panel-2: #eef8f7; --line: #cfe5e3;
+    --accent: #0e857f; --accent-2: #086660; --accent-soft: #d3efec;
+}
+
 * { box-sizing: border-box; }
 
 html { scroll-behavior: smooth; }

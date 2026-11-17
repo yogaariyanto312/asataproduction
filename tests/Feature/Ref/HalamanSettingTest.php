@@ -150,11 +150,26 @@ class HalamanSettingTest extends TestCase
         $this->assertStringNotContainsString('type="hidden" name="telegram_token"', $jsx,
             'Bot Token tidak boleh disalin sebagai input tersembunyi');
 
-        // Token dikirim sekali lewat props, tidak berulang.
+        // Token TIDAK dikirim utuh ke peramban: hanya samaran + 4 huruf terakhir.
         $this->semuaMenyala();
         BotSetting::lupakan();
         $props = $this->actingAs($this->user())->get(route('developer.bot-settings'))->viewData('page')['props'];
-        $this->assertSame('1234567890:AAFabcdefghijklmnopqrstuvwxyz012345', $props['setting']['telegram_token']);
+        $this->assertSame('••••••••2345', $props['setting']['telegram_token']);
+        $this->assertStringNotContainsString('AAFabcdefghijklmnop', json_encode($props));
+    }
+
+    public function test_menyimpan_dengan_token_samaran_tidak_mengubah_token(): void
+    {
+        $this->semuaMenyala();
+        BotSetting::lupakan();
+
+        $this->actingAs($this->user())
+            ->post(route('developer.bot-settings.update'), ['telegram_token' => '••••••••2345', 'reject_threshold' => 7])
+            ->assertSessionHasNoErrors();
+
+        BotSetting::lupakan();
+        $this->assertSame('1234567890:AAFabcdefghijklmnopqrstuvwxyz012345', BotSetting::instance()->telegram_token);
+        $this->assertEquals(7.0, (float) BotSetting::instance()->reject_threshold);
     }
 
     /* ═════════════ Validasi ═════════════ */

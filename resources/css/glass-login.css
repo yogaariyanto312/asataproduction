@@ -1,0 +1,42 @@
+/*
+ * Halaman masuk bergaya kaca (PRD 11): robot dan formulir tetap, hanya latar (scene), kartu, dan warna
+ * robot yang mengikuti tema. Dimuat sesudah login-robot.css, bersama glass-token.css.
+ */
+
+.lr-scene { isolation: isolate; background: transparent; }
+
+:root[data-tema] .lr-scene {
+    --lr-paper: transparent;
+    --lr-ink: rgba(255, 255, 255, 0.2);
+    --lr-line: 1px solid var(--lr-ink);
+    --lr-text: #f3eeee;
+    --lr-muted: rgba(243, 238, 238, 0.74);
+    --lr-field: rgba(255, 255, 255, 0.09);
+    --lr-accent: var(--g-accent);
+    --lr-accent-deep: var(--g-accent);
+    --lr-link: var(--g-accent-2);
+    --lr-shell: #3b221a;
+    --lr-screen: #1a0f0b;
+    --lr-eye: #ffb09c;
+}
+:root[data-tema="terang"][data-warna="violet"] .lr-scene { --lr-shell: #2a2056; --lr-screen: #120d26; --lr-eye: #c4b5fd; }
+:root[data-tema="terang"][data-warna="ocean"] .lr-scene { --lr-shell: #143a3f; --lr-screen: #0a1a1c; --lr-eye: #7ff0e0; }
+:root[data-tema="gelap"] .lr-scene { --lr-shell: #1e293b; --lr-screen: #0b1220; --lr-eye: #60a5fa; --lr-link: #7cb0ff; }
+
+:root[data-tema] .lr-form-panel { background: transparent; }
+:root[data-tema] .lr-brand-panel { border-right: 1px solid var(--g-edge); }
+:root[data-tema] .lr-brand-panel::before {
+    background: linear-gradient(160deg, color-mix(in srgb, var(--g-scene-a) 90%, transparent) 0%, color-mix(in srgb, var(--g-scene-b) 66%, transparent) 100%);
+}
+:root[data-tema] .lr-brand-mark { border-color: rgba(255, 255, 255, 0.5); background: #fff; box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.5); }
+:root[data-tema] .lr-brand-mark svg { color: var(--g-accent); }
+
+:root[data-tema] .lr-card {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 28px;
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03) 55%), color-mix(in srgb, var(--lr-shell) 82%, transparent);
+    box-shadow: 0 30px 70px -28px rgba(10, 4, 2, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    -webkit-backdrop-filter: blur(var(--blur, 26px)) saturate(1.4);
+    backdrop-filter: blur(var(--blur, 26px)) saturate(1.4);
+}
+html.g-ringan .lr-card { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--lr-shell); }

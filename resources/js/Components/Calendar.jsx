@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon, ICON } from './Ui';
 import { csrf } from '../csrf';
 import { konfirmasi, peringatan } from '../dialog';
@@ -212,7 +213,7 @@ function ModalAgenda({ hari, canManage, storeUrl, eventBase, onClose, onChange }
         }
     }
 
-    return (
+    return createPortal(
         <div className="au-modal-backdrop" onClick={onClose}>
             <div className="au-db-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="au-db-modal-kepala is-biru">
@@ -271,5 +272,5 @@ function ModalAgenda({ hari, canManage, storeUrl, eventBase, onClose, onChange }
                 ) : null}
             </div>
         </div>
-    );
+        , document.body);
 }

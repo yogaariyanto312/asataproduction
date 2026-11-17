@@ -81,6 +81,21 @@ class AksesorisKeluarTest extends TestCase
         $this->assertSame($user->name, $a->operator_name, 'Nama penginput ikut dicatat.');
     }
 
+    public function test_keterangan_maksimal_80_karakter(): void
+    {
+        $user = $this->user();
+
+        $this->actingAs($user)
+            ->post(route('accessories.store'), $this->dataValid(['keterangan' => str_repeat('a', 80)]))
+            ->assertSessionHasNoErrors();
+
+        $this->actingAs($user)
+            ->post(route('accessories.store'), $this->dataValid(['keterangan' => str_repeat('a', 81)]))
+            ->assertSessionHasErrors('keterangan');
+
+        $this->assertSame(1, Accessory::count());
+    }
+
     public function test_satuan_selalu_tersimpan_huruf_kecil(): void
     {
         $user = $this->user();

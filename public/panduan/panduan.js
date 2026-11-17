@@ -15,17 +15,30 @@
     const SVG = 'http://www.w3.org/2000/svg';
 
     /* ── Tema ──────────────────────────────────────────────────────────── */
+    // Warna aksen (coral, violet, ocean) mengikuti pilihan Tampilan di aplikasi (PRD 11).
+    function pasangWarna(induk) {
+        const baca = () => {
+            let w = induk && induk.dataset.warna;
+            if (!w) { try { w = localStorage.getItem('au:warna'); } catch (_) { w = null; } }
+            root.dataset.warna = w === 'violet' || w === 'ocean' ? w : 'coral';
+        };
+        baca();
+        if (induk) new MutationObserver(baca).observe(induk, { attributes: true, attributeFilter: ['data-warna'] });
+    }
+
     function pasangTema() {
         let gelap = null;
+        let induk = null;
         try {
             if (bingkai) {
-                const induk = window.parent.document.documentElement;
+                induk = window.parent.document.documentElement;
                 const baca = () => induk.classList.contains('dark');
                 gelap = baca();
                 new MutationObserver(() => root.classList.toggle('gelap', baca()))
                     .observe(induk, { attributes: true, attributeFilter: ['class'] });
             }
-        } catch (_) { gelap = null; }
+        } catch (_) { gelap = null; induk = null; }
+        pasangWarna(induk);
 
         if (gelap === null) {
             const mq = window.matchMedia('(prefers-color-scheme: dark)');

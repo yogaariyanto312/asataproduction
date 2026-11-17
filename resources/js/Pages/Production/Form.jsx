@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { router } from '@inertiajs/react';
 import AppLayout from '../../Layouts/AppLayout';
-import '../../../css/asata-ui.css';
+import '../../../css/asata-glass.css';
 import { Btn, Field, ICON, Icon, Input, Select, Textarea } from '../../Components/Ui';
 import PilihProduk from '../../Components/PilihProduk';
 

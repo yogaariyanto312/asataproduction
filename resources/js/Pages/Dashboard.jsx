@@ -1,31 +1,12 @@
-import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { langgan, useRealtime } from '../realtime';
+import { createPortal } from 'react-dom';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import AppLayout from '../Layouts/AppLayout';
 import Calendar from '../Components/Calendar';
 import { Icon, ICON as UI } from '../Components/Ui';
+import { CincinKomposisi, Hitung, Odometer, Sparkline } from '../Components/Glass';
+import { DonatKaca, GrafikGaris } from '../Components/GrafikKaca';
 
-// Chart.js dimuat menyusul (lihat Components/GrafikChart.jsx).
-const GrafikChart = lazy(() => import('../Components/GrafikChart'));
-
-/** Warna grafik mengikuti tema: dibaca dari variabel CSS saat digambar. */
-const tc = (h) => getComputedStyle(document.documentElement).getPropertyValue('--tc-' + h).trim() || '#' + h;
-const teks = () => tc('94a3b8');
-// Animasi grafik dimatikan di HP & bila pengguna memilih kurangi gerakan:
-// tiap frame animasi Chart.js memakan CPU yang di HP lebih baik untuk tampil.
-const animasiGrafik = () => !window.matchMedia('(max-width: 768px), (prefers-reduced-motion: reduce)').matches;
-const garis = () => (document.documentElement.dataset.tema === 'terang' ? 'rgba(15,23,42,0.07)' : 'rgba(255,255,255,0.05)');
-
-/** Nilai berubah tiap tema diganti — dipakai sebagai key agar grafik digambar ulang. */
-function useTema() {
-    const [tema, setTema] = useState(() => document.documentElement.dataset.tema || 'gelap');
-    useEffect(() => {
-        const ubah = () => setTema(document.documentElement.dataset.tema || 'gelap');
-        window.addEventListener('au:tema', ubah);
-        return () => window.removeEventListener('au:tema', ubah);
-    }, []);
-    return tema;
-}
-// Palet ungu monokrom (gelap → terang), sama dengan referensi.
-const DONUT = ['#5b52e8', '#7c73f0', '#a5a0f7', '#4338ca', '#c7c3fb', '#8b83f3', '#6d63ec'];
 const NOTE_HEX = { blue: '#3b82f6', green: '#22c55e', yellow: '#facc15', amber: '#f59e0b', red: '#ef4444', purple: '#a855f7', teal: '#14b8a6', slate: '#64748b' };
 
 const P = {
@@ -46,36 +27,12 @@ const P = {
 
 const fmt = (n) => Math.round(Number(n) || 0).toLocaleString('id-ID');
 
-// Label angka di atas tiap bar, supaya nilai terbaca tanpa hover.
-const labelBar = {
-    id: 'labelBar',
-    afterDatasetsDraw(chart) {
-        const { ctx } = chart;
-        chart.data.datasets.forEach((ds, i) => {
-            if (ds.type !== 'bar') return;
-            chart.getDatasetMeta(i).data.forEach((bar, j) => {
-                const v = ds.data[j];
-                if (!v) return;
-                ctx.save();
-                ctx.fillStyle = teks();
-                ctx.font = '600 10px Sora, sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'bottom';
-                ctx.fillText(Number(v).toLocaleString('id-ID'), bar.x, bar.y - 2);
-                ctx.restore();
-            });
-        });
-    },
-};
-
 export default function Dashboard(props) {
     const { monthLabel, chartData, productChart, recentLogs, notes, calendar, can, urls } = props;
 
     const [stats, setStats] = useState(props.stats);
     const [target, setTarget] = useState(props.target);
     const [reject, setReject] = useState(props.reject);
-    const [topToday, setTopToday] = useState(props.topOperators);
-    const [updatedAt, setUpdatedAt] = useState(null);
 
     const fetchLive = useCallback(async () => {
         try {
@@ -85,16 +42,19 @@ export default function Dashboard(props) {
             setStats((s) => ({ ...s, today_total: d.today_total, today_entries: d.today_entries, monthly_total: d.monthly_total }));
             setReject({ today: d.today_reject, pct: d.reject_pct });
             if (d.target_pct !== null) setTarget((t) => ({ ...t, total: d.total_target, actual: d.total_actual, pct: d.target_pct }));
-            if (Array.isArray(d.top_operators)) setTopToday(d.top_operators);
-            setUpdatedAt(d.updated_at);
         } catch (_) {
             /* polling gagal tidak boleh merusak halaman */
         }
     }, [urls.live]);
 
+    // Angka statistik diperbarui diam-diam saat ada produksi baru (cadangan tiap 60 detik); tanpa tombol, tanpa muat ulang halaman.
+    useRealtime('produksi', fetchLive);
+
     return (
         <AppLayout title="Dashboard" subtitle="Ringkasan produksi hari ini">
             <div className="au-db">
+                <HeroBulan nama={props.auth?.user?.name} monthLabel={monthLabel} stats={stats} reject={reject} operator={props.topOperatorsMonthly} />
+
                 {/* ── Kartu statistik ── */}
                 <div className={'au-db-stats' + (can.quick ? '' : ' is-3')}>
                     <div className="au-card au-db-stat">
@@ -102,15 +62,16 @@ export default function Dashboard(props) {
                             <span className="au-db-stat-ikon is-biru"><Icon path={P.clipboard} /></span>
                             <span className="au-db-live"><i />Live</span>
                         </div>
-                        <p className="au-db-stat-nilai">{fmt(stats.today_total)}</p>
+                        <p className="au-db-stat-nilai"><Odometer nilai={stats.today_total} /></p>
                         <p className="au-db-stat-label">Total Unit Hari Ini</p>
                         <p className="au-db-stat-kaki">{stats.today_entries} entri</p>
+                        <Sparkline data={chartData.map((d) => Number(d.total) || 0)} label="Total unit 7 hari terakhir" />
                     </div>
                     <div className="au-card au-db-stat">
                         <div className="au-db-stat-atas">
                             <span className="au-db-stat-ikon is-ungu"><Icon path={P.chart} /></span>
                         </div>
-                        <p className="au-db-stat-nilai">{fmt(stats.monthly_total)}</p>
+                        <p className="au-db-stat-nilai"><Odometer nilai={stats.monthly_total} /></p>
                         <p className="au-db-stat-label">Total Bulan Ini</p>
                         <p className="au-db-stat-kaki">{monthLabel}</p>
                     </div>
@@ -118,7 +79,7 @@ export default function Dashboard(props) {
                         <div className="au-db-stat-atas">
                             <span className="au-db-stat-ikon is-amber"><Icon path={P.cube} /></span>
                         </div>
-                        <p className="au-db-stat-nilai">{stats.total_products}</p>
+                        <p className="au-db-stat-nilai"><Odometer nilai={stats.total_products} /></p>
                         <p className="au-db-stat-label">Produk Aktif</p>
                         <p className="au-db-stat-kaki">Terdaftar di sistem</p>
                     </div>
@@ -159,30 +120,54 @@ export default function Dashboard(props) {
                 </div>
 
                 {/* ── Top Operator ── */}
-                <div className="au-db-g2 is-rapat">
-                    <TopHariIni rows={topToday} />
-                    <TopBulanan rows={props.topOperatorsMonthly} monthLabel={monthLabel} />
-                </div>
 
                 {/* ── Catatan | Kalender ── */}
-                <div className="au-db-g2">
-                    <KartuCatatan notes={notes} can={can} urls={urls} />
+                {/* Kolom kiri: Catatan + Input Terbaru; kolom kanan: Kalender. Tinggi keduanya dibuat serasi supaya tidak ada ruang kosong. */}
+                <div className="au-db-g2 is-kolom">
+                    <div className="au-db-kolom">
+                        <KartuCatatan notes={notes} can={can} urls={urls} />
+                        <InputTerbaru data={recentLogs} can={can} urls={urls} />
+                    </div>
                     <div id="dashboard-calendar">
                         <Calendar initial={calendar} calendarUrl={urls.calendar} storeUrl={urls.eventStore} eventBase={urls.eventBase} />
                     </div>
                 </div>
 
-                <InputTerbaru data={recentLogs} can={can} urls={urls} />
-
                 {props.activities ? <LogAktivitas awal={props.activities} url={urls.aktivitas} /> : null}
 
-                <TombolLive onTick={fetchLive} updatedAt={updatedAt} />
             </div>
         </AppLayout>
     );
 }
 
 /* ─────────────────────────── kartu-kartu ─────────────────────────── */
+
+const sapa = () => {
+    const j = new Date().getHours();
+    return j < 11 ? 'Selamat pagi' : j < 15 ? 'Selamat siang' : j < 18 ? 'Selamat sore' : 'Selamat malam';
+};
+
+/** Kartu hero: ringkasan bulan berjalan; cincin di kanan = porsi unit tiap operator teratas bulan ini. */
+function HeroBulan({ nama, monthLabel, stats, reject, operator }) {
+    const depan = (nama || '').trim().split(/\s+/)[0] || 'Tim';
+    return (
+        <section className="gl-hero" aria-label="Ringkasan bulan ini">
+            <div className="gl-hero-isi">
+                <span className="gl-hero-pil"><i />{monthLabel}</span>
+                <h2>
+                    {sapa()}, <em>{depan}</em>
+                </h2>
+                <p className="gl-hero-teks">Ringkasan produksi bulan berjalan. Cincin di kanan menunjukkan top operator bulan ini.</p>
+                <div className="gl-hero-metrik">
+                    <div><strong><Hitung nilai={stats.monthly_total} durasi={1300} tunda={500} /></strong><span>Unit bulan ini</span></div>
+                    <div><strong><Hitung nilai={stats.today_total} durasi={1300} tunda={620} /></strong><span>Unit hari ini</span></div>
+                    <div><strong><Hitung nilai={reject.today} durasi={1300} tunda={740} /></strong><span>Reject hari ini</span></div>
+                </div>
+            </div>
+            <CincinKomposisi judul="Top operator" satuan="unit" data={(operator || []).map((o) => ({ nama: o.name, nilai: o.total, avatar: o.avatar_url }))} />
+        </section>
+    );
+}
 
 function KepalaKartu({ judul, sub, aksi }) {
     return (
@@ -294,83 +279,17 @@ function KartuReject({ reject }) {
 }
 
 function KartuTrend({ data }) {
-    const tema = useTema();
     const hariIni = data[data.length - 1];
-    const chart = {
-        labels: data.map((d) => d.date),
-        datasets: [
-            {
-                type: 'bar',
-                label: 'Total Unit',
-                data: data.map((d) => d.total),
-                backgroundColor: 'rgba(59,130,246,0.85)',
-                hoverBackgroundColor: 'rgba(59,130,246,1)',
-                borderRadius: 6,
-                borderSkipped: false,
-                order: 2,
-            },
-            {
-                type: 'line',
-                label: 'Rata-rata / input',
-                data: data.map((d) => d.avg),
-                borderColor: '#facc15',
-                backgroundColor: 'transparent',
-                borderWidth: 2,
-                borderDash: [4, 3],
-                pointBackgroundColor: '#facc15',
-                pointRadius: 3,
-                pointHoverRadius: 5,
-                tension: 0.4,
-                order: 1,
-            },
-        ],
-    };
-    const options = {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: animasiGrafik() ? undefined : false,
-        interaction: { mode: 'index', intersect: false },
-        layout: { padding: { top: 18 } },
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                callbacks: {
-                    title: (items) => items[0].label,
-                    label: (ctx) => {
-                        if (ctx.dataset.label === 'Total Unit') {
-                            const r = data[ctx.dataIndex];
-                            const rows = [`  Total: ${ctx.parsed.y.toLocaleString('id-ID')} unit`, `  Jumlah input: ${r.entries}x`];
-                            if (r.top) rows.push(`  Terbanyak: ${r.top} (${(r.top_qty || 0).toLocaleString('id-ID')} unit)`);
-                            return rows;
-                        }
-                        return `  Rata-rata: ${ctx.parsed.y} unit / input`;
-                    },
-                },
-            },
-        },
-        scales: {
-            x: { grid: { display: false }, ticks: { color: teks(), font: { size: 10 } } },
-            y: { beginAtZero: true, grid: { color: garis() }, ticks: { color: teks(), font: { size: 10 }, precision: 0, callback: (v) => v.toLocaleString('id-ID') } },
-        },
-    };
-
+    const totalUnit = data.reduce((t, d) => t + (Number(d.total) || 0), 0);
+    const totalInput = data.reduce((t, d) => t + (Number(d.entries) || 0), 0);
     return (
         <div className="au-card au-db-kartu au-db-span2">
-            <KepalaKartu
-                judul="Trend Produksi"
-                sub="Total unit yang diproduksi · 7 hari terakhir"
-                aksi={
-                    <div className="au-db-legend-mini">
-                        <span><i className="is-bar" />Total Unit</span>
-                        <span><i className="is-garis" />Rata-rata / input</span>
-                    </div>
-                }
-            />
-            <div className="au-db-trend">
-                <Suspense fallback={null}>
-                    <GrafikChart key={tema} type="bar" data={chart} options={options} plugins={[labelBar]} />
-                </Suspense>
+            <KepalaKartu judul="Trend Produksi" sub={`${fmt(totalUnit)} unit dari ${fmt(totalInput)} input dalam 7 hari terakhir`} />
+            <div className="gl-legend">
+                <span><i style={{ background: 'var(--g-accent-soft)' }} />Total Unit</span>
+                <span><i style={{ background: 'var(--g-ink)' }} />Rata-rata / input</span>
             </div>
+            <GrafikGaris data={data} />
             {hariIni && hariIni.top ? (
                 <div className="au-db-teratas">
                     <span className="au-db-teratas-ikon"><Icon path={P.star} /></span>
@@ -382,210 +301,17 @@ function KartuTrend({ data }) {
                 </div>
             ) : null}
             <p className="au-db-catatan-kaki">
-                <b>Total Unit</b> = jumlah unit selesai per hari. Arahkan kursor ke tiap bar untuk lihat jumlah input &amp; seri yang paling banyak masuk hari itu.
+                <b>Total Unit</b> = jumlah unit selesai per hari. Arahkan kursor ke grafik (atau tekan tombol panah saat grafik difokus) untuk melihat jumlah input &amp; seri yang paling banyak masuk hari itu.
             </p>
         </div>
     );
 }
 
 function KartuDonut({ data, monthLabel }) {
-    const tema = useTema();
-    const label = data.map((d) => d.name);
-    const nilai = data.map((d) => d.total);
-    const total = nilai.reduce((a, b) => a + b, 0);
-
-    const plugins = useMemo(() => {
-        const lighten = (hex, amt) => {
-            const n = parseInt(hex.slice(1), 16);
-            const mix = (c) => Math.round(c + (255 - c) * amt);
-            return `rgb(${mix((n >> 16) & 255)},${mix((n >> 8) & 255)},${mix(n & 255)})`;
-        };
-        return {
-            gradasi: (chart, i) => {
-                // Chart.js juga memanggil warna skriptabel di tingkat dataset
-                // (tanpa dataIndex) — tanpa pengaman ini halaman ikut mogok.
-                const base = DONUT[(Number.isInteger(i) ? i : 0) % DONUT.length];
-                const area = chart.chartArea;
-                if (!area) return base;
-                const g = chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
-                g.addColorStop(0, lighten(base, 0.28));
-                g.addColorStop(1, base);
-                return g;
-            },
-            list: [
-                {
-                    id: 'bayangan',
-                    beforeDatasetsDraw(chart) {
-                        const c = chart.ctx;
-                        c.save();
-                        c.shadowColor = 'rgba(0,0,0,0.45)';
-                        c.shadowBlur = 14;
-                        c.shadowOffsetY = 5;
-                    },
-                    afterDatasetsDraw(chart) {
-                        chart.ctx.restore();
-                    },
-                },
-                {
-                    id: 'tengah',
-                    afterDraw(chart) {
-                        const { ctx, chartArea: a } = chart;
-                        const cx = (a.left + a.right) / 2;
-                        const cy = (a.top + a.bottom) / 2;
-                        ctx.save();
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.font = '700 24px Sora, sans-serif';
-                        ctx.fillStyle = tc('f1f5f9');
-                        ctx.fillText(total.toLocaleString('id-ID'), cx, cy - 2);
-                        ctx.font = '500 10px Sora, sans-serif';
-                        ctx.fillStyle = teks();
-                        ctx.fillText('total unit', cx, cy + 18);
-                        ctx.restore();
-                    },
-                },
-                {
-                    id: 'labelLuar',
-                    afterDraw(chart) {
-                        if (!total) return;
-                        const { ctx } = chart;
-                        ctx.save();
-                        ctx.textAlign = 'center';
-                        chart.getDatasetMeta(0).data.forEach((arc, i) => {
-                            const v = nilai[i];
-                            if (!v) return;
-                            const pct = (v / total) * 100;
-                            const ang = (arc.startAngle + arc.endAngle) / 2;
-                            const r = arc.outerRadius + 28;
-                            const x = arc.x + Math.cos(ang) * r;
-                            const y = arc.y + Math.sin(ang) * r;
-                            ctx.textBaseline = 'bottom';
-                            ctx.font = '700 12px Sora, sans-serif';
-                            ctx.fillStyle = tc('e2e8f0');
-                            ctx.fillText((pct % 1 === 0 ? pct.toFixed(0) : pct.toFixed(1)) + '%', x, y);
-                            ctx.textBaseline = 'top';
-                            ctx.font = '600 9px Sora, sans-serif';
-                            ctx.fillStyle = teks();
-                            ctx.fillText(String(label[i] ?? '').toUpperCase(), x, y + 1);
-                        });
-                        ctx.restore();
-                    },
-                },
-            ],
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [total]);
-
-    const chart = {
-        labels: label,
-        datasets: [{ data: nilai, backgroundColor: (ctx) => plugins.gradasi(ctx.chart, ctx.dataIndex), borderWidth: 0, spacing: 3, borderRadius: 30, hoverOffset: 10 }],
-    };
-    const options = {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: animasiGrafik() ? undefined : false,
-        cutout: '68%',
-        layout: { padding: 62 },
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                callbacks: {
-                    label: (ctx) => `  ${ctx.parsed.toLocaleString('id-ID')} unit (${total > 0 ? Math.round((ctx.parsed / total) * 100) : 0}%)`,
-                },
-            },
-        },
-    };
-
     return (
-        <div className="au-card au-db-kartu">
-            <KepalaKartu judul="Produk per Tipe" sub={monthLabel} />
-            <div className="au-db-donut">
-                <Suspense fallback={null}>
-                    <GrafikChart key={tema} type="doughnut" data={chart} options={options} plugins={plugins.list} />
-                </Suspense>
-            </div>
-            <div className="au-db-donut-legend">
-                {data.map((d, i) => {
-                    const p = total > 0 ? Math.round((d.total / total) * 100) : 0;
-                    const w = DONUT[i % DONUT.length];
-                    return (
-                        <div key={d.name}>
-                            <i style={{ background: w }} />
-                            <span className="au-db-donut-nama">{d.name}</span>
-                            <b>
-                                {d.total.toLocaleString('id-ID')} <small>Unit</small>
-                            </b>
-                            <span className="au-db-donut-bar">
-                                <span style={{ width: p + '%', background: w }} />
-                            </span>
-                            <span className="au-db-donut-pct">{p}%</span>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-}
-
-function TopHariIni({ rows }) {
-    const max = Math.max(...rows.map((r) => r.total), 1);
-    return (
-        <div className="au-card au-db-kartu is-rapat">
-            <KepalaKartu judul="Top Operator" sub="Hari ini · unit terproduksi" />
-            <div className="au-db-op-list">
-                {rows.length ? (
-                    rows.map((o, i) => (
-                        <div className="au-db-op" key={o.name + i}>
-                            <span className={'au-db-op-rank is-' + Math.min(i + 1, 3)}>{i + 1}</span>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <div className="au-db-op-baris">
-                                    <span>{o.name}</span>
-                                    <b>
-                                        {o.total.toLocaleString('id-ID')} <small>unit</small>
-                                    </b>
-                                </div>
-                                <div className="au-db-bar is-tipis">
-                                    <div className="is-biru" style={{ width: Math.round((o.total / max) * 100) + '%' }} />
-                                </div>
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <p className="au-db-kosong-teks">Belum ada data hari ini</p>
-                )}
-            </div>
-        </div>
-    );
-}
-
-function TopBulanan({ rows, monthLabel }) {
-    const max = Math.max(...rows.map((r) => r.total), 1);
-    return (
-        <div className="au-card au-db-kartu is-rapat">
-            <KepalaKartu judul="Top Operator" sub={monthLabel + ' · unit terproduksi'} />
-            <div className="au-db-op-list">
-                {rows.length ? (
-                    rows.map((o, i) => (
-                        <div className="au-db-op" key={o.name + i}>
-                            <span className={'au-db-op-angka is-' + Math.min(i + 1, 4)}>{i + 1}</span>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <div className="au-db-op-baris">
-                                    <span>
-                                        {o.name}
-                                        {i === 0 ? ' 👑' : ''}
-                                    </span>
-                                    <b className="is-biru">{o.total.toLocaleString('id-ID')} unit</b>
-                                </div>
-                                <div className="au-db-bar is-tipis">
-                                    <div className={i === 0 ? 'is-amber' : 'is-biru'} style={{ width: Math.round((o.total / max) * 100) + '%' }} />
-                                </div>
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <p className="au-db-kosong-teks">Belum ada data produksi bulan ini</p>
-                )}
-            </div>
+        <div className="au-card au-db-kartu gl-donat-kartu">
+            <KepalaKartu judul="Produk per Tipe" sub={monthLabel + ' · arahkan kursor ke irisan'} />
+            <DonatKaca data={data} />
         </div>
     );
 }
@@ -718,7 +444,7 @@ function ModalCatatan({ n, url, onClose }) {
     if (n.due) meta.push((n.late ? '⚠ Tenggat ' : 'Tenggat ') + n.due);
     if (n.to) meta.push('→ ' + n.to);
 
-    return (
+    return createPortal(
         <div className="au-modal-backdrop" onClick={onClose}>
             <div className="au-db-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="au-db-modal-kepala is-amber">
@@ -746,7 +472,7 @@ function ModalCatatan({ n, url, onClose }) {
                 </div>
             </div>
         </div>
-    );
+        , document.body);
 }
 
 function InputTerbaru({ data, can, urls }) {
@@ -884,7 +610,7 @@ function LogAktivitas({ awal, url }) {
     }, [batasi]);
 
     useEffect(() => {
-        const t = setInterval(async () => {
+        const poll = async () => {
             if (document.hidden) return;
             try {
                 const res = await fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
@@ -900,8 +626,14 @@ function LogAktivitas({ awal, url }) {
             } catch (_) {
                 /* diamkan */
             }
-        }, 20000);
-        return () => clearInterval(t);
+        };
+        // Realtime ringan: input produksi baru langsung terlihat; cadangan polling 60 detik.
+        const t = setInterval(poll, 60000);
+        const lepas = langgan('produksi', poll);
+        return () => {
+            clearInterval(t);
+            lepas();
+        };
     }, [url]);
 
     let hariSebelumnya = null;
@@ -965,58 +697,6 @@ function LogAktivitas({ awal, url }) {
                     )}
                 </ol>
             </div>
-        </div>
-    );
-}
-
-const AR_INTERVAL = 60;
-function bacaAutoRefresh() {
-    try {
-        return localStorage.getItem('dashAutoRefresh') !== 'false';
-    } catch (_) {
-        return true;
-    }
-}
-
-/* Tombol Live/Paused + hitung mundur — statistik disegarkan tiap 60 detik. */
-function TombolLive({ onTick, updatedAt }) {
-    const [on, setOn] = useState(bacaAutoRefresh);
-    const [cd, setCd] = useState(AR_INTERVAL);
-
-    useEffect(() => {
-        if (!on) return undefined;
-        onTick();
-        let c = AR_INTERVAL;
-        setCd(c);
-        const t = setInterval(() => {
-            c -= 1;
-            if (c <= 0) {
-                c = AR_INTERVAL;
-                if (!document.hidden) onTick();
-            }
-            setCd(c);
-        }, 1000);
-        return () => clearInterval(t);
-    }, [on, onTick]);
-
-    function ubah() {
-        const v = !on;
-        setOn(v);
-        try {
-            localStorage.setItem('dashAutoRefresh', String(v));
-        } catch (_) {
-            /* abaikan */
-        }
-    }
-
-    return (
-        <div className="au-db-live-wadah">
-            <button type="button" className="au-db-live-tombol" onClick={ubah}>
-                <i className={on ? 'is-on' : ''} />
-                <b>{on ? 'Live' : 'Paused'}</b>
-                {on ? <span>{cd}s</span> : null}
-                {updatedAt ? <small> · {updatedAt}</small> : null}
-            </button>
         </div>
     );
 }

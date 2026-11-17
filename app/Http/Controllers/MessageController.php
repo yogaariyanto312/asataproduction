@@ -229,6 +229,7 @@ class MessageController extends Controller
             'typing_to' => $request->recipient_id,
             'typing_at' => now(),
         ]);
+        \App\Support\Realtime::bumpPengguna('chat', (int) $request->recipient_id); // indikator "mengetik" langsung terlihat
         return response()->json(['ok' => true]);
     }
 

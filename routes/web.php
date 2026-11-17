@@ -247,6 +247,8 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('role:developer')->group(function () {
 
         // Hak Akses Menu per role
+        Route::post('/akun/departemen', [\App\Http\Controllers\DepartemenAkunController::class, 'update'])->name('akun.departemen');
+
         Route::get('/permissions',  [\App\Http\Controllers\PermissionController::class, 'index'])->name('permissions.index');
         Route::post('/permissions', [\App\Http\Controllers\PermissionController::class, 'update'])->name('permissions.update');
 
@@ -261,6 +263,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/developer/bot-settings',                  [BotSettingController::class, 'index'])->name('developer.bot-settings');
         Route::post('/developer/bot-settings',                 [BotSettingController::class, 'update'])->name('developer.bot-settings.update');
         Route::post('/developer/bot-settings/test',            [BotSettingController::class, 'test'])->name('developer.bot-settings.test');
+        Route::post('/developer/sinkron-qc', [\App\Http\Controllers\SinkronQcController::class, 'jalankan'])->name('developer.sinkron-qc');
+        Route::post('/developer/sinkron-qc/aturan', [\App\Http\Controllers\SinkronQcController::class, 'aturan'])->name('developer.sinkron-qc.aturan');
         Route::post('/developer/bot-settings/webhook-register',[BotSettingController::class, 'registerWebhook'])->name('developer.bot-settings.webhook-register');
         Route::post('/developer/bot-settings/webhook-info',    [BotSettingController::class, 'webhookInfo'])->name('developer.bot-settings.webhook-info');
         Route::post('/developer/bot-settings/send-daily-report', [BotSettingController::class, 'sendDailyReport'])->name('developer.bot-settings.send-daily-report');

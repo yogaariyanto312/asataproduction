@@ -113,9 +113,14 @@ export default function ProductsIndex({
 
             {sections.length ? (
                 sections.map((sec) => (
-                    <div className="au-section" key={sec.year || 'tanpa-tahun'}>
+                    <div className="au-section" key={sec.permanen ? 'permanen' : sec.year || 'tanpa-tahun'}>
                         <div className="au-section-head">
-                            {sec.year ? (
+                            {sec.permanen ? (
+                                <span className="au-section-pill">
+                                    <Icon path={CAL} />
+                                    Permanen
+                                </span>
+                            ) : sec.year ? (
                                 <span className="au-section-pill">
                                     <Icon path={CAL} />
                                     {sec.year}
@@ -131,7 +136,7 @@ export default function ProductsIndex({
 
                         <div className="au-groupgrid">
                             {sec.products.map((p) => (
-                                <div className="au-groupcard" key={(sec.year || 'x') + '-' + p.name}>
+                                <div className="au-groupcard" key={(sec.permanen ? 'perm' : sec.year || 'x') + '-' + p.name}>
                                     <div className="au-groupcard-head">
                                         <span
                                             className={

@@ -1,0 +1,113 @@
+/*
+ * Panel /admin (Filament) bergaya kaca (PRD 11). Memakai token yang sama dengan aplikasi (glass-token.css):
+ * tema dipasang di <html> oleh skrip di AdminPanelProvider (HEAD_START), sehingga tema aplikasi dan panel selalu sama.
+ * Hanya tampilan: struktur dan perilaku Filament tidak diubah.
+ */
+@import './glass-token.css';
+
+html[data-tema] {
+    background: var(--g-scene-a);
+    /* Warna utama Filament mengikuti aksen tema. */
+    --primary-50: color-mix(in srgb, var(--g-accent) 8%, #fff);
+    --primary-100: color-mix(in srgb, var(--g-accent) 16%, #fff);
+    --primary-200: color-mix(in srgb, var(--g-accent) 30%, #fff);
+    --primary-300: color-mix(in srgb, var(--g-accent) 48%, #fff);
+    --primary-400: color-mix(in srgb, var(--g-accent) 70%, #fff);
+    --primary-500: var(--g-accent-soft);
+    --primary-600: var(--g-accent);
+    --primary-700: color-mix(in srgb, var(--g-accent) 85%, #000);
+    --primary-800: color-mix(in srgb, var(--g-accent) 70%, #000);
+    --primary-900: color-mix(in srgb, var(--g-accent) 55%, #000);
+    --primary-950: color-mix(in srgb, var(--g-accent) 40%, #000);
+}
+
+/* Latar ruangan buram di belakang seluruh panel */
+html[data-tema] body.fi-body { background: transparent; color: var(--g-ink); }
+html[data-tema] body.fi-body::before {
+    content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+        radial-gradient(60% 70% at 78% 28%, color-mix(in srgb, var(--g-scene-c) 78%, transparent), transparent 70%),
+        radial-gradient(50% 60% at 14% 72%, color-mix(in srgb, var(--g-scene-b) 85%, transparent), transparent 72%),
+        radial-gradient(120% 100% at 50% 40%, transparent 55%, rgba(8, 4, 2, 0.32)),
+        linear-gradient(100deg, var(--g-scene-a) 0%, color-mix(in srgb, var(--g-scene-b) 60%, var(--g-scene-a)) 46%, var(--g-scene-d) 100%);
+}
+
+/* Sidebar dan topbar: kaca */
+html[data-tema] .fi-sidebar,
+html[data-tema] .fi-sidebar-nav,
+html[data-tema] .fi-sidebar-header {
+    background: transparent; color: var(--g-on-side); --tw-ring-shadow: 0 0 #0000;
+}
+html[data-tema] .fi-sidebar {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 30%), linear-gradient(180deg, var(--g-side-a), var(--g-side-b));
+    border-right: 1px solid var(--g-edge); box-shadow: 0 24px 60px -24px rgba(20, 8, 4, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    -webkit-backdrop-filter: blur(var(--blur)) saturate(1.5); backdrop-filter: blur(var(--blur)) saturate(1.5);
+}
+html[data-tema] .fi-sidebar :is(.fi-sidebar-item-label, .fi-sidebar-group-label, .fi-sidebar-item-icon, .fi-sidebar-group-btn, .fi-sidebar-group-collapse-btn, .fi-logo, a, span, svg) { color: var(--g-on-side) !important; }
+html[data-tema] .fi-sidebar-item-btn { border-radius: 999px; transition: background 0.25s; }
+html[data-tema] .fi-sidebar-item-btn:hover { background: rgba(255, 255, 255, 0.14) !important; }
+html[data-tema] .fi-sidebar-item.fi-active > .fi-sidebar-item-btn { background: #fff !important; box-shadow: 0 8px 20px -8px rgba(40, 12, 6, 0.65); }
+html[data-tema] .fi-sidebar-item.fi-active > .fi-sidebar-item-btn :is(.fi-sidebar-item-label, .fi-sidebar-item-icon, span, svg) { color: #2c1c16 !important; }
+html[data-tema] .fi-topbar {
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 55%), var(--g-card);
+    border-bottom: 1px solid var(--g-edge); --tw-ring-shadow: 0 0 #0000; box-shadow: 0 14px 34px -22px var(--g-shadow);
+    -webkit-backdrop-filter: blur(var(--blur)) saturate(1.5); backdrop-filter: blur(var(--blur)) saturate(1.5);
+}
+html[data-tema="gelap"] .fi-topbar { background: linear-gradient(150deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 55%), var(--g-card); }
+html[data-tema] .fi-topbar * { color: var(--g-ink); }
+
+/* Kartu: seksi, statistik, tabel */
+html[data-tema] :is(.fi-section, .fi-wi-stats-overview-stat, .fi-ta-ctn, .fi-ta-header-ctn, .fi-modal-window, .fi-dropdown-panel) {
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 48%), var(--g-card);
+    border: 1px solid var(--g-edge); border-radius: 24px; --tw-ring-shadow: 0 0 #0000;
+    box-shadow: 0 18px 40px -22px var(--g-shadow), inset 0 1px 0 var(--g-edge-hi);
+    -webkit-backdrop-filter: blur(var(--blur)) saturate(1.5); backdrop-filter: blur(var(--blur)) saturate(1.5);
+}
+html[data-tema="gelap"] :is(.fi-section, .fi-wi-stats-overview-stat, .fi-ta-ctn, .fi-modal-window, .fi-dropdown-panel) {
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0) 48%), var(--g-card);
+}
+/* Bagian dalam seksi tidak perlu bingkai ganda */
+html[data-tema] .fi-section :is(.fi-section-content-ctn, .fi-section-header) { background: transparent; border-color: var(--g-edge); }
+html[data-tema] :is(.fi-section, .fi-wi-stats-overview-stat, .fi-ta-ctn) :is(h1, h2, h3, h4, [class*="text-gray-950"], [class*="text-gray-900"], [class*="dark:text-white"]) { color: var(--g-ink) !important; }
+html[data-tema] :is(.fi-section, .fi-wi-stats-overview-stat, .fi-ta-ctn) :is(p, [class*="text-gray-500"], [class*="text-gray-600"], [class*="text-gray-400"]) { color: var(--g-ink-2) !important; }
+html[data-tema] .fi-header-heading { color: var(--g-ink); letter-spacing: -0.02em; }
+html[data-tema] .fi-header-subheading { color: var(--g-ink-2); }
+html[data-tema] .fi-main :is(.fi-ta-header-cell, .fi-ta-cell, .fi-ta-text-item) { color: var(--g-ink); }
+html[data-tema] .fi-ta-row:hover { background: rgba(255, 255, 255, 0.28); }
+html[data-tema="gelap"] .fi-ta-row:hover { background: rgba(255, 255, 255, 0.05); }
+
+/* Tombol dan isian */
+html[data-tema] .fi-btn { border-radius: 999px; }
+html[data-tema] .fi-input-wrp { border-radius: 16px; background: var(--g-field); --tw-ring-shadow: 0 0 #0000; border: 1px solid var(--g-edge); }
+html[data-tema] .fi-main :is(input, select, textarea) { color: var(--g-ink); }
+html[data-tema] .fi-icon-btn, html[data-tema] .fi-theme-switcher-btn { border-radius: 50%; }
+html[data-tema] .fi-badge { border-radius: 999px; }
+
+/* Mode ringan: tanpa blur */
+html.g-ringan :is(.fi-sidebar, .fi-topbar, .fi-section, .fi-wi-stats-overview-stat, .fi-ta-ctn, .fi-modal-window, .fi-dropdown-panel) { -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* Area isi: lapisan panel seperti di aplikasi (teks langsung di atas latar tetap terbaca) */
+html[data-tema] .fi-main-ctn {
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0) 42%), var(--g-panel);
+}
+html[data-tema="gelap"] .fi-main-ctn { background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 42%), var(--g-panel); }
+
+/* Tombol utama: solid aksen dengan teks putih (bawaan Filament pucat dengan teks gelap) */
+html[data-tema] .fi-btn.fi-color-primary:not(.fi-outlined) {
+    background: linear-gradient(180deg, var(--g-accent), color-mix(in srgb, var(--g-accent) 86%, #000)) !important;
+    color: #fff !important; box-shadow: 0 10px 22px -10px var(--g-accent);
+}
+html[data-tema] .fi-btn.fi-color-primary:not(.fi-outlined) :is(span, svg) { color: #fff !important; }
+
+/* Seksi tanpa bingkai (judul grup kartu statistik) bukan kartu */
+html[data-tema] .fi-section.fi-section-not-contained { background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; border-radius: 0; }
+
+/* Kalender memakai warna tema dan opasitas penuh agar angka libur tetap terbaca. */
+html[data-tema] .ak-hari { opacity: 1; color: var(--g-ink-2); }
+html[data-tema] :is(.ak-akhir, .ak-sel--merah) { color: var(--tc-f87171); }
+html[data-tema] .ak-kosong { opacity: 1; color: var(--g-ink-2); }
+html[data-tema="terang"] :is(.fi-wi-stats-overview-stat-label, .fi-wi-stats-overview-stat-description, .fi-input-wrp-label) { color: var(--g-ink-2) !important; }
+html[data-tema="terang"] .fi-wi-stats-overview-stat-description span { color: inherit !important; }
+html[data-tema="terang"] .fi-wi-stats-overview-stat-description.fi-color-danger { color: var(--g-t-bad) !important; }
+html[data-tema="terang"] .fi-wi-stats-overview-stat-description.fi-color-success { color: var(--g-t-ok) !important; }
+html[data-tema="terang"] .fi-wi-stats-overview-stat-description.fi-color-info { color: var(--g-link) !important; }

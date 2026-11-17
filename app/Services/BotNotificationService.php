@@ -110,6 +110,14 @@ class BotNotificationService
 
             if ($actual < $target->target_qty) return;
 
+            // Target channel terpisah: tercapai bila UP dan BT sama-sama tercapai.
+            if ($target->isSplit()) {
+                $k = \App\Models\ProductionLog::withoutGlobalScope(\App\Models\Scopes\DepartmentScope::class)
+                    ->where('product_id', $productId)
+                    ->selectRaw('COALESCE(SUM(up_qty),0) as up, COALESCE(SUM(bt_qty),0) as bt')->first();
+                if (! $target->splitProgress((int) $k->up, (int) $k->bt)['done']) return;
+            }
+
             // Tandai tercapai secara atomik — cegah notifikasi ganda dari request concurrent
             $marked = \App\Models\ProductionTarget::where('id', $target->id)
                 ->whereNull('reached_at')

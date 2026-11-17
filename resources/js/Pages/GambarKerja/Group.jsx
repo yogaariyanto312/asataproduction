@@ -5,7 +5,10 @@ import { Btn, ICON, Icon, Input, Textarea } from '../../Components/Ui';
 import { berkasTersimpan } from '../../offlineFiles';
 import { csrf } from '../../csrf';
 import { konfirmasi } from '../../dialog';
+import { createPortal } from 'react-dom';
 import PdfViewer from '../../Components/PdfViewer';
+import { useRealtime } from '../../realtime';
+import PratinjauPdf from '../../Components/PratinjauPdf';
 
 const DOC =
     'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z';
@@ -48,6 +51,17 @@ export default function GambarKerjaGroup({
     const [simpanan, setSimpanan] = useState({ set: new Set() });
     // Edit keterangan per file (mis. "Revisi ke-2") langsung di kartu file.
     const [edit, setEdit] = useState(null);
+    // Berkas yang sedang dibuka penuh (modal); pratinjau halaman 1 tampil di kartu tanpa memuat seluruh PDF.
+    const [penuh, setPenuh] = useState(null);
+    // Realtime ringan: berkas ditambah/diubah/dihapus orang lain langsung terlihat.
+    useRealtime('gambar', () => router.reload({ only: ['files', 'group'], preserveScroll: true }), 0);
+
+    useEffect(() => {
+        if (!penuh) return undefined;
+        const esc = (e) => e.key === 'Escape' && setPenuh(null);
+        document.addEventListener('keydown', esc);
+        return () => document.removeEventListener('keydown', esc);
+    }, [penuh]);
 
     // Viewer PDF.js membersihkan dirinya lewat event 'spa:leave'; dikirim saat
     // halaman ditinggalkan, bukan saat satu berkas hilang dari daftar.
@@ -285,117 +299,117 @@ export default function GambarKerjaGroup({
             </div>
 
             {files.length ? (
-                files.map((f) => (
-                    <div className="au-filecard" key={f.id}>
-                        <div className="au-filecard-head">
-                            <span className="au-filecard-left">
-                                <span className="au-filecard-no">{f.urutan}</span>
-                                <span className="au-filecard-info">
+                <section className="au-berkas-grid" aria-label="Berkas gambar kerja">
+                    {files.map((f) => (
+                        <article className="au-berkas" key={f.id}>
+                            <button type="button" className="au-berkas-gambar" onClick={() => setPenuh(f)} aria-label={'Buka File ' + f.urutan + ' layar penuh'}>
+                                {f.isPdf ? (
+                                    <PratinjauPdf src={f.url} pdfjs={pdfjs} />
+                                ) : (
+                                    <img loading="lazy" decoding="async" src={f.url} alt={'File ' + f.urutan} />
+                                )}
+                                <span className="au-berkas-besar" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4" /></svg>
+                                </span>
+                            </button>
+
+                            <div className="au-berkas-isi">
+                                <div className="au-berkas-baris">
+                                    <span className="au-berkas-no">{f.urutan}</span>
                                     <b>File {f.urutan}</b>
-                                    {f.catatan ? <i className="au-filecard-catatan">{f.catatan}</i> : null}
-                                </span>
-                                <span
-                                    className={
-                                        'au-prodtag ' +
-                                        (f.isPdf ? 'au-prodtag--red' : 'au-prodtag--blue')
-                                    }
-                                >
-                                    {f.isPdf ? 'PDF' : 'Gambar'}
-                                </span>
-                                {simpanan.set.has(f.url) ? (
-                                    <span className="au-prodtag au-offline-tag">
-                                        <Icon path={SIMPAN} />
-                                        Tersimpan
-                                    </span>
-                                ) : null}
-                            </span>
+                                    <span className={'au-prodtag ' + (f.isPdf ? 'au-prodtag--red' : 'au-prodtag--blue')}>{f.isPdf ? 'PDF' : 'Gambar'}</span>
+                                </div>
+                                <div className="au-berkas-baris is-meta">
+                                    <span>{f.at || '—'}</span>
+                                    {simpanan.set.has(f.url) ? (
+                                        <span className="au-prodtag au-offline-tag">
+                                            <Icon path={SIMPAN} />
+                                            Tersimpan
+                                        </span>
+                                    ) : null}
+                                </div>
 
-                            <span className="au-filecard-right">
-                                <span className="au-filecard-date">{f.at || '—'}</span>
+                                <div className="au-berkas-aksi">
+                                    <button type="button" className="au-filebtn au-berkas-layar" onClick={() => setPenuh(f)}>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4" /></svg>
+                                        Layar Penuh
+                                    </button>
+                                    {can.download ? (
+                                        <a className="au-filebtn au-filebtn--green" href={f.url} target="_blank" rel="noreferrer" download title="Download" aria-label="Download">
+                                            <Icon path={DOWN} />
+                                        </a>
+                                    ) : null}
+                                    {can.delete ? (
+                                        <button type="button" className="au-filebtn au-filebtn--red" onClick={() => hapusFile(f)} title="Hapus" aria-label="Hapus">
+                                            <Icon path={ICON.trash} />
+                                        </button>
+                                    ) : null}
+                                </div>
 
-                                {can.edit ? (
+                                {edit && edit.id === f.id ? (
+                                    <form className="au-berkas-edit" onSubmit={simpanCatatan}>
+                                        <Input
+                                            autoFocus
+                                            value={edit.teks}
+                                            maxLength={200}
+                                            placeholder="Keterangan file ini, mis. Revisi ke-2"
+                                            onChange={(e) => setEdit({ ...edit, teks: e.target.value })}
+                                        />
+                                        <div>
+                                            <Btn type="submit" sm>Simpan</Btn>
+                                            <Btn tone="ghost" sm onClick={() => setEdit(null)}>Batal</Btn>
+                                        </div>
+                                    </form>
+                                ) : f.catatan ? (
                                     <button
                                         type="button"
-                                        className="au-filebtn"
-                                        onClick={() => setEdit({ id: f.id, url: f.catatanUrl, teks: f.catatan || '' })}
+                                        className="au-berkas-catatan is-isi"
+                                        disabled={!can.edit}
+                                        onClick={() => can.edit && setEdit({ id: f.id, url: f.catatanUrl, teks: f.catatan || '' })}
                                     >
-                                        <Icon path={ICON.edit} />
-                                        Keterangan
+                                        <span>{f.catatan}</span>
+                                        {can.edit ? <Icon path={ICON.edit} /> : null}
+                                    </button>
+                                ) : can.edit ? (
+                                    <button type="button" className="au-berkas-catatan" onClick={() => setEdit({ id: f.id, url: f.catatanUrl, teks: '' })}>
+                                        <Icon path={ICON.plus} />
+                                        <span>Tambah keterangan (mis. Revisi ke-2)</span>
                                     </button>
                                 ) : null}
-
-                                {can.download ? (
-                                    <a
-                                        className="au-filebtn au-filebtn--green"
-                                        href={f.url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        download
-                                    >
-                                        <Icon path={DOWN} />
-                                        Download
-                                    </a>
-                                ) : null}
-
-                                {can.delete ? (
-                                    <button
-                                        type="button"
-                                        className="au-filebtn au-filebtn--red"
-                                        onClick={() => hapusFile(f)}
-                                    >
-                                        <Icon path={ICON.trash} />
-                                        Hapus
-                                    </button>
-                                ) : null}
-                            </span>
-                        </div>
-
-                        {edit && edit.id === f.id ? (
-                            <form className="au-filecard-edit" onSubmit={simpanCatatan}>
-                                <Input
-                                    autoFocus
-                                    value={edit.teks}
-                                    maxLength={200}
-                                    placeholder="Keterangan file ini, mis. Revisi ke-2"
-                                    onChange={(e) => setEdit({ ...edit, teks: e.target.value })}
-                                />
-                                <Btn type="submit">Simpan</Btn>
-                                <Btn tone="ghost" onClick={() => setEdit(null)}>
-                                    Batal
-                                </Btn>
-                            </form>
-                        ) : null}
-
-                        {f.isPdf ? (
-                            <PdfViewer
-                                id={'pdf-' + f.id}
-                                src={f.url}
-                                title={'File ' + f.urutan}
-                                download={can.pdfDownload ? f.url : null}
-                                pdfjs={pdfjs}
-                            />
-                        ) : (
-                            <div className="au-filepreview">
-                                <img
-                                    loading="lazy"
-                                    decoding="async"
-                                    className={zoom[f.id] ? 'is-zoom' : ''}
-                                    src={f.url}
-                                    alt={'File ' + f.urutan}
-                                    onClick={() =>
-                                        setZoom((z) => ({ ...z, [f.id]: !z[f.id] }))
-                                    }
-                                />
                             </div>
-                        )}
-                    </div>
-                ))
+                        </article>
+                    ))}
+                </section>
             ) : (
                 <div className="au-blank">
                     <Icon path={DOC} />
                     <p>Belum ada file untuk dokumen ini</p>
                 </div>
             )}
+
+            {penuh
+                ? createPortal(
+                      <div className="au-berkas-modal" role="dialog" aria-modal="true" aria-label={'File ' + penuh.urutan} onClick={() => setPenuh(null)}>
+                          <div className="au-berkas-modal-kotak" onClick={(e) => e.stopPropagation()}>
+                              <div className="au-berkas-modal-kepala">
+                                  <b>
+                                      File {penuh.urutan}
+                                      {penuh.catatan ? ' · ' + penuh.catatan : ''}
+                                  </b>
+                                  <button type="button" className="au-berkas-tutup" onClick={() => setPenuh(null)} aria-label="Tutup">×</button>
+                              </div>
+                              <div className="au-berkas-modal-isi">
+                                  {penuh.isPdf ? (
+                                      <PdfViewer id={'pdf-penuh-' + penuh.id} src={penuh.url} title={'File ' + penuh.urutan} download={can.pdfDownload ? penuh.url : null} pdfjs={pdfjs} height="100%" />
+                                  ) : (
+                                      <img src={penuh.url} alt={'File ' + penuh.urutan} />
+                                  )}
+                              </div>
+                          </div>
+                      </div>,
+                      document.body,
+                  )
+                : null}
         </AppLayout>
     );
 }

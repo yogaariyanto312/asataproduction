@@ -8,6 +8,7 @@ use App\Models\Note;
 use App\Models\Product;
 use App\Models\ProductionLog;
 use App\Models\ProductionTarget;
+use App\Models\User;
 use App\Services\HolidayService;
 use App\Support\FaseBulan;
 use App\Support\HtmlCatatan;
@@ -54,11 +55,14 @@ class DashboardController extends Controller
         $topOperatorsMonthly = ProductionLog::where('production_date', '>=', $awalBulan)
             ->where('production_date', '<', $bulanDepan)
             ->whereNotNull('operator_name')->where('operator_name', '!=', '')
-            ->select('operator_name', DB::raw('SUM(total_qty) as total'))
+            ->select('operator_name', DB::raw('SUM(total_qty) as total'), DB::raw('CASE WHEN COUNT(DISTINCT user_id) = 1 THEN MIN(user_id) END as avatar_user_id'))
             ->groupBy('operator_name')
             ->orderByDesc('total')
             ->limit(5)
             ->get();
+
+        $operatorAvatars = User::whereIn('id', $topOperatorsMonthly->pluck('avatar_user_id')->filter())
+            ->get(['id', 'avatar'])->keyBy('id');
 
         $progres = $this->progresTarget();
 
@@ -82,7 +86,11 @@ class DashboardController extends Controller
             'reject' => ['today' => $ringkas['today_reject'], 'pct' => $ringkas['reject_pct']],
 
             'topOperators'        => $this->bentukOperator($ringkas['top_operators']),
-            'topOperatorsMonthly' => $this->bentukOperator($topOperatorsMonthly),
+            'topOperatorsMonthly' => $topOperatorsMonthly->map(fn ($r) => [
+                'name' => $r->operator_name,
+                'total' => (float) $r->total,
+                'avatar_url' => $operatorAvatars->get($r->avatar_user_id)?->avatarUrl(),
+            ])->values(),
 
             'recentLogs' => $this->inputTerbaru(),
             'notes'      => $this->catatanTerbaru(),

@@ -33,7 +33,10 @@ class ProductUrutanTest extends TestCase
     {
         $page = $this->actingAs($this->admin)->get('/products')->assertOk()->viewData('page');
 
-        return collect($page['props']['sections'][0]['products'])->pluck('name')->all();
+        // Kelompok 'Permanen' (cetakan Input Seri & KVA Manual dari migrasi) tampil lebih dulu; uji ini memeriksa kelompok tahun 2026.
+        $tahun = collect($page['props']['sections'])->firstWhere('year', '2026');
+
+        return collect($tahun['products'])->pluck('name')->all();
     }
 
     public function test_kartu_diurutkan_dari_urutan_lalu_abjad(): void
@@ -83,7 +86,7 @@ class ProductUrutanTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $this->assertSame(['#22c55e', '#22c55e'], Product::where('name', 'Channel-PLN')->pluck('warna_ikon')->all());
-        $kartu = $this->get('/products')->viewData('page')['props']['sections'][0]['products'][0];
+        $kartu = collect($this->get('/products')->viewData('page')['props']['sections'])->firstWhere('year', '2026')['products'][0];
         $this->assertSame(['#22c55e', '#FF8800'], [$kartu['warnaIkon'], $kartu['warnaTeks']]);
 
         // Varian baru dari tombol (+) ikut warna kartunya.
@@ -118,5 +121,23 @@ class ProductUrutanTest extends TestCase
         $this->assertSame('4', (string) $props['prefill']['urutan']);
         $this->assertContains('lembar', $props['units']);
         $this->assertContains('batang', $props['units']);
+    }
+
+    public function test_cetakan_input_manual_tampil_di_kelompok_permanen_tanpa_tahun(): void
+    {
+        $manual = Category::create(['name' => 'Manual Uji', 'is_active' => true, 'has_manual_serial' => true]);
+        Product::create(['category_id' => $manual->id, 'type' => 'regular', 'name' => 'Cetakan Uji', 'series' => null, 'unit' => 'unit', 'tahun' => 2031, 'is_active' => true]);
+        Product::create(['category_id' => $manual->id, 'type' => 'regular', 'name' => 'Seri Nyata Uji', 'series' => '31A0001', 'unit' => 'unit', 'tahun' => 2031, 'is_active' => true]);
+
+        $sections = collect($this->actingAs($this->admin)->get('/products')->viewData('page')['props']['sections']);
+
+        $permanen = $sections->firstWhere('permanen', true);
+        $this->assertNull($permanen['year']);
+        $this->assertContains('Cetakan Uji', collect($permanen['products'])->pluck('name')->all());
+        $this->assertNotContains('Seri Nyata Uji', collect($permanen['products'])->pluck('name')->all());
+        $this->assertSame($permanen, $sections->first(), 'kelompok Permanen paling atas');
+
+        $tahun2031 = $sections->firstWhere('year', '2031');
+        $this->assertSame(['Seri Nyata Uji'], collect($tahun2031['products'])->pluck('name')->all());
     }
 }

@@ -8,6 +8,7 @@ export default function ProfileEdit({
     user,
     action,
     avatarUrl,
+    avatarDasarUrl,
     logoutOthersUrl,
     aboutAvatarUrl,
     aboutInfoUrl,
@@ -71,7 +72,7 @@ export default function ProfileEdit({
     return (
         <AppLayout title="Profil" subtitle={user.name}>
             <div style={{ marginBottom: 16 }}>
-                <PilihAvatar user={user} url={avatarUrl} />
+                <PilihAvatar user={user} url={avatarUrl} dasar={avatarDasarUrl} />
             </div>
             <div className="au-grid au-grid-2">
                 <Card title="Data Akun">
@@ -350,7 +351,7 @@ function TelegramCard({ telegram }) {
     );
 }
 
-/* Avatar siap pakai (DiceBear), sama dengan versi lama. */
+/* Avatar siap pakai (DiceBear), sama dengan versi lama. Gambarnya disalin ke public/avatars-dasar; yang disimpan tetap URL DiceBear (cocok dengan Android/Windows). */
 const AVATAR_DASAR = 'https://api.dicebear.com/9.x/adventurer/svg?backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf&seed=';
 const AVATAR_SEED = [
     'Felix', 'Aneka', 'Liam', 'Sophie', 'Max', 'Lily', 'Jack', 'Emma', 'Oliver', 'Zoe',
@@ -363,7 +364,7 @@ const AVATAR_SEED = [
     'Farah', 'Galih', 'Hesti', 'Irfan', 'Jihan', 'Kevin', 'Lina', 'Mario', 'Nisa', 'Yoga',
 ];
 
-function PilihAvatar({ user, url }) {
+function PilihAvatar({ user, url, dasar }) {
     const sekarang = AVATAR_SEED.find((s) => String(user.avatar || '').includes('seed=' + s)) || '';
     const [pilih, setPilih] = useState(sekarang);
     const [busy, setBusy] = useState(false);
@@ -380,7 +381,7 @@ function PilihAvatar({ user, url }) {
             </p>
             <div className="au-avp-kepala">
                 <span className="au-avatar" style={{ width: 60, height: 60, fontSize: 22 }}>
-                    {pilih ? <img src={AVATAR_DASAR + pilih} alt="" /> : user.name.charAt(0).toUpperCase()}
+                    {pilih ? <img src={dasar + '/' + pilih + '.svg'} alt="" /> : user.name.charAt(0).toUpperCase()}
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                     <p className="au-avp-judul">{pilih ? 'Avatar dipilih: ' + pilih : 'Belum ada avatar'}</p>
@@ -408,7 +409,7 @@ function PilihAvatar({ user, url }) {
                         className={pilih === s ? 'is-aktif' : ''}
                         onClick={() => setPilih(s)}
                     >
-                        <img src={AVATAR_DASAR + s} alt="" loading="lazy" />
+                        <img src={dasar + '/' + s + '.svg'} alt="" loading="lazy" />
                     </button>
                 ))}
             </div>
