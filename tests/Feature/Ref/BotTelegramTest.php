@@ -186,7 +186,7 @@ class BotTelegramTest extends TestCase
 
     public function test_kode_penautan_menautkan_akun(): void
     {
-        $user = $this->user('supervisor');
+        $user = $this->user('developer');
         $kode = PenautanAkun::buatKode($user);
 
         $balasan = $this->jalankan($this->pesan("/tautkan {$kode}"));
@@ -205,7 +205,7 @@ class BotTelegramTest extends TestCase
     /** Kode sekali pakai — kalau bocor, tidak bisa dipakai ulang. */
     public function test_kode_hanya_bisa_dipakai_sekali(): void
     {
-        $user = $this->user('supervisor');
+        $user = $this->user('developer');
         $kode = PenautanAkun::buatKode($user);
 
         $this->jalankan($this->pesan("/tautkan {$kode}", '555'));
@@ -219,7 +219,7 @@ class BotTelegramTest extends TestCase
     public function test_menautkan_ulang_melepas_tautan_lama(): void
     {
         $lama = $this->user('operator', '555');
-        $baru = $this->user('admin');
+        $baru = $this->user('developer');
 
         $this->jalankan($this->pesan('/tautkan ' . PenautanAkun::buatKode($baru), '555'));
 
@@ -229,7 +229,7 @@ class BotTelegramTest extends TestCase
 
     public function test_pengguna_nonaktif_tidak_bisa_menautkan(): void
     {
-        $user = $this->user('supervisor');
+        $user = $this->user('developer');
         $kode = PenautanAkun::buatKode($user);
         $user->update(['is_active' => false]);
 
@@ -282,7 +282,7 @@ class BotTelegramTest extends TestCase
 
     public function test_halaman_profil_bisa_membuat_kode(): void
     {
-        $user = $this->user('supervisor');
+        $user = $this->user('developer');
 
         $res = $this->actingAs($user)->post(route('profile.telegram.kode'));
 
@@ -305,7 +305,7 @@ class BotTelegramTest extends TestCase
     /** Tiap orang hanya boleh menautkan akunnya sendiri. */
     public function test_kode_selalu_untuk_pengguna_yang_sedang_login(): void
     {
-        $a = $this->user('supervisor');
+        $a = $this->user('developer');
         $b = $this->user('admin');
 
         $this->actingAs($a)->post(route('profile.telegram.kode'));
@@ -319,7 +319,7 @@ class BotTelegramTest extends TestCase
 
     public static function peranTanpaTelegram(): array
     {
-        return ['operator' => ['operator'], 'mandor' => ['mandor'], 'visitor' => ['visitor']];
+        return ['admin' => ['admin'], 'supervisor' => ['supervisor'], 'operator' => ['operator'], 'mandor' => ['mandor'], 'visitor' => ['visitor']];
     }
 
     #[\PHPUnit\Framework\Attributes\DataProvider('peranTanpaTelegram')]
@@ -340,14 +340,18 @@ class BotTelegramTest extends TestCase
         $this->assertNull($props['telegram']);
     }
 
-    public function test_kartu_telegram_tampil_untuk_developer_admin_supervisor(): void
+    public function test_kartu_penautan_baru_hanya_tampil_untuk_developer(): void
     {
-        foreach (['developer', 'admin', 'supervisor'] as $peran) {
+        foreach (['developer', 'admin', 'supervisor', 'mandor', 'operator', 'visitor'] as $peran) {
             // Sesi dikosongkan tiap ganti orang: AuthenticateSession menolak
             // (302) sesi yang hash password-nya milik pengguna sebelumnya.
             $this->flushSession();
             $props = $this->actingAs($this->user($peran))->get(route('profile.edit'))->assertOk()->viewData('page')['props'];
-            $this->assertSame(route('profile.telegram.kode'), $props['telegram']['kodeUrl'] ?? null, "{$peran} harus bisa menautkan.");
+            if ($peran === 'developer') {
+                $this->assertSame(route('profile.telegram.kode'), $props['telegram']['kodeUrl']);
+            } else {
+                $this->assertNull($props['telegram']);
+            }
         }
     }
 
@@ -372,13 +376,13 @@ class BotTelegramTest extends TestCase
         $teks = $this->teksPertama($this->jalankan($this->pesan('/lapor 2601 12')));
 
         $this->assertStringContainsString('belum tertaut', $teks);
-        $this->assertStringContainsString('khusus developer, admin, dan supervisor', $teks);
+        $this->assertStringContainsString('khusus developer', $teks);
     }
 
     /** Perannya diturunkan dalam 10 menit antara kode dibuat dan dikirim. */
     public function test_kode_ditolak_kalau_perannya_berubah_sebelum_ditukar(): void
     {
-        $user = $this->user('supervisor');
+        $user = $this->user('developer');
         $kode = PenautanAkun::buatKode($user);
         $user->update(['role' => 'operator']);
 
@@ -402,7 +406,7 @@ class BotTelegramTest extends TestCase
 
         $teks = $this->teksPertama($this->jalankan($this->pesan('/tutorial tautkan')));
 
-        $this->assertStringContainsString('Khusus developer, admin, dan supervisor', $teks);
+        $this->assertStringContainsString('Khusus developer', $teks);
     }
 
     /** telegram_user_id tidak boleh bisa diisi lewat pengisian massal. */

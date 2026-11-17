@@ -73,11 +73,11 @@ class TelegramPenautanTest extends TestCase
 
     public function test_tautkan_lalu_unggah_jadwal_tercatat_atas_nama_pengguna(): void
     {
-        $admin = $this->user('admin');
-        $kode  = $this->kodeUntuk($admin);
+        $developer = $this->user('developer');
+        $kode  = $this->kodeUntuk($developer);
 
         $this->kirim('/tautkan ' . $kode);
-        $this->assertSame(self::TG_ID, $admin->fresh()->telegram_user_id);
+        $this->assertSame(self::TG_ID, $developer->fresh()->telegram_user_id);
 
         // Perintah unggah kini "/jadwal upload <tanggal>" (seperti referensi) dan
         // jadwal berlaku seminggu: tanggalnya dibulatkan ke Senin minggu itu.
@@ -86,22 +86,22 @@ class TelegramPenautanTest extends TestCase
 
         $foto = SchedulePhoto::sole();
         $this->assertSame('2026-08-31', $foto->target_date->toDateString());
-        $this->assertSame($admin->id, $foto->uploaded_by);
+        $this->assertSame($developer->id, $foto->uploaded_by);
         Storage::disk('public')->assertExists($foto->file_path);
     }
 
     public function test_kode_hanya_sekali_pakai(): void
     {
-        $admin = $this->user('admin');
-        $kode  = $this->kodeUntuk($admin);
+        $developer = $this->user('developer');
+        $kode  = $this->kodeUntuk($developer);
 
         $this->kirim('/tautkan ' . $kode);
-        $this->actingAs($admin)->delete('/profile/telegram')->assertRedirect();
-        $this->assertNull($admin->fresh()->telegram_user_id);
+        $this->actingAs($developer)->delete('/profile/telegram')->assertRedirect();
+        $this->assertNull($developer->fresh()->telegram_user_id);
 
         // Kode yang sama dipakai lagi → ditolak
         $this->kirim('/tautkan ' . $kode);
-        $this->assertNull($admin->fresh()->telegram_user_id);
+        $this->assertNull($developer->fresh()->telegram_user_id);
     }
 
     public function test_peran_operator_tidak_boleh_menautkan(): void
@@ -112,11 +112,11 @@ class TelegramPenautanTest extends TestCase
 
     public function test_tautan_dicabut_di_tengah_sesi_membatalkan_unggahan(): void
     {
-        $admin = $this->user('admin');
-        $this->kirim('/tautkan ' . $this->kodeUntuk($admin));
+        $developer = $this->user('developer');
+        $this->kirim('/tautkan ' . $this->kodeUntuk($developer));
         $this->kirim('/jadwal');
 
-        $admin->forceFill(['is_active' => false])->save();
+        $developer->forceFill(['is_active' => false])->save();
         $this->kirim(null, ['photo' => [['file_id' => 'f1']]]);
 
         $this->assertSame(0, SchedulePhoto::count());

@@ -25,7 +25,7 @@ class PenautanAkun
     public const IZIN = 'telegram';
 
     /**
-     * Peran yang boleh menautkan Telegram & memakai bot secara pribadi, menurut Hak Akses.
+     * Peran yang boleh memakai bot melalui tautan lama, menurut Hak Akses.
      * Bawaan: developer, admin, supervisor. Grup yang terdaftar di Settings tetap bisa
      * memakai perintah baca.
      *
@@ -39,16 +39,10 @@ class PenautanAkun
         ));
     }
 
-    /** Untuk ditulis di pesan bot & layar: "developer, admin, dan supervisor". */
+    /** Penautan baru hanya Developer; izin bot untuk tautan lama tetap terpisah. */
     public static function daftarPeran(): string
     {
-        $peran = self::peran();
-        if (count($peran) < 2) {
-            return implode('', $peran);
-        }
-        $akhir = array_pop($peran);
-
-        return implode(', ', $peran) . (count($peran) > 1 ? ', dan ' : ' dan ') . $akhir;
+        return 'developer';
     }
 
     public static function boleh(?User $user): bool
@@ -56,9 +50,15 @@ class PenautanAkun
         return MenuAccess::can($user, self::IZIN);
     }
 
+    public static function bolehMenautkan(?User $user): bool
+    {
+        return $user !== null && $user->is_active && $user->isDeveloper();
+    }
+
     /** Buat (atau perbarui) kode penautan untuk seorang pengguna. */
     public static function buatKode(User $user): string
     {
+        abort_unless(self::bolehMenautkan($user), 403, 'Penautan Telegram hanya untuk Developer aktif.');
         // Huruf yang mudah tertukar dibuang: 0/O dan 1/I/L. Kodenya dibacakan
         // atau diketik ulang orang, bukan disalin mesin.
         $kode = strtoupper(Str::password(6, true, true, false, false));
@@ -86,7 +86,7 @@ class PenautanAkun
 
         // Diperiksa lagi saat ditukar: perannya bisa saja diubah dalam 10 menit
         // antara kode dibuat dan dikirim ke bot.
-        if (! $user || ! $user->is_active || ! self::boleh($user)) {
+        if (! self::bolehMenautkan($user)) {
             return null;
         }
 

@@ -25,16 +25,15 @@ class ProfileController extends Controller
             'aboutAvatarUrl' => route('profile.about-avatar'),
             'aboutInfoUrl'   => route('profile.about-info'),
             'isDeveloper'    => $user->isDeveloper(),
-            // Kartu Telegram: hanya peran yang boleh, atau yang telanjur tertaut
-            // (supaya tetap bisa memutus tautan).
-            'telegram'       => (\App\Services\Telegram\PenautanAkun::boleh($user) || $user->telegram_user_id) ? [
+            // Penautan baru khusus Developer; tautan lama tetap dapat diputus pemiliknya.
+            'telegram'       => (\App\Services\Telegram\PenautanAkun::bolehMenautkan($user) || $user->telegram_user_id) ? [
                 'linked'       => (bool) $user->telegram_user_id,
                 'linkedAt'     => $user->telegram_linked_at?->timezone('Asia/Jakarta')->locale('id')->isoFormat('D MMM YYYY, HH:mm'),
-                'kode'         => session('telegram_kode'),
+                'kode'         => \App\Services\Telegram\PenautanAkun::bolehMenautkan($user) ? session('telegram_kode') : null,
                 'berlakuMenit' => \App\Services\Telegram\PenautanAkun::BERLAKU_MENIT,
                 // Membuat kode baru hanya untuk peran yang boleh; tautan lama peran
                 // lain tetap bisa diputus.
-                'kodeUrl'      => \App\Services\Telegram\PenautanAkun::boleh($user) ? route('profile.telegram.kode') : null,
+                'kodeUrl'      => \App\Services\Telegram\PenautanAkun::bolehMenautkan($user) ? route('profile.telegram.kode') : null,
                 'putusUrl'     => route('profile.telegram.putus'),
             ] : null,
             'user'           => [
@@ -266,8 +265,8 @@ class ProfileController extends Controller
      */
     public function telegramKode(Request $request)
     {
-        abort_unless(\App\Services\Telegram\PenautanAkun::boleh($request->user()), 403,
-            'Fitur Telegram belum diaktifkan untuk peran Anda. Minta developer mengaktifkannya di Hak Akses Menu (Bot Telegram).');
+        abort_unless(\App\Services\Telegram\PenautanAkun::bolehMenautkan($request->user()), 403,
+            'Penautan Telegram hanya untuk Developer aktif.');
 
         $kode = \App\Services\Telegram\PenautanAkun::buatKode($request->user());
 

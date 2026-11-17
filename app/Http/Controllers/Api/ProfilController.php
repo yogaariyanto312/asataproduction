@@ -49,7 +49,7 @@ class ProfilController extends Controller
     /** Kode penautan Telegram (web: flash 'telegram_kode' — di API langsung dikembalikan). */
     public function telegramKode(Request $request): JsonResponse
     {
-        abort_unless(PenautanAkun::boleh($request->user()), 403, 'Fitur Telegram belum diaktifkan untuk peran Anda. Minta developer mengaktifkannya di Hak Akses Menu (Bot Telegram).');
+        abort_unless(PenautanAkun::bolehMenautkan($request->user()), 403, 'Penautan Telegram hanya untuk Developer aktif.');
 
         return response()->json([
             'kode'         => PenautanAkun::buatKode($request->user()),

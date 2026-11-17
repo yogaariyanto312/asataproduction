@@ -52,7 +52,7 @@ Screenshot berikut memakai database demo terpisah. Nama operator, seri produk, a
 | **Master Produk & Kategori** | Produk dikelompokkan per tahun dan nama, urutan & warna kartu bisa diatur, kategori dengan opsi *seri manual* |
 | **Laporan** | Rekap harian & bulanan, ekspor PDF dan Excel |
 | **Manajemen & Hak Akses** | Kelola pengguna per departemen; hak akses menu & aksi per peran (tampilan matriks) bisa diubah tanpa ubah kode |
-| **Profil** | 80 pilihan avatar kartun atau foto sendiri, ganti password, logout perangkat lain, tautkan Telegram |
+| **Profil** | 80 pilihan avatar kartun atau foto sendiri, ganti password, logout perangkat lain, penautan Telegram baru khusus Developer |
 | **Tutorial** | Panduan bergambar tiap menu dengan penanda bernomor & garis penunjuk |
 | **Bot Telegram** | Lapor produksi, cek jadwal, dan notifikasi lewat Telegram (akun ditautkan dari halaman Profil) |
 | **Sinkron Gambar dari qc** | Khusus Developer di Settings web, Windows, dan Android. Server memeriksa sumber tiap menit, menambah gambar kerja/foto jadwal baru, serta menampilkan hasil dan konflik tanpa menimpa data yang sudah ada |
@@ -81,7 +81,7 @@ Kedua aplikasi native memakai API `/api/v1` (lihat `routes/api.php`): aturan dat
 | Platform | Rilis | Unduh |
 |---|---|---|
 | Android | **1.4.1** (kode 15) | [APK Android](https://asataproduction.yogaariyanto.com/unduh/aplikasi) |
-| Windows | **1.1.1** (kode 4) | [Installer MSI](https://asataproduction.yogaariyanto.com/unduh/aplikasi-windows) |
+| Windows | **1.1.2** (kode 5) | [Installer MSI](https://asataproduction.yogaariyanto.com/unduh/aplikasi-windows) |
 
 Versi rilis di atas diperiksa pada 17 November 2026. Informasi versi terbaru tersedia melalui `GET /api/v1/aplikasi/versi?platform=android` atau `?platform=windows`.
 

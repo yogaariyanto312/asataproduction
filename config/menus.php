@@ -275,10 +275,9 @@ return [
         ],
 
         [
-            // Bukan halaman: saklar "boleh menautkan & memakai bot Telegram pribadi" (kartu Telegram
-            // di Profil web & aplikasi). 'nav' => false = tidak muncul di sidebar. Tanpa 'match' karena
-            // route-nya (buat kode / putuskan) dijaga di controller — memutus tautan harus tetap bisa.
-            'key' => 'telegram', 'label' => 'Bot Telegram', 'nav' => false, 'view_label' => 'Tautkan & pakai bot',
+            // Mengatur pemakaian bot melalui tautan yang sudah ada. Penautan baru khusus Developer;
+            // pemilik tautan lama tetap dapat memutusnya. Ini bukan halaman/sidebar.
+            'key' => 'telegram', 'label' => 'Bot Telegram', 'nav' => false, 'view_label' => 'Pakai bot tertaut',
             'icon' => 'M12 19l9 2-9-18-9 18 9-2zm0 0v-8',
             'default_roles' => ['developer', 'admin', 'supervisor'], 'match' => [], 'manageable' => true,
         ],
