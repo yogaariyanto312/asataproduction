@@ -17,9 +17,8 @@ class ProductionLog extends Model
         'department',
         'operator_name',
         'production_date',
-        'shift1_qty',
-        'shift2_qty',
-        'shift3_qty',
+        'up_qty',
+        'bt_qty',
         'total_qty',
         'notes',
         'manual_series',
@@ -33,9 +32,8 @@ class ProductionLog extends Model
 
     protected $casts = [
         'production_date' => 'date',
-        'shift1_qty'      => 'integer',
-        'shift2_qty'      => 'integer',
-        'shift3_qty'      => 'integer',
+        'up_qty'      => 'integer',
+        'bt_qty'      => 'integer',
         'total_qty'       => 'float',
         'reject_qty'      => 'integer',
     ];

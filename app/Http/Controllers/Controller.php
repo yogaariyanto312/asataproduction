@@ -17,7 +17,8 @@ abstract class Controller
      */
     protected function departmentFilter(Request $request, $query, string $column = 'department'): array
     {
-        if (auth()->user()?->role !== 'developer') {
+        // Khusus developer, dan hanya bila fitur Departemen menyala di Settings (sama dengan Input/Riwayat).
+        if (! \App\Models\BotSetting::departemenUntuk(auth()->user())) {
             return [collect(), null];
         }
 
@@ -38,7 +39,8 @@ abstract class Controller
      */
     protected function developerDeptFilter(Request $request): ?string
     {
-        if (auth()->user()?->role !== 'developer') {
+        // Khusus developer, dan hanya bila fitur Departemen menyala di Settings (sama dengan Input/Riwayat).
+        if (! \App\Models\BotSetting::departemenUntuk(auth()->user())) {
             return null;
         }
 
@@ -48,7 +50,8 @@ abstract class Controller
     /** Daftar departemen aktif untuk dropdown filter (developer). */
     protected function departmentOptions(): \Illuminate\Support\Collection
     {
-        if (auth()->user()?->role !== 'developer') {
+        // Khusus developer, dan hanya bila fitur Departemen menyala di Settings (sama dengan Input/Riwayat).
+        if (! \App\Models\BotSetting::departemenUntuk(auth()->user())) {
             return collect();
         }
 

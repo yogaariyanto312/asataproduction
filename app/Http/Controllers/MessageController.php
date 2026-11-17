@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class MessageController extends Controller
 {
@@ -193,13 +194,24 @@ class MessageController extends Controller
     // Operator: halaman chat (lama)
     public function chat()
     {
-        return view('chat.index');
+        // Route lama. Halaman chat terpisah sudah digantikan chat terpadu,
+        // jadi URL ini diarahkan ke sana daripada menyisakan tampilan usang.
+        return redirect()->route('chatting');
     }
 
     // Semua role: halaman chat terpadu (WhatsApp-style)
     public function chatUnified()
     {
-        return view('chat.unified');
+        return Inertia::render('Chat/Index', [
+            'contactsUrl' => route('chat.contacts'),
+            'messagesUrl' => route('messages.my'),
+            'sinceUrl'    => route('messages.since'),
+            'storeUrl'    => route('messages.store'),
+            'pingUrl'     => route('api.ping'),
+            'typingUrl'   => route('api.typing'),
+            'readUrlBase' => url('/api/messages/read-conversation'),
+            'deleteUrlBase' => url('/messages/conversation'),
+        ]);
     }
 
     // Semua role: update last_seen_at (ping)
@@ -217,6 +229,7 @@ class MessageController extends Controller
             'typing_to' => $request->recipient_id,
             'typing_at' => now(),
         ]);
+        \App\Support\Realtime::bumpPengguna('chat', (int) $request->recipient_id); // indikator "mengetik" langsung terlihat
         return response()->json(['ok' => true]);
     }
 
@@ -225,47 +238,25 @@ class MessageController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->role === 'developer') {
-            $users = \App\Models\User::where('id', '!=', $user->id)
-                ->where('is_active', true)
-                ->whereIn('role', ['admin', 'supervisor', 'mandor', 'operator', 'visitor'])
-                ->orderByRaw("FIELD(role, 'admin', 'supervisor', 'mandor', 'operator', 'visitor')")
-                ->orderBy('name')
-                ->get(['id', 'name', 'role', 'department', 'avatar', 'last_seen_at']);
-        } elseif ($user->role === 'admin') {
-            $users = \App\Models\User::whereIn('role', ['developer', 'supervisor', 'mandor', 'operator', 'visitor'])
-                ->where('is_active', true)
-                ->orderByRaw("FIELD(role, 'developer', 'supervisor', 'mandor', 'operator', 'visitor')")
-                ->orderBy('name')
-                ->get(['id', 'name', 'role', 'department', 'avatar', 'last_seen_at']);
-        } elseif ($user->role === 'supervisor') {
-            $users = \App\Models\User::whereIn('role', ['developer', 'admin', 'supervisor', 'mandor', 'operator'])
-                ->where('id', '!=', $user->id)
-                ->where('is_active', true)
-                ->orderByRaw("FIELD(role, 'developer', 'admin', 'supervisor', 'mandor', 'operator')")
-                ->orderBy('name')
-                ->get(['id', 'name', 'role', 'department', 'avatar', 'last_seen_at']);
-        } elseif ($user->role === 'mandor') {
-            $users = \App\Models\User::whereIn('role', ['developer', 'admin', 'supervisor', 'mandor', 'operator'])
-                ->where('id', '!=', $user->id)
-                ->where('is_active', true)
-                ->orderByRaw("FIELD(role, 'developer', 'admin', 'supervisor', 'mandor', 'operator')")
-                ->orderBy('name')
-                ->get(['id', 'name', 'role', 'department', 'avatar', 'last_seen_at']);
-        } elseif ($user->role === 'visitor') {
-            $users = \App\Models\User::whereIn('role', ['developer', 'admin'])
-                ->where('is_active', true)
-                ->orderByRaw("FIELD(role, 'developer', 'admin')")
-                ->orderBy('name')
-                ->get(['id', 'name', 'role', 'department', 'avatar', 'last_seen_at']);
-        } else {
-            // Operator
-            $users = \App\Models\User::whereIn('role', ['developer', 'admin', 'supervisor', 'mandor'])
-                ->where('is_active', true)
-                ->orderByRaw("FIELD(role, 'developer', 'admin', 'supervisor', 'mandor')")
-                ->orderBy('name')
-                ->get(['id', 'name', 'role', 'department', 'avatar', 'last_seen_at']);
-        }
+        // Peran yang boleh dihubungi, urut sesuai tampilan. Diurutkan di PHP,
+        // bukan FIELD() yang hanya ada di MySQL.
+        $peran = match ($user->role) {
+            // Sesama developer / sesama admin juga bisa saling chat (dulu tidak muncul di daftar).
+            'developer'           => ['developer', 'admin', 'supervisor', 'mandor', 'operator', 'visitor'],
+            'admin'               => ['developer', 'admin', 'supervisor', 'mandor', 'operator', 'visitor'],
+            'supervisor', 'mandor' => ['developer', 'admin', 'supervisor', 'mandor', 'operator'],
+            'visitor'             => ['developer', 'admin'],
+            default               => ['developer', 'admin', 'supervisor', 'mandor'], // operator
+        };
+        $urut = array_flip($peran);
+
+        $users = \App\Models\User::whereIn('role', $peran)
+            ->where('id', '!=', $user->id)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'role', 'department', 'avatar', 'last_seen_at'])
+            ->sortBy(fn ($u) => $urut[$u->role])
+            ->values();
 
         $typingIds = \App\Models\User::where('typing_to', $user->id)
             ->where('typing_at', '>=', now()->subSeconds(8))
@@ -299,12 +290,28 @@ class MessageController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        if ($request->expectsJson() || $request->ajax()) {
+        if (! $request->header('X-Inertia') && ($request->expectsJson() || $request->ajax())) {
             return response()->json($messages);
         }
 
         $unreadCount = $messages->where('is_read', false)
             ->where('sender_id', '!=', $userId)->count();
-        return view('chat.admin', compact('messages', 'unreadCount'));
+        return Inertia::render('Chat/Admin', [
+            'chatUrl'     => route('chatting'),
+            'replyBase'   => url('/messages'),
+            'unreadCount' => $unreadCount,
+            'messages'    => $messages->map(fn ($m) => [
+                'id'        => $m->id,
+                'message'   => $m->message,
+                'reply'     => $m->reply,
+                'repliedAt' => $m->replied_at?->locale('id')->isoFormat('D MMM YYYY HH:mm'),
+                'isRead'    => (bool) $m->is_read,
+                'sender'    => $m->sender->name ?? 'Tidak dikenal',
+                'senderRole'=> $m->sender->role ?? null,
+                'recipient' => $m->recipient->name ?? null,
+                'at'        => $m->created_at?->locale('id')->isoFormat('D MMM YYYY HH:mm'),
+                'mine'      => $m->sender_id === auth()->id(),
+            ])->values(),
+        ]);
     }
 }

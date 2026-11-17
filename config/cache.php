@@ -112,6 +112,25 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Serializable Classes
+    |--------------------------------------------------------------------------
+    |
+    | Laravel 13 memperketat unserialize cache untuk mencegah PHP
+    | deserialization gadget chain kalau APP_KEY sampai bocor. Daftar di bawah
+    | adalah allow-list kelas yang boleh di-unserialize dari cache.
+    |
+    | Collection wajib ada: App\Services\HolidayService menyimpan hasil
+    | Google Calendar sebagai Collection lewat Cache::remember(). Menyetel
+    | opsi ini ke false akan membuat cache hari libur gagal dibaca.
+    |
+    */
+
+    'serializable_classes' => [
+        Illuminate\Support\Collection::class,
+    ],
+
     'prefix' => env('CACHE_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')).'-cache-'),
 
 ];

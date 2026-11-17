@@ -10,6 +10,7 @@ use App\Http\Controllers\MandorController;
 use App\Http\Controllers\SupervisorController;
 use App\Http\Controllers\GambarKerjaController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\InfoController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
@@ -44,9 +45,28 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->midd
 // Root redirect
 Route::get('/', fn() => redirect()->route('dashboard'));
 
+// Token CSRF terbaru untuk sesi peminta — dipakai saat tab/PWA kembali aktif
+// agar submit pertama tidak ditolak 419. Tidak membocorkan apa pun: token yang
+// dikembalikan hanya milik sesi si peminta sendiri.
+Route::get('/csrf-token', fn () => response()
+    ->json(['token' => csrf_token()])
+    ->header('Cache-Control', 'no-store, no-cache, private')
+)->middleware('throttle:60,1')->name('csrf.token');
+
+// Unduh APK aplikasi Android terbaru (tujuan QR di halaman Tentang). Tanpa login:
+// HP pekerja yang scan QR belum tentu pernah masuk ke web.
+Route::get('/unduh/aplikasi', [InfoController::class, 'unduhAplikasi'])
+    ->middleware('throttle:20,1')->name('unduh.aplikasi');
+// Unduh installer aplikasi Windows terbaru (tombol di halaman Tentang & auto update aplikasi Windows).
+Route::get('/unduh/aplikasi-windows', [InfoController::class, 'unduhAplikasiWindows'])
+    ->middleware('throttle:20,1')->name('unduh.aplikasi.windows');
+
 // File serve — bypass junction/symlink issue pada local dev
 Route::get('/file/{path}', [GambarKerjaController::class, 'serveFile'])
     ->where('path', '.+')->middleware('auth')->name('storage.file');
+// Versi kecil (thumbnail) untuk kartu daftar — hemat bandwidth.
+Route::get('/thumb/{path}', [GambarKerjaController::class, 'serveThumb'])
+    ->where('path', '.+')->middleware('auth')->name('storage.thumb');
 
 // Protected routes (authenticated)
 Route::middleware(['auth'])->group(function () {
@@ -54,25 +74,13 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/api/dashboard-live', [DashboardController::class, 'liveStats'])->name('api.dashboard.live');
+    Route::get('/api/dashboard-calendar', [DashboardController::class, 'calendar'])->name('api.dashboard.calendar');
+    Route::get('/api/dashboard-aktivitas', [DashboardController::class, 'aktivitas'])->name('api.dashboard.aktivitas');
 
-    // Tutorial
-    Route::get('/tutorial', function () {
-        $iframeUrl = \App\Models\BotSetting::instance()->tutorial_iframe_url;
-        return view('tutorial', compact('iframeUrl'));
-    })->name('tutorial');
-    Route::post('/tutorial/embed', function (\Illuminate\Http\Request $request) {
-        abort_unless(auth()->user()->isDeveloper(), 403);
-        $request->validate(['iframe_url' => ['nullable', 'string', 'max:1000']]);
-        \App\Models\BotSetting::instance()->update(['tutorial_iframe_url' => $request->iframe_url ?: null]);
-        return back()->with('success', 'URL embed berhasil diperbarui.');
-    })->name('tutorial.embed.update')->middleware('role:developer');
-
-    // About — load developer pertama yang aktif + changelog
-    Route::get('/about', function () {
-        $developer  = \App\Models\User::where('role', 'developer')->where('is_active', true)->first();
-        $changelogs = \App\Models\Changelog::latest()->get();
-        return view('about', compact('developer', 'changelogs'));
-    })->name('about');
+    // Tutorial & Tentang Aplikasi
+    Route::get('/tutorial', [InfoController::class, 'tutorial'])->name('tutorial');
+    Route::post('/tutorial/embed', [InfoController::class, 'tutorialEmbed'])->name('tutorial.embed.update'); // akses via Hak Akses Menu (tutorial.edit)
+    Route::get('/about', [InfoController::class, 'about'])->name('about');
 
     // Profil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -81,6 +89,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/profile/logout-others', [ProfileController::class, 'logoutOtherDevices'])->name('profile.logout-others');
     Route::post('/profile/about-avatar', [ProfileController::class, 'updateAboutAvatar'])->name('profile.about-avatar');
     Route::post('/profile/about-info',   [ProfileController::class, 'updateAboutInfo'])->name('profile.about-info');
+    Route::post('/profile/telegram/kode', [ProfileController::class, 'telegramKode'])
+        ->middleware('throttle:10,1')->name('profile.telegram.kode');
+    Route::delete('/profile/telegram',    [ProfileController::class, 'telegramPutus'])->name('profile.telegram.putus');
 
     // Riwayat Produksi — semua role bisa lihat
     Route::get('/production', [ProductionLogController::class, 'index'])->name('production.index');
@@ -92,6 +103,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/production/{productionLog}/edit', [ProductionLogController::class, 'edit'])->name('production.edit');
         Route::put('/production/{productionLog}', [ProductionLogController::class, 'update'])->name('production.update');
         Route::delete('/production/{productionLog}', [ProductionLogController::class, 'destroy'])->name('production.destroy');
+        Route::post('/production/{productionLog}/reject-unit', [ProductionLogController::class, 'rejectUnit'])->name('production.reject-unit');
     });
 
     // Target Produksi — akses diatur via Hak Akses Menu
@@ -129,12 +141,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/gambar-kerja',           [GambarKerjaController::class, 'index'])->name('gambar-kerja.index');
     Route::get('/gambar-kerja/create',    [GambarKerjaController::class, 'create'])->name('gambar-kerja.create');
     Route::post('/gambar-kerja',          [GambarKerjaController::class, 'store'])->name('gambar-kerja.store');
+    Route::get('/api/gambar-kerja/poll',  [GambarKerjaController::class, 'poll'])->name('api.gambar-kerja.poll');
+    Route::get('/api/gambar-kerja/berkas', [GambarKerjaController::class, 'daftarBerkas'])->name('api.gambar-kerja.berkas');
     Route::get('/gambar-kerja/group',     [GambarKerjaController::class, 'byGroup'])->name('gambar-kerja.by-group');
     Route::delete('/gambar-kerja/group',  [GambarKerjaController::class, 'destroyByGroup'])->name('gambar-kerja.destroy-by-group');
     Route::post('/gambar-kerja/group/thumbnail',          [GambarKerjaController::class, 'uploadThumbnail'])->name('gambar-kerja.upload-thumbnail');
     Route::delete('/gambar-kerja/group/thumbnail',       [GambarKerjaController::class, 'deleteThumbnail'])->name('gambar-kerja.delete-thumbnail');
     Route::patch('/gambar-kerja/group/kategori',         [GambarKerjaController::class, 'updateKategori'])->name('gambar-kerja.update-kategori');
     Route::patch('/gambar-kerja/group/info',             [GambarKerjaController::class, 'updateInfo'])->name('gambar-kerja.update-info');
+    Route::patch('/gambar-kerja/{gambarKerja}/catatan', [GambarKerjaController::class, 'updateCatatan'])->name('gambar-kerja.update-catatan');
     Route::delete('/gambar-kerja/{gambarKerja}', [GambarKerjaController::class, 'destroy'])->name('gambar-kerja.destroy');
 
     // Barang Pengganti / Repair — akses diatur via Hak Akses Menu
@@ -145,8 +160,12 @@ Route::middleware(['auth'])->group(function () {
 
     // Aksesoris Keluar — akses diatur via Hak Akses Menu
     Route::get('/accessories', [AccessoryController::class, 'index'])->name('accessories.index');
+    Route::get('/accessories/export', [AccessoryController::class, 'exportExcel'])->name('accessories.export');
     Route::post('/accessories', [AccessoryController::class, 'store'])->name('accessories.store');
+    Route::put('/accessories/{accessory}', [AccessoryController::class, 'update'])->name('accessories.update');
     Route::delete('/accessories/{accessory}', [AccessoryController::class, 'destroy'])->name('accessories.destroy');
+    Route::patch('/accessories/categories/{category}', [AccessoryController::class, 'updateCategory'])->name('accessories.categories.update');
+    Route::delete('/accessories/categories/{category}', [AccessoryController::class, 'destroyCategory'])->name('accessories.categories.destroy');
 
     // Notes
     Route::get('/notes', [NoteController::class, 'index'])->name('notes.index');
@@ -178,8 +197,8 @@ Route::middleware(['auth'])->group(function () {
     // Kategori (lihat) & Laporan — akses diatur via Hak Akses Menu
     Route::group([], function () {
 
-        // Kategori — hanya bisa lihat (index), create/edit/delete hanya untuk developer
-        Route::get('/categories', [\App\Http\Controllers\CategoryController::class, 'index'])->name('categories.index');
+        // Kategori — bawaan developer saja, tapi bisa di-grant lewat Hak Akses Menu
+        Route::resource('categories', CategoryController::class)->except(['show']);
 
         // Laporan
         Route::prefix('reports')->name('reports.')->group(function () {
@@ -191,13 +210,17 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 
-    // Admin + Supervisor + Mandor: Chat inbox
-    Route::middleware('role:developer,admin,supervisor,mandor')->group(function () {
-        Route::get('/messages', [MessageController::class, 'adminMessages'])->name('messages.index');
-        Route::post('/messages/{message}/reply', [MessageController::class, 'reply'])->name('messages.reply');
-        Route::patch('/messages/{message}/read', [MessageController::class, 'markRead'])->name('messages.read');
-        Route::delete('/messages/{message}', [MessageController::class, 'destroy'])->name('messages.destroy');
-    });
+    // Kotak masuk pesan — akses diatur via Hak Akses Menu (chatting.inbox).
+    // Middleware role: sengaja dilepas: kalau dua lapis gate dipasang, saklar di
+    // halaman Hak Akses jadi bohong (dicentang tapi tetap 403).
+    Route::get('/messages', [MessageController::class, 'adminMessages'])->name('messages.index');
+    Route::post('/messages/{message}/reply', [MessageController::class, 'reply'])->name('messages.reply');
+    Route::patch('/messages/{message}/read', [MessageController::class, 'markRead'])->name('messages.read');
+    Route::delete('/messages/{message}', [MessageController::class, 'destroy'])->name('messages.destroy');
+
+    // Changelog (riwayat update aplikasi) — akses via Hak Akses Menu (about.edit).
+    Route::post('/about/changelog', [InfoController::class, 'changelogStore'])->name('about.changelog.store');
+    Route::delete('/about/changelog/{changelog}', [InfoController::class, 'changelogDestroy'])->name('about.changelog.destroy');
 
     // Halaman Manajemen — akses diatur via Hak Akses Menu
     Route::get('/management', [ManagementController::class, 'index'])->name('management.index');
@@ -208,51 +231,55 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware('role:developer,admin')->group(function () {
         // Manajemen Operator (admin boleh kelola operator)
-        Route::resource('operators', OperatorController::class)->except(['show']);
+        Route::resource('operators', OperatorController::class)->except(['show', 'index']);
         Route::patch('/operators/{operator}/toggle-active', [OperatorController::class, 'toggleActive'])->name('operators.toggle-active');
 
         // Manajemen Visitor (developer + admin bisa kelola)
         Route::resource('visitors', \App\Http\Controllers\VisitorController::class)->except(['show', 'index']);
+
+        // Supervisor & Mandor — peran lapangan setingkat operator, boleh dikelola
+        // admin. Admin & developer tetap hanya dikelola developer.
+        Route::resource('supervisors', SupervisorController::class)->except(['show', 'index']);
+        Route::resource('mandors', MandorController::class)->except(['show', 'index']);
     });
 
     // Developer only routes (permission tertinggi — hanya developer yg bisa kelola admin, supervisor, mandor, developer, departemen, kategori)
     Route::middleware('role:developer')->group(function () {
 
         // Hak Akses Menu per role
+        Route::post('/akun/departemen', [\App\Http\Controllers\DepartemenAkunController::class, 'update'])->name('akun.departemen');
+
         Route::get('/permissions',  [\App\Http\Controllers\PermissionController::class, 'index'])->name('permissions.index');
         Route::post('/permissions', [\App\Http\Controllers\PermissionController::class, 'update'])->name('permissions.update');
 
-        Route::resource('developers', \App\Http\Controllers\DeveloperController::class)->except(['show']);
-        Route::resource('admins', AdminController::class)->except(['show']);
-        Route::resource('supervisors', SupervisorController::class)->except(['show']);
-        Route::resource('mandors', MandorController::class)->except(['show']);
-        Route::resource('departments', DepartmentController::class)->except(['show']);
+        Route::resource('developers', \App\Http\Controllers\DeveloperController::class)->except(['show', 'index']);
+        Route::resource('admins', AdminController::class)->except(['show', 'index']);
+        Route::resource('departments', DepartmentController::class)->except(['show', 'index']);
         Route::post('/departments/quick-store', [DepartmentController::class, 'quickStore'])->name('departments.quick-store');
-        Route::resource('categories', CategoryController::class)->except(['show']);
 
-        // Changelog (riwayat update aplikasi)
-        Route::post('/about/changelog', function (\Illuminate\Http\Request $request) {
-            $request->validate([
-                'type'        => ['required', 'in:feature,fix,improvement,security'],
-                'version'     => ['nullable', 'string', 'max:20'],
-                'title'       => ['required', 'string', 'max:255'],
-                'description' => ['nullable', 'string', 'max:2000'],
-            ]);
-            \App\Models\Changelog::create($request->only('type', 'version', 'title', 'description'));
-            return back()->with('success', 'Entry changelog berhasil ditambahkan.');
-        })->name('about.changelog.store');
 
-        Route::delete('/about/changelog/{changelog}', function (\App\Models\Changelog $changelog) {
-            $changelog->delete();
-            return back()->with('success', 'Entry changelog berhasil dihapus.');
-        })->name('about.changelog.destroy');
 
         // Developer Tools — Bot Notifikasi
         Route::get('/developer/bot-settings',                  [BotSettingController::class, 'index'])->name('developer.bot-settings');
         Route::post('/developer/bot-settings',                 [BotSettingController::class, 'update'])->name('developer.bot-settings.update');
         Route::post('/developer/bot-settings/test',            [BotSettingController::class, 'test'])->name('developer.bot-settings.test');
+        Route::post('/developer/sinkron-qc', [\App\Http\Controllers\SinkronQcController::class, 'jalankan'])->name('developer.sinkron-qc');
+        Route::post('/developer/sinkron-qc/aturan', [\App\Http\Controllers\SinkronQcController::class, 'aturan'])->name('developer.sinkron-qc.aturan');
         Route::post('/developer/bot-settings/webhook-register',[BotSettingController::class, 'registerWebhook'])->name('developer.bot-settings.webhook-register');
         Route::post('/developer/bot-settings/webhook-info',    [BotSettingController::class, 'webhookInfo'])->name('developer.bot-settings.webhook-info');
         Route::post('/developer/bot-settings/send-daily-report', [BotSettingController::class, 'sendDailyReport'])->name('developer.bot-settings.send-daily-report');
+
+        // Developer Tools — cek fondasi React/Inertia.
+        Route::get('/developer/system-check', function () {
+            return \Inertia\Inertia::render('SystemCheck', [
+                'stack' => [
+                    'Laravel'  => app()->version(),
+                    'PHP'      => PHP_VERSION,
+                    'Inertia'  => \Composer\InstalledVersions::getPrettyVersion('inertiajs/inertia-laravel'),
+                    'Filament' => \Composer\InstalledVersions::getPrettyVersion('filament/filament'),
+                    'Livewire' => \Composer\InstalledVersions::getPrettyVersion('livewire/livewire'),
+                ],
+            ]);
+        })->name('developer.system-check');
     });
 });

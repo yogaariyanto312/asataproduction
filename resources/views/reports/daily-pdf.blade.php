@@ -33,8 +33,8 @@
             <th>UP</th><th>BT</th><th>Grand Total</th>
         </tr>
         <tr>
-            <td class="center">{{ number_format($totalShift1) }}</td>
-            <td class="center">{{ number_format($totalShift2) }}</td>
+            <td class="center">{{ number_format($totalUp) }}</td>
+            <td class="center">{{ number_format($totalBt) }}</td>
             <td class="center grand">{{ number_format($grandTotal) }}</td>
         </tr>
     </table>
@@ -61,8 +61,8 @@
                 </td>
                 <td>{{ $log->product->series_with_kva ?: '-' }}</td>
                 <td>{{ $log->product->category->name ?? '-' }}</td>
-                <td class="center">{{ number_format($log->shift1_qty) }}</td>
-                <td class="center">{{ number_format($log->shift2_qty) }}</td>
+                <td class="center">{{ number_format($log->up_qty) }}</td>
+                <td class="center">{{ number_format($log->bt_qty) }}</td>
                 <td class="center grand">{{ number_format($log->total_qty) }}</td>
                 <td>{{ $log->user->name ?? '-' }}</td>
             </tr>
@@ -71,14 +71,14 @@
         <tfoot>
             <tr>
                 <td colspan="4" class="tfoot">TOTAL</td>
-                <td class="tfoot center">{{ number_format($totalShift1) }}</td>
-                <td class="tfoot center">{{ number_format($totalShift2) }}</td>
+                <td class="tfoot center">{{ number_format($totalUp) }}</td>
+                <td class="tfoot center">{{ number_format($totalBt) }}</td>
                 <td class="tfoot center grand">{{ number_format($grandTotal) }}</td>
                 <td class="tfoot"></td>
             </tr>
         </tfoot>
     </table>
 
-    <div class="footer">Asata Production System &copy; {{ date('Y') }}</div>
+    <div class="footer">QC Production System &copy; {{ date('Y') }}</div>
 </body>
 </html>

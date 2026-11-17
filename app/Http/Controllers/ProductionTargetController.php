@@ -10,20 +10,30 @@ use App\Models\Scopes\DepartmentScope;
 use App\Models\SchedulePhoto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 class ProductionTargetController extends Controller
 {
     public function index(Request $request)
+    {
+        return Inertia::render('Production/Targets', $this->dataTarget());
+    }
+
+    /** Data halaman Target Produksi (web & API Android). */
+    public function dataTarget(): array
     {
         // Target tanpa batas waktu: 1 target aktif per produk.
         $rawTargets = ProductionTarget::with(['product'])->get();
 
         // Produksi kumulatif per produk (untuk hitung progres sejak target dibuat).
         // Target bersifat org-wide → aktual dihitung lintas departemen.
-        $cumulative = ProductionLog::withoutGlobalScope(DepartmentScope::class)
-            ->selectRaw('product_id, SUM(total_qty) as total')
+        // Hanya produk yang punya target (dulu seluruh tabel dijumlah: ~2 dtk di 550 ribu baris).
+        $kumulatifRows = ProductionLog::withoutGlobalScope(DepartmentScope::class)
+            ->whereIn('product_id', $rawTargets->pluck('product_id')->filter()->all())
+            ->selectRaw('product_id, SUM(total_qty) as total, SUM(up_qty) as up, SUM(bt_qty) as bt')
             ->groupBy('product_id')
-            ->pluck('total', 'product_id');
+            ->get()->keyBy('product_id');
+        $cumulative = $kumulatifRows->map(fn ($r) => $r->total);
 
         // Bangun daftar target + aktual (progres sejak baseline)
         $targets  = collect();
@@ -38,10 +48,11 @@ class ProductionTargetController extends Controller
                 'target_qty' => (int) $t->target_qty,
                 'notes'      => $t->notes,
                 'reached_at' => $t->reached_at,
+                'split'      => $t->splitProgress((int) ($kumulatifRows[$t->product_id]->up ?? 0), (int) ($kumulatifRows[$t->product_id]->bt ?? 0)),
             ]);
         }
         // Yang belum tercapai tampil dulu, lalu berdasarkan progres
-        $targets = $targets->sortBy(fn ($t) => $actuals[$t->product_id] >= $t->target_qty ? 1 : 0)->values();
+        $targets = $targets->sortBy(fn ($t) => ($t->split ? $t->split['done'] : $actuals[$t->product_id] >= $t->target_qty) ? 1 : 0)->values();
 
         $totalTarget = (int) $targets->sum('target_qty');
         // Aktual di-cap per produk supaya over-produksi tidak menutupi produk lain
@@ -62,17 +73,78 @@ class ProductionTargetController extends Controller
         $scheduleDate  = $weekStart->toDateString();
         $schedulePhoto = SchedulePhoto::with('uploader')->where('target_date', $scheduleDate)->first();
 
-        return view('production.targets.index', compact(
-            'targets', 'actuals', 'weekStart', 'weekEnd', 'date', 'scheduleDate', 'products',
-            'totalTarget', 'totalActual', 'schedulePhoto'
-        ));
+        $canEdit   = \App\Support\MenuAccess::can(auth()->user(), 'targets.edit');
+        $canDelete = \App\Support\MenuAccess::can(auth()->user(), 'targets.delete');
+
+        return [
+            'liveUrl'      => route('api.targets.live'),
+            'actualQtyUrl' => route('api.targets.actual-qty'),
+            'storeUrl'     => route('production.targets.store'),
+            'photoUrl'     => route('production.targets.schedule-photo.store'),
+            'photoDestroyUrl' => route('production.targets.schedule-photo.destroy'),
+            'canEdit'      => $canEdit,
+            'canDelete'    => $canDelete,
+            'weekLabel'    => 'Minggu ' . $weekStart->locale('id')->isoFormat('DD MMM') . ' – ' . $weekEnd->locale('id')->isoFormat('DD MMM YYYY'),
+            'scheduleDate' => $scheduleDate,
+            'pdfjs'        => GambarKerjaController::pdfjs(),
+            'totals'       => [
+                'target' => $totalTarget,
+                'actual' => $totalActual,
+                'pct'    => $totalTarget > 0 ? min((int) round($totalActual / $totalTarget * 100), 100) : 0,
+            ],
+            'targets'      => $targets->map(fn ($t) => [
+                'id'         => $t->id,
+                'productId'  => $t->product_id,
+                'product'    => $t->product->name ?? '-',
+                'seriesKva'  => $t->product?->series_with_kva ?: null,
+                'target'     => (int) $t->target_qty,
+                'actual'     => (int) ($actuals[$t->product_id] ?? 0),
+                'notes'      => $t->notes,
+                'split'      => $t->split,
+                // Target tercapai dihapus otomatis 2 jam kemudian (target:clear-reached).
+                'hapusOtomatis' => $t->reached_at ? $t->reached_at->copy()->addHours(2)->locale('id')->diffForHumans() : null,
+                'deleteUrl'  => route('production.targets.destroy', $t->id),
+            ])->values(),
+            // Dikelompokkan per nama produk seperti referensi; produk placeholder
+            // kategori seri manual berlabel "Seri & KVA Manual → PLN/Swasta/TypeTest".
+            'productGroups' => $products->groupBy('name')->map(fn ($isi, $nama) => [
+                'label'   => (string) $nama,
+                'options' => $isi->map(function ($p) {
+                    $manual = (bool) (($p->category->has_manual_serial ?? false) && ! $p->series);
+                    $nl  = strtolower($p->name);
+                    $tag = str_contains($nl, 'swasta') ? 'Swasta' : (str_contains($nl, 'type') ? 'TypeTest' : 'PLN');
+
+                    return [
+                        'value'  => $p->id,
+                        'label'  => $manual ? 'Seri & KVA Manual → ' . $tag : (($p->series ?: 'Tanpa seri') . ($p->kva ? ' · ' . $p->kva . ' KVA' : '')),
+                        'manual' => $manual,
+                        'type'   => $p->type ?: 'regular',
+                    ];
+                })->values(),
+            ])->values(),
+            'schedulePhoto' => $schedulePhoto ? [
+                'url'      => route('storage.file', ['path' => $schedulePhoto->file_path]),
+                'isPdf'    => str_ends_with(strtolower($schedulePhoto->file_path), '.pdf'),
+                'uploader' => $schedulePhoto->uploader->name ?? '-',
+                'ago'      => $schedulePhoto->updated_at?->locale('id')->diffForHumans(),
+            ] : null,
+        ];
     }
 
     public function store(Request $request)
     {
+        return back()->with('success', $this->simpanTarget($request));
+    }
+
+    /** Inti set target (tanpa sesi) — dipakai web & API Android. Mengembalikan pesan sukses. */
+    public function simpanTarget(Request $request): string
+    {
         $request->validate([
             'product_id'    => ['required', 'exists:products,id'],
-            'target_qty'    => ['required', 'integer', 'min:1', 'max:999999'],
+            'target_qty'    => ['required_without_all:target_up,target_bt', 'nullable', 'integer', 'min:1', 'max:999999'],
+            // Produk channel: target dipisah per deret (UP dan BT). target_qty gabungan dihitung server.
+            'target_up'     => ['nullable', 'integer', 'min:0', 'max:999999'],
+            'target_bt'     => ['nullable', 'integer', 'min:0', 'max:999999'],
             'notes'         => ['nullable', 'string', 'max:200'],
             'manual_series' => ['nullable', 'string', 'max:100'],
             'manual_kva'    => ['nullable', 'string', 'max:50'],
@@ -94,14 +166,30 @@ class ProductionTargetController extends Controller
         }
 
         // Baseline = total produksi kumulatif produk saat ini → titik nol progres (org-wide).
-        $baseline = (int) ProductionLog::withoutGlobalScope(DepartmentScope::class)
-            ->where('product_id', $productId)->sum('total_qty');
+        $kumulatif = ProductionLog::withoutGlobalScope(DepartmentScope::class)
+            ->where('product_id', $productId)
+            ->selectRaw('COALESCE(SUM(total_qty),0) as total, COALESCE(SUM(up_qty),0) as up, COALESCE(SUM(bt_qty),0) as bt')
+            ->first();
+        $baseline = (int) $kumulatif->total;
+
+        // Target terpisah hanya untuk produk channel dan bila UP/BT diisi.
+        $terpisah = $product && $product->type === 'channel' && ($request->filled('target_up') || $request->filled('target_bt'));
+        $targetUp = $terpisah ? (int) $request->input('target_up', 0) : null;
+        $targetBt = $terpisah ? (int) $request->input('target_bt', 0) : null;
+        if ($terpisah && ($targetUp + $targetBt) < 1) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['target_qty' => 'Isi target UP atau BT minimal 1.']);
+        }
+        $targetQty = $terpisah ? max(1, (int) round(($targetUp + $targetBt) / 2)) : (int) $request->target_qty;
 
         $target = ProductionTarget::updateOrCreate(
             ['product_id' => $productId],
             [
-                'target_qty'   => $request->target_qty,
+                'target_qty'   => $targetQty,
+                'target_up'    => $targetUp,
+                'target_bt'    => $targetBt,
                 'baseline_qty' => $baseline,
+                'baseline_up'  => $terpisah ? (int) $kumulatif->up : null,
+                'baseline_bt'  => $terpisah ? (int) $kumulatif->bt : null,
                 'notes'        => $request->notes,
                 'target_date'  => today()->toDateString(),
                 'reached_at'   => null,
@@ -110,22 +198,27 @@ class ProductionTargetController extends Controller
         );
 
         if (!$product) {
-            return back()->withErrors(['product_id' => 'Produk tidak ditemukan.']);
+            throw \Illuminate\Validation\ValidationException::withMessages(['product_id' => 'Produk tidak ditemukan.']);
         }
 
-        ActivityLog::record('create', "Set target produksi: {$product->name} = {$request->target_qty} unit", $target);
+        ActivityLog::record('create', $terpisah
+            ? "Set target produksi: {$product->name} = UP {$targetUp} + BT {$targetBt}"
+            : "Set target produksi: {$product->name} = {$targetQty} unit", $target);
 
-        return back()->with('success', "Target untuk {$product->name} berhasil disimpan.");
+        return "Target untuk {$product->name} berhasil disimpan.";
     }
 
     public function liveData(Request $request)
     {
         $targets = ProductionTarget::whereNotNull('product_id')->get();
 
-        $cumulative = ProductionLog::withoutGlobalScope(DepartmentScope::class)
-            ->selectRaw('product_id, SUM(total_qty) as total')
+        // Hanya produk yang punya target (dulu seluruh tabel dijumlah: ~2 dtk di 550 ribu baris).
+        $kumulatifRows = ProductionLog::withoutGlobalScope(DepartmentScope::class)
+            ->whereIn('product_id', $targets->pluck('product_id')->filter()->all())
+            ->selectRaw('product_id, SUM(total_qty) as total, SUM(up_qty) as up, SUM(bt_qty) as bt')
             ->groupBy('product_id')
-            ->pluck('total', 'product_id');
+            ->get()->keyBy('product_id');
+        $cumulative = $kumulatifRows->map(fn ($r) => $r->total);
 
         $totalTarget = 0;
         $totalActualCapped = 0;
@@ -133,12 +226,14 @@ class ProductionTargetController extends Controller
         foreach ($targets as $t) {
             $actual = $t->actualProduced((int) ($cumulative[$t->product_id] ?? 0));
             $pct    = $t->target_qty > 0 ? min(round(($actual / $t->target_qty) * 100), 100) : 0;
+            $split = $t->splitProgress((int) ($kumulatifRows[$t->product_id]->up ?? 0), (int) ($kumulatifRows[$t->product_id]->bt ?? 0));
             $map[$t->product_id] = [
                 'actual'    => $actual,
                 'target'    => (int) $t->target_qty,
-                'pct'       => $pct,
-                'done'      => $actual >= $t->target_qty,
+                'pct'       => $split ? $split['pct'] : $pct,
+                'done'      => $split ? $split['done'] : $actual >= $t->target_qty,
                 'remaining' => max(0, (int) $t->target_qty - $actual),
+                'split'     => $split,
             ];
             $totalTarget       += (int) $t->target_qty;
             $totalActualCapped += min($actual, (int) $t->target_qty);
@@ -215,23 +310,35 @@ class ProductionTargetController extends Controller
         }
 
         // Total kumulatif semua tanggal = no. urut terakhir yang diproduksi (org-wide)
-        $actual = (int) ProductionLog::withoutGlobalScope(DepartmentScope::class)
-            ->where('product_id', $productId)->sum('total_qty');
+        $kumulatif = ProductionLog::withoutGlobalScope(DepartmentScope::class)
+            ->where('product_id', $productId)
+            ->selectRaw('COALESCE(SUM(total_qty),0) as total, COALESCE(SUM(up_qty),0) as up, COALESCE(SUM(bt_qty),0) as bt')
+            ->first();
+        $actual = (int) $kumulatif->total;
 
         // Target aktif untuk produk ini (jika ada)
         $target = ProductionTarget::where('product_id', $productId)->value('target_qty');
 
         return response()->json([
             'actual'     => $actual,
+            // Produk channel punya dua deret no. urut (UP dan BT); kumulatif keduanya untuk mode "Sampai No. Urut".
+            'up'         => (int) $kumulatif->up,
+            'bt'         => (int) $kumulatif->bt,
             'target_qty' => $target ? (int) $target : null,
         ]);
     }
 
     public function destroy(ProductionTarget $productionTarget)
     {
+        $this->hapusTarget($productionTarget);
+        return back()->with('success', 'Target berhasil dihapus.');
+    }
+
+    /** Inti hapus target (tanpa sesi) — dipakai web & API Android. */
+    public function hapusTarget(ProductionTarget $productionTarget): void
+    {
         $info = $productionTarget->product?->name ?? 'produk #' . $productionTarget->product_id;
         $productionTarget->delete();
         ActivityLog::record('delete', "Hapus target produksi: {$info}");
-        return back()->with('success', 'Target berhasil dihapus.');
     }
 }

@@ -34,6 +34,9 @@ class MenuAccess
     /** @var array<string,array>|null index key => definisi permission (view/aksi) */
     protected static ?array $index = null;
 
+    /** @var array<string,string>|null key aksi => key menu induknya */
+    protected static ?array $parents = null;
+
     protected static function stored(): array
     {
         if (static::$stored === null) {
@@ -91,6 +94,7 @@ class MenuAccess
         static::$storedDept = null;
         static::$sharedKeys = null;
         static::$index      = null;
+        static::$parents    = null;
     }
 
     public static function items(): array
@@ -169,8 +173,33 @@ class MenuAccess
         if (!$user) return false;
         if ($user->role === 'developer') return true;
 
-        return static::allowed($user->role, $key)
-            && static::departmentAllowed($user->department, $key);
+        // Aksi mewarisi izin menu induknya: kalau menu "Lihat" dimatikan untuk
+        // sebuah role/departemen, semua aksinya ikut mati. Tanpa ini, mematikan
+        // menu Riwayat Produksi tetap membiarkan edit/hapus lewat URL langsung.
+        $keys   = [$key];
+        $parent = static::parents()[$key] ?? null;
+        if ($parent) $keys[] = $parent;
+
+        foreach ($keys as $k) {
+            if (!static::allowed($user->role, $k) || !static::departmentAllowed($user->department, $k)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    protected static function parents(): array
+    {
+        if (static::$parents === null) {
+            static::$parents = [];
+            foreach (static::items() as $item) {
+                foreach ($item['actions'] ?? [] as $act) {
+                    static::$parents[$act['key']] = $item['key'];
+                }
+            }
+        }
+        return static::$parents;
     }
 
     /** Resolusi nama route → permission key (aksi diutamakan, lalu view). Null bila tak dikelola. */

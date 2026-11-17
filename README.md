@@ -1,137 +1,173 @@
 # Asata Production System
 
-Sistem pencatatan produksi dan quality control berbasis web untuk pabrik/manufaktur. Dibangun dengan Laravel 12, memungkinkan operator mencatat hasil produksi harian per shift, sementara admin dapat memantau, menganalisis, dan mengekspor laporan.
+Sistem pencatatan produksi dan quality control untuk pabrik trafo. Operator mencatat hasil produksi harian (UP/BT untuk channel, jumlah unit untuk cover/tangki), sementara admin, supervisor, dan mandor memantau target, laporan, dan riwayat.
+
+Tersedia dalam tiga bentuk yang memakai data & hak akses yang sama:
+
+- **Web**: Laravel + Inertia/React (repo ini).
+- **Aplikasi Android**: aplikasi native (Kotlin + Jetpack Compose), bukan WebView.
+- **Aplikasi Windows**: aplikasi native (Kotlin + Compose Multiplatform Desktop), dipasang lewat installer MSI.
+
+Ditambah bot Telegram untuk lapor produksi dan cek jadwal dari HP.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+---
+
+## Tampilan aplikasi
+
+Screenshot berikut memakai database demo terpisah. Nama operator, seri produk, angka produksi, dan catatan adalah contoh, bukan data pabrik atau konfigurasi server.
+
+### Dashboard
+
+![Dashboard dengan tema Ocean, ringkasan produksi, foto avatar operator, dan grafik](docs/screenshots/dashboard.png)
+
+### Papan Catatan
+
+![Catatan dikelompokkan menjadi Aktif, Terlambat, dan Selesai](docs/screenshots/catatan.png)
+
+<details>
+<summary>Lihat halaman login dan tampilan HP</summary>
+
+![Halaman login Asata Production](docs/screenshots/login.png)
+
+<img src="docs/screenshots/dashboard-mobile.png" alt="Dashboard responsif dengan dock navigasi pada HP" width="320">
+
+</details>
 
 ---
 
 ## Fitur Utama
 
-| Fitur | Deskripsi |
+| Menu | Isi |
 |---|---|
-| **Input Produksi** | Catat jumlah produksi per shift (Shift 1, 2, 3) per produk setiap harinya |
-| **Gambar Kerja** | Upload dan lihat gambar kerja (JPG/PNG/PDF) tiap produk secara berurutan |
-| **Ukuran Produk** | Referensi dimensi produk (panjang × lebar) lengkap dengan KVA |
-| **Laporan** | Rekap harian & bulanan, export ke PDF dan Excel |
-| **Manajemen User** | Role Admin dan Operator dengan hak akses berbeda |
-| **Chat Internal** | Operator bisa kirim pesan ke admin, admin bisa membalas |
-| **Activity Log** | Riwayat aktivitas seluruh pengguna tercatat otomatis |
-| **Dark Mode** | Tampilan gelap/terang tersedia di semua halaman |
+| **Tampilan kaca** | Empat tema: Coral, Violet, Ocean, dan Gelap; mode ringan, palet Ctrl+K, sidebar ringkas, serta dock navigasi HP |
+| **Dashboard** | Ringkasan hari ini & bulan ini, kalender (hari libur nasional & fase bulan), tren produksi, target aktif, reject, catatan & input terbaru, log aktivitas |
+| **Catatan** | Papan Aktif, Terlambat, dan Selesai; editor teks, foto/kamera, tenggat, dan penerima |
+| **Target Produksi** | Foto jadwal gambar/PDF, target jumlah atau nomor urut, deret UP/BT terpisah untuk channel, serta progres yang diperbarui otomatis |
+| **Chatting** | Pesan antar pengguna (termasuk sesama developer/admin), status mengetik & dibaca |
+| **Gambar Kerja** | Upload banyak file (JPG/PNG/PDF) per judul-seri-kVA, pratinjau PDF, cache offline, **keterangan per file** (mis. "Revisi ke-2") |
+| **Input & Riwayat Produksi** | Input per produk dengan nomor urut UP/BT, seri & kVA manual, reject unit; riwayat per tanggal & kategori, input cepat lewat modal |
+| **Barang Pengganti & Aksesoris Keluar** | Pencatatan barang pengganti dan aksesoris keluar beserta ekspor; **kategori aksesoris** bisa difilter, diubah nama (otomatis digabung bila sama), dan dihapus bila tidak dipakai |
+| **Master Produk & Kategori** | Produk dikelompokkan per tahun dan nama, urutan & warna kartu bisa diatur, kategori dengan opsi *seri manual* |
+| **Laporan** | Rekap harian & bulanan, ekspor PDF dan Excel |
+| **Manajemen & Hak Akses** | Kelola pengguna per departemen; hak akses menu & aksi per peran (tampilan matriks) bisa diubah tanpa ubah kode |
+| **Profil** | 80 pilihan avatar kartun atau foto sendiri, ganti password, logout perangkat lain, tautkan Telegram |
+| **Tutorial** | Panduan bergambar tiap menu dengan penanda bernomor & garis penunjuk |
+| **Bot Telegram** | Lapor produksi, cek jadwal, dan notifikasi lewat Telegram (akun ditautkan dari halaman Profil) |
+| **Sinkron Gambar dari qc** | Khusus Developer di Settings web, Windows, dan Android. Server memeriksa sumber tiap menit, menambah gambar kerja/foto jadwal baru, serta menampilkan hasil dan konflik tanpa menimpa data yang sudah ada |
+| **Pembaruan data** | Pemeriksaan versi ringan dari server, berhenti saat tab tersembunyi, dengan pengambilan data saat ada perubahan dan polling cadangan |
+| **Mode Maintenance** | Saklar dari Settings dengan hitung mundur; developer tetap bisa masuk |
+| **Panel `/admin`** | Panel Filament untuk dashboard ringkas |
 
 ---
 
 ## Teknologi
 
-- **Backend** — Laravel 12, PHP 8.2
-- **Frontend** — Tailwind CSS v4, Alpine.js, Vite
-- **Database** — MySQL
-- **Export** — barryvdh/laravel-dompdf (PDF), maatwebsite/excel (Excel)
+- **Backend**: Laravel 13, PHP 8.4, Filament 5
+- **Frontend**: Inertia.js 3 + React 19, Vite 8, CSS kustom (empat tema kaca dan mode ringan)
+- **Database**: MySQL 8 / MariaDB 11 (SQLite untuk pengujian)
+- **Ekspor**: barryvdh/laravel-dompdf (PDF), maatwebsite/excel (Excel)
+- **PDF viewer**: pdf.js (di `public/vendor/pdfjs`)
+- **API aplikasi**: REST JSON `/api/v1` dengan Laravel Sanctum (token per perangkat)
+- **Aplikasi**: Kotlin 2.1, Jetpack Compose (Android), Compose Multiplatform 1.8 + JDK 21 (Windows)
+
+---
+
+## Aplikasi Android & Windows
+
+Kedua aplikasi native memakai API `/api/v1` (lihat `routes/api.php`): aturan data, hak akses, dan departemen ditangani server yang sama. Perubahan tampilan atau kontrol baru pada aplikasi native tetap membutuhkan pembaruan APK/MSI.
+
+| Platform | Rilis | Unduh |
+|---|---|---|
+| Android | **1.4.1** (kode 15) | [APK Android](https://asataproduction.yogaariyanto.com/unduh/aplikasi) |
+| Windows | **1.1.1** (kode 4) | [Installer MSI](https://asataproduction.yogaariyanto.com/unduh/aplikasi-windows) |
+
+Versi rilis di atas diperiksa pada 17 November 2026. Informasi versi terbaru tersedia melalui `GET /api/v1/aplikasi/versi?platform=android` atau `?platform=windows`.
+
+- Aplikasi mengecek versi saat dibuka dan menawarkan update otomatis bila versi di server lebih baru.
+- Gambar kerja & foto yang sudah diunduh disimpan di perangkat sehingga tidak diunduh ulang (penting untuk koneksi pabrik yang lambat).
+- Kode sumber aplikasi ada di proyek terpisah (Android Studio). Berkas APK/MSI dan script unggahnya (`android-update/`, `windows-update/`) **tidak** di-commit karena berukuran besar dan memakai kredensial SSH dari `.env`.
+
+Pengunggahan rilis dikelola melalui alat operasional lokal. Skrip unggah, kredensial, keystore, APK, dan MSI tidak disertakan dalam repositori kode maupun payload deploy web.
+
+---
+
+## Peran Pengguna
+
+Hak akses bawaan di bawah bisa diubah per peran lewat menu **Hak Akses Menu** (`config/menus.php` menjadi daftar menu & aksinya).
+
+| Peran | Gambaran akses bawaan |
+|---|---|
+| **Developer** | Semua menu, termasuk Kategori, Hak Akses, Settings/bot, Tutorial, dan riwayat update |
+| **Admin** | Semua menu operasional: master produk, gambar kerja, manajemen pengguna, laporan |
+| **Supervisor** | Pantau produksi, target, dan laporan |
+| **Mandor** | Pantau produksi, set target, laporan |
+| **Operator** | Input & riwayat produksi, barang pengganti, aksesoris, gambar kerja (lihat) |
+| **Visitor** | Lihat dashboard dan menu yang diizinkan |
+
+Data produksi dipisah per **departemen**; selain developer, pengguna hanya melihat data departemennya.
 
 ---
 
 ## Persyaratan Sistem
 
-- PHP >= 8.2 (dengan ekstensi: `pdo_mysql`, `gd`, `zip`, `mbstring`, `xml`, `fileinfo`)
+- PHP >= 8.4 dengan ekstensi `pdo_mysql`, `gd`, `zip`, `mbstring`, `xml`, `fileinfo`, `intl`, `bcmath`, `exif`
 - Composer >= 2
-- Node.js >= 18 & npm
-- MySQL >= 8.0
-- Web server: Apache (XAMPP) atau Nginx
+- Node.js >= 20 & npm (hanya untuk build aset)
+- MySQL >= 8 atau MariaDB >= 10.6
+- Apache/LiteSpeed (`mod_rewrite`) atau Nginx
 
 ---
 
-## Instalasi Lokal (XAMPP)
-
-### 1. Clone / Letakkan Proyek
+## Instalasi Lokal
 
 ```bash
-# Letakkan folder proyek di dalam www (Laragon)
-D:\laragon\www\asata-production\
-```
+# 1. Clone repositori dan masuk ke folder project
+git clone https://github.com/yogaariyanto312/asataproduction.git
+cd asataproduction
 
-### 2. Install Dependensi PHP
-
-```bash
+# 2. Dependensi
 composer install
-```
-
-### 3. Install Dependensi Frontend
-
-```bash
 npm install
-```
 
-### 4. Konfigurasi Environment
-
-```bash
-# Salin file contoh .env
+# 3. Environment
 copy .env.example .env
-
-# Generate application key
 php artisan key:generate
 ```
 
-Lalu buka file `.env` dan sesuaikan konfigurasi database:
+Sesuaikan `.env`:
 
 ```env
 APP_NAME="Asata Production"
-APP_URL=http://asata-production.test
+APP_ENV=local
+APP_URL=http://localhost/asata-production/public
+APP_LOCALE=id
+APP_FALLBACK_LOCALE=en
 
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=qc_production_db
+DB_DATABASE=asata_lokal
 DB_USERNAME=root
 DB_PASSWORD=
+
+# Inertia DevTools menambah ±250 ms tiap request: nyalakan hanya saat debug
+INERTIA_DEVTOOLS_ENABLED=false
 ```
-
-### 5. Buat Database
-
-Buka phpMyAdmin (`http://localhost/phpmyadmin`) lalu buat database baru:
-
-```sql
-CREATE DATABASE qc_production_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-### 6. Jalankan Migrasi
 
 ```bash
+# 4. Database (buat dulu database kosong utf8mb4), lalu migrasi
 php artisan migrate
-```
 
-### 7. Buat Storage Symlink
-
-```bash
+# 5. Symlink storage
 php artisan storage:link
+
+# 6. Aset frontend
+npm run build      # atau: npm run dev (hot reload)
 ```
 
-> **Penting untuk XAMPP di Windows:** Pastikan baris berikut ada di `public/.htaccess` di dalam blok `<IfModule mod_rewrite.c>`:
-> ```
-> Options +FollowSymLinks
-> ```
-> Tanpa ini, gambar yang diupload tidak akan tampil.
-
-### 8. Build Asset Frontend
-
-```bash
-# Untuk development (hot-reload)
-npm run dev
-
-# Untuk production
-npm run build
-```
-
-### 9. Konfigurasi PHP untuk Upload File Besar
-
-Buka `C:\xampp\php\php.ini` dan ubah nilai berikut:
-
-```ini
-post_max_size = 500M
-upload_max_filesize = 100M
-max_file_uploads = 50
-```
-
-Restart Apache setelah menyimpan perubahan.
-
-### 10. Buat Akun Admin Pertama
+**Akun pertama**: seeder bawaan berisi data contoh dan password lemah, jangan dipakai di server. Buat akun developer lewat tinker:
 
 ```bash
 php artisan tinker
@@ -139,105 +175,58 @@ php artisan tinker
 
 ```php
 App\Models\User::create([
-    'name'     => 'Admin',
-    'username' => 'admin',
-    'email'    => 'admin@example.com',
-    'password' => bcrypt('password'),
-    'role'     => 'admin',
-    'is_active'=> true,
+    'name'      => 'Developer',
+    'username'  => 'developer',
+    'email'     => 'developer@example.com',
+    'password'  => bcrypt('ganti-dengan-password-kuat'),
+    'role'      => 'developer',
+    'is_active' => true,
 ]);
 ```
 
-### 11. Akses Aplikasi
-
-Buka browser dan akses:
-
-```
-http://asata-production.test
-```
-
-Login menggunakan username dan password yang dibuat di langkah sebelumnya.
+Buka `http://localhost/asata-production/public` lalu login.
 
 ---
 
-## Instalasi di Shared Hosting
+## Publikasi dan deploy
 
-### 1. Upload File
+Repositori ini berisi kode aplikasi, pengujian, aset web hasil build, serta dokumentasi. Alat deploy dan rilis disimpan lokal di luar publikasi kode. Untuk instalasi sendiri, siapkan konfigurasi hosting dan kredensial di lingkungan masing-masing.
 
-Upload semua isi folder proyek ke direktori hosting (misal: `public_html/qc/`), **kecuali** folder `node_modules`.
-
-### 2. Pindahkan Isi Folder `public`
-
-Pindahkan semua isi folder `public/` ke root domain (`public_html/`) atau ke direktori yang diakses browser.
-
-Lalu buka file `public_html/index.php` dan ubah path-nya:
-
-```php
-// Sesuaikan path ke folder proyek
-require __DIR__.'/../qc/vendor/autoload.php';
-$app = require_once __DIR__.'/../qc/bootstrap/app.php';
-```
-
-### 3. Konfigurasi `.env`
-
-Upload dan sesuaikan `.env` dengan kredensial database hosting.
-
-### 4. Jalankan via SSH (jika tersedia)
-
-```bash
-cd ~/public_html/qc
-composer install --no-dev --optimize-autoloader
-php artisan key:generate
-php artisan migrate --force
-php artisan storage:link
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-```
-
-### 5. Build Asset (lakukan lokal, lalu upload)
-
-Karena shared hosting biasanya tidak punya Node.js:
-
-```bash
-# Di komputer lokal — sesuaikan APP_URL ke domain hosting dulu di .env
-npm run build
-
-# Upload folder public/build/ ke server
-```
+- Jangan commit `.env`, token bot, password server/database, kunci privat, keystore, dump database, arsip cadangan, atau data unggahan pengguna.
+- Folder `deployment/`, `android-update/`, `windows-update/`, `ai-context/`, serta instruksi AI lokal dikecualikan dari Git dan deploy web.
+- Skrip operasional, screenshot dokumentasi, serta paket APK/MSI tidak dikirim sebagai file aplikasi web.
+- Cadangkan database dan kode sebelum deploy. Hentikan publikasi bila pemeriksaan file atau cadangan gagal.
+- Sinkron gambar memerlukan scheduler server yang berjalan tiap menit. Proses berlangsung di server meskipun aplikasi ditutup; sumber hanya dibaca, konflik tidak ditimpa, dan kegagalan dicoba pada jadwal berikutnya.
+- Kredensial bot diisi lewat Settings khusus Developer. Nilai rahasia tidak boleh ditanam dalam kode frontend atau screenshot dokumentasi.
 
 ---
 
-## Struktur Role Pengguna
+## Pengujian
 
-| Role | Hak Akses |
-|---|---|
-| **Admin** | Semua fitur: manajemen user, produk, kategori, departemen, laporan, upload gambar kerja, hapus data |
-| **Operator** | Input produksi, lihat gambar kerja, lihat ukuran produk, kirim pesan ke admin |
+```bash
+php artisan test                                   # SQLite (cepat)
+php vendor/bin/phpunit -c phpunit.verify.xml       # MySQL, database khusus *_verify
+```
+
+`tests/TestCase.php` menolak `RefreshDatabase` pada database selain SQLite atau yang namanya berakhiran `_verify`, supaya data asli tidak terhapus.
 
 ---
 
 ## Perintah Berguna
 
 ```bash
-# Jalankan semua sekaligus (server + queue + log + vite)
-composer run dev
-
-# Jalankan migrasi ulang (hati-hati: menghapus semua data)
-php artisan migrate:fresh
-
-# Bersihkan cache
-php artisan cache:clear
-php artisan config:clear
-php artisan view:clear
-php artisan route:clear
-
-# Lihat semua route
-php artisan route:list
+composer run dev            # server + queue + log + vite sekaligus
+php artisan optimize:clear  # bersihkan semua cache
+php artisan route:list      # daftar route
+php artisan jadwal:clear    # hapus semua foto jadwal
+php artisan catatan:clear-done
 ```
+
+> `php artisan migrate:fresh` **menghapus semua data**: backup database dulu.
 
 ---
 
-## Lisensi
+## Lisensi & Ketentuan
 
-Proyek ini untuk keperluan internal. Tidak untuk didistribusikan ulang tanpa izin.
+- Kode sumber dirilis di bawah **[MIT License](LICENSE)**.
+- Penggunaan aplikasi yang berjalan (layanan) tunduk pada **[Ketentuan Layanan](TERMS_OF_SERVICE.md)**.

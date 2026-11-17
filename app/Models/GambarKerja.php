@@ -19,6 +19,7 @@ class GambarKerja extends Model
         'file_path',
         'file_type',
         'keterangan',
+        'catatan_file',
         'uploaded_by',
         'urutan',
         'is_thumbnail',

@@ -7,12 +7,27 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class VisitorController extends Controller
 {
     public function create()
     {
-        return view('visitors.create');
+        return Inertia::render('Users/Form', [
+            'mode'   => 'create',
+            'action' => route('visitors.store'),
+            'resource' => [
+                'label'            => 'Visitor',
+                'role'             => 'visitor',
+                'emailRequired'    => false,
+                'usernameOptional' => false,
+                'withDepartment'   => true,
+                'minPassword'      => 8,
+                'indexUrl'         => route('management.index', ['tab' => 'visitor']),
+            ],
+            'departments' => \App\Models\Department::where('is_active', true)->orderBy('name')->pluck('name')
+                ->map(fn ($d) => ['value' => $d, 'label' => $d])->values(),
+        ]);
     }
 
     public function store(Request $request)
@@ -21,6 +36,7 @@ class VisitorController extends Controller
             'name'     => ['required', 'string', 'max:150'],
             'username' => ['required', 'string', 'max:50', 'alpha_dash', 'unique:users,username'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'department' => ['nullable', 'string', 'max:100', 'exists:departments,name'],
         ], [
             'name.required'       => 'Nama lengkap wajib diisi.',
             'username.required'   => 'Username wajib diisi.',
@@ -47,7 +63,29 @@ class VisitorController extends Controller
     public function edit(User $visitor)
     {
         abort_if($visitor->role !== 'visitor', 404);
-        return view('visitors.edit', compact('visitor'));
+        return Inertia::render('Users/Form', [
+            'mode'   => 'edit',
+            'action' => route('visitors.update', $visitor->id),
+            'user'   => [
+                'id'         => $visitor->id,
+                'name'       => $visitor->name,
+                'username'   => $visitor->username,
+                'email'      => $visitor->email,
+                'department' => $visitor->department,
+                'is_active'  => (bool) $visitor->is_active,
+            ],
+            'resource' => [
+                'label'            => 'Visitor',
+                'role'             => 'visitor',
+                'emailRequired'    => false,
+                'usernameOptional' => false,
+                'withDepartment'   => true,
+                'minPassword'      => 8,
+                'indexUrl'         => route('management.index', ['tab' => 'visitor']),
+            ],
+            'departments' => \App\Models\Department::where('is_active', true)->orderBy('name')->pluck('name')
+                ->map(fn ($d) => ['value' => $d, 'label' => $d])->values(),
+        ]);
     }
 
     public function update(Request $request, User $visitor)
@@ -58,6 +96,7 @@ class VisitorController extends Controller
             'name'     => ['required', 'string', 'max:150'],
             'username' => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('users', 'username')->ignore($visitor->id)],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'department' => ['nullable', 'string', 'max:100', 'exists:departments,name'],
         ], [
             'name.required'       => 'Nama lengkap wajib diisi.',
             'username.required'   => 'Username wajib diisi.',

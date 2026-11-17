@@ -31,11 +31,11 @@ class ProductionLogSeeder extends Seeder
                     'product_id'      => $productId,
                     'user_id'         => $operatorId,
                     'production_date' => $date,
-                    'shift1_qty'      => rand(2, 15),
-                    'shift2_qty'      => rand(2, 15),
-                    'shift3_qty'      => rand(0, 10),
-                    'notes'           => rand(0, 5) === 0 ? 'Produksi normal, tidak ada kendala' : null,
-                    'status'          => 'confirmed',
+                    'up_qty'          => 0,
+                    'bt_qty'          => 0,
+                    'total_qty'       => rand(2, 15),
+                    'reject_qty'      => 0,
+                    'keterangan'      => rand(0, 5) === 0 ? 'Produksi normal, tidak ada kendala' : null,
                 ]);
             }
         }

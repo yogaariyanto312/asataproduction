@@ -6,6 +6,7 @@ use App\Http\Requests\CategoryRequest;
 use App\Models\ActivityLog;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class CategoryController extends Controller
 {
@@ -18,29 +19,61 @@ class CategoryController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('categories.index', compact('categories'));
+        return Inertia::render('Categories/Index', [
+            'search'    => $request->search,
+            'indexUrl'  => route('categories.index'),
+            'createUrl' => route('categories.create'),
+            'canManage' => auth()->user()->isDeveloper(),
+            'rows'      => $categories->through(fn ($c) => [
+                'id'          => $c->id,
+                'name'        => $c->name,
+                'code'        => $c->code,
+                'description' => $c->description,
+                'is_active'   => (bool) $c->is_active,
+                'manual'      => (bool) $c->has_manual_serial,
+                'products'    => (int) $c->products_count,
+                'editUrl'     => route('categories.edit', $c->id),
+                'deleteUrl'   => route('categories.destroy', $c->id),
+            ]),
+        ]);
     }
 
     public function create()
     {
-        return view('categories.create');
+        return Inertia::render('Categories/Form', [
+            'mode'     => 'create',
+            'action'   => route('categories.store'),
+            'indexUrl' => route('categories.index'),
+        ]);
     }
 
     public function store(CategoryRequest $request)
     {
-        $category = Category::create($request->validated() + ['is_active' => $request->boolean('is_active', true)]);
+        $category = Category::create($request->validated() + ['is_active' => $request->boolean('is_active', true), 'has_manual_serial' => $request->boolean('has_manual_serial')]);
         ActivityLog::record('create', "Menambah kategori: {$category->name}", $category);
         return redirect()->route('categories.index')->with('success', "Kategori '{$category->name}' berhasil ditambahkan.");
     }
 
     public function edit(Category $category)
     {
-        return view('categories.edit', compact('category'));
+        return Inertia::render('Categories/Form', [
+            'mode'     => 'edit',
+            'action'   => route('categories.update', $category->id),
+            'indexUrl' => route('categories.index'),
+            'category' => [
+                'id'          => $category->id,
+                'name'        => $category->name,
+                'code'        => $category->code,
+                'description' => $category->description,
+                'is_active'   => (bool) $category->is_active,
+                'has_manual_serial' => (bool) $category->has_manual_serial,
+            ],
+        ]);
     }
 
     public function update(CategoryRequest $request, Category $category)
     {
-        $category->update($request->validated() + ['is_active' => $request->boolean('is_active', true)]);
+        $category->update($request->validated() + ['is_active' => $request->boolean('is_active', true), 'has_manual_serial' => $request->boolean('has_manual_serial')]);
         ActivityLog::record('update', "Mengubah kategori: {$category->name}", $category);
         return redirect()->route('categories.index')->with('success', "Kategori '{$category->name}' berhasil diperbarui.");
     }

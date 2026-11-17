@@ -15,6 +15,9 @@ class Product extends Model
         'category_id',
         'type',
         'name',
+        'urutan',
+        'warna_ikon',
+        'warna_teks',
         'series',
         'kva',
         'tahun',
@@ -27,6 +30,7 @@ class Product extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'urutan'    => 'integer',
     ];
 
     public function isChannel(): bool

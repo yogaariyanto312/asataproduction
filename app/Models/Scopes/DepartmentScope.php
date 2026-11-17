@@ -22,7 +22,18 @@ class DepartmentScope implements Scope
     {
         $user = auth()->user();
 
-        if (! $user || $user->role === 'developer') {
+        if (! $user) {
+            return;
+        }
+
+        // Developer melihat semua departemen, kecuali ia memilih menyempitkan tampilan lewat menu akun
+        // (sesi 'dept_lihat'). Hanya memengaruhi tampilan: entri baru tetap ikut departemen akunnya.
+        if ($user->role === 'developer') {
+            $lihat = self::departemenDilihat();
+            if ($lihat !== null) {
+                $builder->where($model->qualifyColumn('department'), $lihat);
+            }
+
             return;
         }
 
@@ -33,5 +44,18 @@ class DepartmentScope implements Scope
         } else {
             $builder->whereNull($column);
         }
+    }
+
+    /** Departemen yang sedang disaring developer, atau null (semua). Hanya ada di permintaan web (punya sesi). */
+    public static function departemenDilihat(): ?string
+    {
+        // Hanya bila permintaan saat ini punya sesi (web); perintah artisan/antrean tidak.
+        if (! app()->bound('request') || ! request()->hasSession()) {
+            return null;
+        }
+
+        $nilai = request()->session()->get('dept_lihat');
+
+        return is_string($nilai) && $nilai !== '' ? $nilai : null;
     }
 }

@@ -15,6 +15,7 @@
 /node_modules
 # /public/build — sengaja di-commit untuk deployment ke shared hosting
 /public/hot
+/public/js/filament
 /public/storage
 /storage/*.key
 /storage/pail
@@ -33,3 +34,47 @@ Thumbs.db
 /test.html
 __pycache__/
 *.pyc
+
+/public/css/filament
+/public/fonts/filament
+
+# APK aplikasi Android (dipush ke server lewat android-update/push_update.py)
+/android-update/*.apk
+# Installer aplikasi Windows (dipush ke server lewat windows-update/push_update.py)
+/windows-update/*.msi
+
+# Alat update aplikasi (APK/MSI + skrip SSH yang membaca .env) & salinan statis halaman (bisa berisi data asli)
+/android-update/
+/windows-update/
+/asata-static/
+
+# Memory AI dan instruksi lokal tidak dipublikasikan.
+/ai-context/
+/AGENTS.md
+/CLAUDE.md
+/GEMINI.md
+/.claude/
+
+# Rahasia, cadangan dan paket operasional, termasuk file baru di subfolder.
+.env.*
+!.env.example
+*.rar
+*.7z
+*.zip
+*.tar
+*.tgz
+*.sql
+*.sql.gz
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.bak
+*.jks
+*.keystore
+*.pem
+*.key
+*.p12
+*.pfx
+*.apk
+*.msi
+*.user.ini

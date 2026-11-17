@@ -4,15 +4,18 @@ namespace App\Models;
 
 use App\Notifications\ResetPasswordNotification;
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
@@ -38,6 +41,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'telegram_user_id',
     ];
 
     protected function casts(): array
@@ -45,6 +49,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'last_seen_at'      => 'datetime',
+            'telegram_linked_at'=> 'datetime',
             'typing_at'         => 'datetime',
             'password'          => 'hashed',
             'is_active'         => 'boolean',
@@ -54,8 +59,30 @@ class User extends Authenticatable
     public function avatarUrl(): ?string
     {
         if (!$this->avatar) return null;
-        if (str_starts_with($this->avatar, 'http')) return $this->avatar;
+        if (str_starts_with($this->avatar, 'http')) {
+            // Avatar siap pakai DiceBear dilayani dari salinan lokal (public/avatars-dasar):
+            // 80 gambar sekaligus dari layanan luar sering gagal dimuat di jaringan pabrik.
+            if (preg_match('~^https://api\.dicebear\.com/9\.x/adventurer/svg\?(?:.*&)?seed=([A-Za-z0-9_-]+)$~', $this->avatar, $m)
+                && is_file(public_path("avatars-dasar/{$m[1]}.svg"))) {
+                return asset("avatars-dasar/{$m[1]}.svg");
+            }
+            return $this->avatar;
+        }
         return route('storage.file', ['path' => $this->avatar]);
+    }
+
+    /**
+     * Gerbang masuk panel Filament (/admin).
+     *
+     * Panel ini kini menjadi rumah Dashboard, yang menurut config/menus.php
+     * boleh dilihat semua peran termasuk visitor. Karena itu semua akun aktif
+     * dipersilakan masuk — pembatasan isi diserahkan ke tiap widget lewat
+     * canView(), bukan ke gerbang panel. Akun nonaktif tetap ditolak, sejajar
+     * dengan pengecekan is_active saat login.
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return (bool) $this->is_active;
     }
 
     public function isDeveloper(): bool

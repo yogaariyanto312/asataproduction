@@ -7,12 +7,25 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class DeveloperController extends Controller
 {
     public function create()
     {
-        return view('developers.create');
+        return Inertia::render('Users/Form', [
+            'mode'   => 'create',
+            'action' => route('developers.store'),
+            'resource' => [
+                'label'            => 'Developer',
+                'role'             => 'developer',
+                'emailRequired'    => true,
+                'usernameOptional' => true,
+                'withDepartment'   => false,
+                'minPassword'      => 8,
+                'indexUrl'         => route('management.index', ['tab' => 'developer']),
+            ],
+        ]);
     }
 
     public function store(Request $request)
@@ -38,7 +51,27 @@ class DeveloperController extends Controller
     public function edit(User $developer)
     {
         abort_if($developer->role !== 'developer', 404);
-        return view('developers.edit', compact('developer'));
+        return Inertia::render('Users/Form', [
+            'mode'   => 'edit',
+            'action' => route('developers.update', $developer->id),
+            'user'   => [
+                'id'         => $developer->id,
+                'name'       => $developer->name,
+                'username'   => $developer->username,
+                'email'      => $developer->email,
+                'department' => $developer->department,
+                'is_active'  => (bool) $developer->is_active,
+            ],
+            'resource' => [
+                'label'            => 'Developer',
+                'role'             => 'developer',
+                'emailRequired'    => true,
+                'usernameOptional' => true,
+                'withDepartment'   => false,
+                'minPassword'      => 8,
+                'indexUrl'         => route('management.index', ['tab' => 'developer']),
+            ],
+        ]);
     }
 
     public function update(Request $request, User $developer)
